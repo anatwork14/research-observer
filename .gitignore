@@ -1,33 +1,28 @@
-# macOS / editor noise
-.DS_Store
-.AppleDouble
-.LSOverride
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
 
-# LaTeX build output
-*.aux
-*.log
-*.out
-*.toc
-*.lof
-*.lot
-*.fls
-*.fdb_latexmk
-*.synctex.gz
-missfont.log
+# Next.js
+/.next/
+/out/
 
-# Python caches
-__pycache__/
-*.py[cod]
+# production
+/build
 
-# Local bundled skill source and generated archive snapshots
-ieee-diagram-skills-bundle/
-review/archive/
-review/markdown_inventory.json
-
-# Local server / tooling output
-.pytest_cache/
-node_modules/
-dist/
-.env
-.env.*
+# local env
+.env*
 !.env.example
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS / editors
+.DS_Store
+*.swp
+
+# TypeScript
+*.tsbuildinfo
