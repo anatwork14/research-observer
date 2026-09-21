@@ -5,6 +5,8 @@ import { notFound } from "next/navigation";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { ResearchNav } from "@/components/ResearchNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { CommandPalette } from "@/components/CommandPalette";
+import { WorkspaceControls } from "@/components/WorkspaceControls";
 import { getProgressEntries, getProgressEntry } from "@/lib/progress";
 
 export async function generateStaticParams() {
@@ -16,6 +18,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const entry = await getProgressEntry(slug);
   return entry ? { title: `${entry.title} · Research Observer`, description: entry.summary } : {};
+}
+
+function stripLeadingTitle(content: string) {
+  return content.replace(/^\s*#\s+.+(?:\r?\n)+/, "");
 }
 
 function extractHeadings(content: string) {
@@ -37,27 +43,36 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
   const index = entries.findIndex((item) => item.slug === entry.slug);
   const previous = index > 0 ? entries[index - 1] : null;
   const next = index < entries.length - 1 ? entries[index + 1] : null;
-  const linked = entries.filter((item) => entry.linkedSlugs.includes(item.slug));
-  const headings = extractHeadings(entry.content);
+  const references = entries.filter((item) => entry.linkedSlugs.includes(item.slug));
+  const backlinks = entries.filter((item) => item.slug !== entry.slug && item.linkedSlugs.includes(entry.slug));
+  const neighbors = [previous, next].filter(Boolean);
+  const bodyContent = stripLeadingTitle(entry.content);
+  const headings = extractHeadings(bodyContent);
 
   return (
     <div className="site-shell">
       <header className="topbar">
         <Link href="/" className="brand"><span className="brand-mark">◒</span><span>RESEARCH <em>OBSERVER</em></span></Link>
         <div className="workspace-state"><i /> convention-driven workspace <span>/</span> {entries.length} notes</div>
+        <CommandPalette entries={entries.map(({ slug, order, title, status }) => ({ slug, order, title, status }))} />
+        <WorkspaceControls />
         <ThemeToggle />
       </header>
 
-      <section className="hero panel">
-        <div>
-          <p className="eyebrow">Research progress / {String(entry.order).padStart(2, "0")}</p>
-          <h1>Observe the work.<br /><span>Keep the thread.</span></h1>
-          <p className="hero-copy">A lightweight research notebook generated directly from ordered Markdown files, equations, figures, experiments, and linked decisions.</p>
+      <section className="note-overview panel">
+        <div className="note-heading-row">
+          <div>
+            <p className="eyebrow">Research progress / {String(entry.order).padStart(2, "0")}</p>
+            <h1>{entry.title}</h1>
+            {entry.summary && <p className="note-summary">{entry.summary}</p>}
+          </div>
+          {entry.status && <span className="status-chip">{entry.status}</span>}
         </div>
-        <div className="hero-stats">
-          <span><strong>{entries.length}</strong> notes</span>
-          <span><strong>{entry.words.toLocaleString()}</strong> words</span>
-          <span><strong>{entry.readingMinutes}</strong> min read</span>
+        <div className="note-meta">
+          {entry.date && <span>{entry.date}</span>}
+          <span>{entry.words.toLocaleString()} words</span>
+          <span>{entry.readingMinutes} min read</span>
+          {entry.tags.map((tag) => <span key={tag} className="tag-chip">#{tag}</span>)}
         </div>
       </section>
 
@@ -69,9 +84,9 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
             <div><span className="file-chip">MD</span><code>{entry.filename}</code></div>
             <span className="readonly">source of truth</span>
           </div>
-          <article><MarkdownRenderer content={entry.content} /></article>
+          <article><MarkdownRenderer content={bodyContent} /></article>
           <footer className="reader-footer">
-            <span>{entry.words.toLocaleString()} words</span><span>·</span><span>}entry.readingMinutes} min</span>
+            <span>{entry.words.toLocaleString()} words</span><span>·</span><span>{entry.readingMinutes} min</span>
             <div className="page-arrows">
               {previous && <Link href={`/progress/${previous.slug}`}>← {String(previous.order).padStart(2, "0")}</Link>}
               {next && <Link href={`/progress/${next.slug}`}>{String(next.order).padStart(2, "0")} →</Link>}
@@ -89,17 +104,39 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
 
           <section className="side-card panel">
             <span className="kicker">Connections</span>
-            <h3>{linked.length ? "Linked research" : "Sequence neighbors"}</h3>
-            <div className="connection-list">
-              {(linked.length ? linked : [previous, next].filter(Boolean)).map((item) => item && (
-                <Link key={item.slug} href={`/progress/${item.slug}`}><span>{String(item.order).padStart(2, "0")}</span>{item.title}</Link>
-              ))}
+            <h3>Research relationships</h3>
+
+            <div className="connection-group">
+              <span className="connection-group-title">← Referenced by</span>
+              <div className="connection-list">
+                {backlinks.length ? backlinks.map((item) => (
+                  <Link key={item.slug} href={`/progress/${item.slug}`}><span>{String(item.order).padStart(2, "0")}</span>{item.title}</Link>
+                )) : <span className="connection-empty">No backlinks yet.</span>}
+              </div>
+            </div>
+
+            <div className="connection-group">
+              <span className="connection-group-title">→ References</span>
+              <div className="connection-list">
+                {references.length ? references.map((item) => (
+                  <Link key={item.slug} href={`/progress/${item.slug}`}><span>{String(item.order).padStart(2, "0")}</span>{item.title}</Link>
+                )) : <span className="connection-empty">No explicit note links.</span>}
+              </div>
+            </div>
+
+            <div className="connection-group">
+              <span className="connection-group-title">≈ Sequence neighbors</span>
+              <div className="connection-list">
+                {neighbors.map((item) => item && (
+                  <Link key={item.slug} href={`/progress/${item.slug}`}><span>{String(item.order).padStart(2, "0")}</span>{item.title}</Link>
+                ))}
+              </div>
             </div>
           </section>
 
           <section className="side-card panel syntax-card">
             <span className="kicker">Media support</span>
-            <p>Use normal Markdown image syntax for PNG, JPG, SVG, GIF, WebP, AVIF, PDF, MP4/WebM, MP3/WAW and more.</p>
+            <p>Use normal Markdown image syntax for PNG, JPG, SVG, GIF, WebP, AVIF, PDF, MP4/WebM, MP3/WAV and more.</p>
             <code>![caption](figures/result.svg)</code>
           </section>
         </aside>

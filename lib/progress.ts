@@ -88,7 +88,11 @@ export async function getProgressEntries(): Promise<ProgressEntry[]> {
           : firstHeading(content) ?? titleFromFilename(filename),
         summary,
         status: typeof data.status === "string" ? data.status : undefined,
-        date: typeof data.date === "string" ? data.date : undefined,
+        date: data.date instanceof Date
+          ? data.date.toISOString().slice(0, 10)
+          : typeof data.date === "string"
+            ? data.date
+            : undefined,
         tags: Array.isArray(data.tags) ? data.tags.map(String) : [],
         content,
         words,
