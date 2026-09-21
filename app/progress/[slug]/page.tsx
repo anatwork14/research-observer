@@ -6,6 +6,7 @@ import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { ResearchNav } from "@/components/ResearchNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { CommandPalette } from "@/components/CommandPalette";
+import { WorkspaceControls } from "@/components/WorkspaceControls";
 import { getProgressEntries, getProgressEntry } from "@/lib/progress";
 
 export async function generateStaticParams() {
@@ -54,6 +55,7 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
         <Link href="/" className="brand"><span className="brand-mark">◒</span><span>RESEARCH <em>OBSERVER</em></span></Link>
         <div className="workspace-state"><i /> convention-driven workspace <span>/</span> {entries.length} notes</div>
         <CommandPalette entries={entries.map(({ slug, order, title, status }) => ({ slug, order, title, status }))} />
+        <WorkspaceControls />
         <ThemeToggle />
       </header>
 
