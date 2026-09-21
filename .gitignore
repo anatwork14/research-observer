@@ -1,0 +1,33 @@
+# macOS / editor noise
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# LaTeX build output
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+missfont.log
+
+# Python caches
+__pycache__/
+*.py[cod]
+
+# Local bundled skill source and generated archive snapshots
+ieee-diagram-skills-bundle/
+review/archive/
+review/markdown_inventory.json
+
+# Local server / tooling output
+.pytest_cache/
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
