@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 function stripLeadingTitle(content: string) {
-  return content.replace(/^#\s+.+(?:\r?\n)+/, "");
+  return content.replace(/^\s*#\s+.+(?:\r?\n)+/, "");
 }
 
 function extractHeadings(content: string) {

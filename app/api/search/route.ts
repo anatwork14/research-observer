@@ -63,7 +63,7 @@ export async function GET(request: Request) {
     .filter((result): result is NonNullable<typeof result> => Boolean(result))
     .sort((a, b) => b.score - a.score || a.order - b.order)
     .slice(0, 12)
-    .map(({ score: _score, ...result }) => result);
+    .map(({ slug, order, title, status, excerpt, matchedBy }) => ({ slug, order, title, status, excerpt, matchedBy }));
 
   return NextResponse.json({ results });
 }
