@@ -42,7 +42,9 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
   const index = entries.findIndex((item) => item.slug === entry.slug);
   const previous = index > 0 ? entries[index - 1] : null;
   const next = index < entries.length - 1 ? entries[index + 1] : null;
-  const linked = entries.filter((item) => entry.linkedSlugs.includes(item.slug));
+  const references = entries.filter((item) => entry.linkedSlugs.includes(item.slug));
+  const backlinks = entries.filter((item) => item.slug !== entry.slug && item.linkedSlugs.includes(entry.slug));
+  const neighbors = [previous, next].filter(Boolean);
   const bodyContent = stripLeadingTitle(entry.content);
   const headings = extractHeadings(bodyContent);
 
@@ -100,11 +102,33 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
 
           <section className="side-card panel">
             <span className="kicker">Connections</span>
-            <h3>{linked.length ? "Linked research" : "Sequence neighbors"}</h3>
-            <div className="connection-list">
-              {(linked.length ? linked : [previous, next].filter(Boolean)).map((item) => item && (
-                <Link key={item.slug} href={`/progress/${item.slug}`}><span>{String(item.order).padStart(2, "0")}</span>{item.title}</Link>
-              ))}
+            <h3>Research relationships</h3>
+
+            <div className="connection-group">
+              <span className="connection-group-title">← Referenced by</span>
+              <div className="connection-list">
+                {backlinks.length ? backlinks.map((item) => (
+                  <Link key={item.slug} href={`/progress/${item.slug}`}><span>{String(item.order).padStart(2, "0")}</span>{item.title}</Link>
+                )) : <span className="connection-empty">No backlinks yet.</span>}
+              </div>
+            </div>
+
+            <div className="connection-group">
+              <span className="connection-group-title">→ References</span>
+              <div className="connection-list">
+                {references.length ? references.map((item) => (
+                  <Link key={item.slug} href={`/progress/${item.slug}`}><span>{String(item.order).padStart(2, "0")}</span>{item.title}</Link>
+                )) : <span className="connection-empty">No explicit note links.</span>}
+              </div>
+            </div>
+
+            <div className="connection-group">
+              <span className="connection-group-title">≈ Sequence neighbors</span>
+              <div className="connection-list">
+                {neighbors.map((item) => item && (
+                  <Link key={item.slug} href={`/progress/${item.slug}`}><span>{String(item.order).padStart(2, "0")}</span>{item.title}</Link>
+                ))}
+              </div>
             </div>
           </section>
 
