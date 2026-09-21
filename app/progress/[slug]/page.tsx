@@ -18,6 +18,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return entry ? { title: `${entry.title} · Research Observer`, description: entry.summary } : {};
 }
 
+function stripLeadingTitle(content: string) {
+  return content.replace(/^#\s+.+(?:\r?\n)+/, "");
+}
+
 function extractHeadings(content: string) {
   const slugger = new GithubSlugger();
   return [...content.matchAll(/^(#{1,3})\s+(.+)$/gm)].map((match) => {
@@ -38,7 +42,8 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
   const previous = index > 0 ? entries[index - 1] : null;
   const next = index < entries.length - 1 ? entries[index + 1] : null;
   const linked = entries.filter((item) => entry.linkedSlugs.includes(item.slug));
-  const headings = extractHeadings(entry.content);
+  const bodyContent = stripLeadingTitle(entry.content);
+  const headings = extractHeadings(bodyContent);
 
   return (
     <div className="site-shell">
@@ -48,16 +53,20 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
         <ThemeToggle />
       </header>
 
-      <section className="hero panel">
-        <div>
-          <p className="eyebrow">Research progress / {String(entry.order).padStart(2, "0")}</p>
-          <h1>Observe the work.<br /><span>Keep the thread.</span></h1>
-          <p className="hero-copy">A lightweight research notebook generated directly from ordered Markdown files, equations, figures, experiments, and linked decisions.</p>
+      <section className="note-overview panel">
+        <div className="note-heading-row">
+          <div>
+            <p className="eyebrow">Research progress / {String(entry.order).padStart(2, "0")}</p>
+            <h1>{entry.title}</h1>
+            {entry.summary && <p className="note-summary">{entry.summary}</p>}
+          </div>
+          {entry.status && <span className="status-chip">{entry.status}</span>}
         </div>
-        <div className="hero-stats">
-          <span><strong>{entries.length}</strong> notes</span>
-          <span><strong>{entry.words.toLocaleString()}</strong> words</span>
-          <span><strong>{entry.readingMinutes}</strong> min read</span>
+        <div className="note-meta">
+          {entry.date && <span>{entry.date}</span>}
+          <span>{entry.words.toLocaleString()} words</span>
+          <span>{entry.readingMinutes} min read</span>
+          {entry.tags.map((tag) => <span key={tag} className="tag-chip">#{tag}</span>)}
         </div>
       </section>
 
@@ -69,7 +78,7 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
             <div><span className="file-chip">MD</span><code>{entry.filename}</code></div>
             <span className="readonly">source of truth</span>
           </div>
-          <article><MarkdownRenderer content={entry.content} /></article>
+          <article><MarkdownRenderer content={bodyContent} /></article>
           <footer className="reader-footer">
             <span>{entry.words.toLocaleString()} words</span><span>·</span><span>{entry.readingMinutes} min</span>
             <div className="page-arrows">
