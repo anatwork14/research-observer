@@ -71,7 +71,7 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
           </div>
           <article><MarkdownRenderer content={entry.content} /></article>
           <footer className="reader-footer">
-            <span>{entry.words.toLocaleString()} words</span><span>·</span><span>}entry.readingMinutes} min</span>
+            <span>{entry.words.toLocaleString()} words</span><span>·</span><span>{entry.readingMinutes} min</span>
             <div className="page-arrows">
               {previous && <Link href={`/progress/${previous.slug}`}>← {String(previous.order).padStart(2, "0")}</Link>}
               {next && <Link href={`/progress/${next.slug}`}>{String(next.order).padStart(2, "0")} →</Link>}
@@ -99,7 +99,7 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
 
           <section className="side-card panel syntax-card">
             <span className="kicker">Media support</span>
-            <p>Use normal Markdown image syntax for PNG, JPG, SVG, GIF, WebP, AVIF, PDF, MP4/WebM, MP3/WAW and more.</p>
+            <p>Use normal Markdown image syntax for PNG, JPG, SVG, GIF, WebP, AVIF, PDF, MP4/WebM, MP3/WAV and more.</p>
             <code>![caption](figures/result.svg)</code>
           </section>
         </aside>
