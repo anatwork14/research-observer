@@ -1,11 +1,11 @@
 ---
 name: verify-research-observer
-description: End-to-end verification protocol for Research Observer when an agent has npm/network access and a browser or deployment sandbox. Use before marking a feature PR ready or merging a release candidate.
+description: End-to-end verification protocol for Observaire when an agent has npm/network access and a browser or deployment sandbox. Use before marking a feature PR ready or merging a release candidate.
 ---
 
-# Verify Research Observer
+# Verify Observaire
 
-Use this skill when asked to verify Research Observer, validate a PR/branch, close a build gap, test the PDF reader, or confirm Codex integration.
+Use this skill when asked to verify Observaire, validate a PR/branch, close a build gap, test the PDF reader, or confirm Codex integration.
 
 This repository intentionally does **not** rely on GitHub Actions. Verification is local or performed in an available deployment/browser sandbox.
 
@@ -133,7 +133,7 @@ Do not commit `public/_research/`.
 
 ## 4. Start the development server
 
-Start Research Observer with Codex disabled first so the ordinary reader is tested independently:
+Start Observaire with Codex disabled first so the ordinary reader is tested independently:
 
 ```bash
 RESEARCH_OBSERVER_CODEX=0 npm run dev -- --hostname 127.0.0.1
@@ -334,7 +334,7 @@ Diagnose the actual failure.
 Return this exact structure:
 
 ```text
-Research Observer verification
+Observaire verification
 Revision: <branch> @ <full SHA>
 Node: <version>
 npm: <version>
@@ -419,7 +419,7 @@ This feature must be tested without leaking or committing real credentials.
 Run the normal unit suite and additionally confirm:
 
 - Consensus normalizer accepts representative `papers`, `results`, and nested response shapes.
-- page size is bounded by Research Observer.
+- page size is bounded by Observaire.
 - the API key is sent only from the server in the `x-api-key` header.
 - no `CONSENSUS_API_KEY` string/value appears in browser bundles or rendered HTML.
 - cross-origin POSTs to `/api/consensus/search` are rejected.
