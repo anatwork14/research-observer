@@ -121,7 +121,7 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
           </footer>
         </section>
 
-        <aside className="right-rail">
+        <aside className="right-rail" id="research-context-sidebar">
           <section className="side-card panel">
             <span className="kicker">On this page</span>
             <nav className="outline-list">

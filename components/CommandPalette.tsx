@@ -203,7 +203,19 @@ export function CommandPalette({ entries }: { entries: NavEntry[] }) {
               <kbd>ESC</kbd>
             </div>
             <div className="palette-results" role="listbox">
-              {index === null && <p className="palette-state">Loading research index…</p>}
+              {index === null && (
+                <div className="palette-skeleton" aria-label="Loading research index" aria-busy="true">
+                  {Array.from({ length: 5 }, (_, row) => (
+                    <div className="palette-skeleton-row" key={row}>
+                      <span className="skeleton-block palette-skeleton-number" />
+                      <span className="palette-skeleton-copy">
+                        <span className="skeleton-block" />
+                        <span className="skeleton-block short" />
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
               {results.map((result, resultIndex) => (
                 <button
                   key={result.slug}

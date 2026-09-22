@@ -216,7 +216,14 @@ export default function PdfReaderInner({
           return next;
         });
       }}
-      loading={<div className="pdf-loading panel">Opening {title}…</div>}
+      loading={
+        <div className="pdf-loading panel pdf-document-loading" aria-busy="true">
+          <span className="skeleton-block pdf-loading-title" />
+          <span className="skeleton-block pdf-loading-line" />
+          <span className="skeleton-block pdf-loading-page" />
+          <small>Opening {title}…</small>
+        </div>
+      }
       error={<div className="pdf-loading panel error">This PDF failed to render. <a href={src}>Open original</a>.</div>}
     >
       <div className="pdf-workbench">
@@ -270,7 +277,15 @@ export default function PdfReaderInner({
                 rotate={rotation}
                 renderTextLayer
                 renderAnnotationLayer
-                loading={<div className="pdf-page-loading">Rendering page {pageNumber}…</div>}
+                loading={
+                  <div className="pdf-page-loading pdf-page-skeleton" aria-busy="true">
+                    <span className="skeleton-block wide" />
+                    <span className="skeleton-block" />
+                    <span className="skeleton-block short" />
+                    <span className="skeleton-block wide" />
+                    <small>Rendering page {pageNumber}…</small>
+                  </div>
+                }
               />
             </div>
             {selection && (

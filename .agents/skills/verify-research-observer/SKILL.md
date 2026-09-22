@@ -389,3 +389,20 @@ A feature PR may be called **fully verified** only when:
 - Codex safety boundaries are tested if the PR changes Codex code.
 
 If some environment-specific test cannot run, report **PARTIAL**, name the exact missing capability, and still execute every other available layer.
+
+
+## Smooth sidebar and loading UX
+
+For UI/UX verification on note and PDF routes:
+
+- Toggle the left research sidebar with the toolbar button and `[` shortcut. It must animate width + opacity/translation rather than abruptly disappear.
+- Toggle the right context rail with the toolbar button and `]` shortcut.
+- Toggle focus mode with Shift+F; both rails should collapse smoothly and the reader should recenter.
+- Reload after closing/opening rails and confirm persisted layout is applied before hydration without a visible layout jump.
+- On mobile width, rail open/close should animate vertically without trapping focus or leaving invisible interactive content.
+- With `prefers-reduced-motion: reduce`, rail/page-entry/shimmer animations must effectively stop.
+- Navigate between routes under throttled network/CPU and confirm a structural skeleton appears instead of blank content.
+- Open a note under throttling and confirm the note skeleton mirrors left rail / reader / context rail.
+- Open a PDF under throttling and confirm both route-level and PDF.js internal skeletons appear without large layout shifts.
+- Open Command Palette before its search index resolves and confirm skeleton rows appear.
+- Browser console must show no hydration warnings caused by persisted rail state.

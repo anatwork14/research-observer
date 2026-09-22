@@ -14,7 +14,7 @@ export function ResearchNav({ entries, activeSlug }: { entries: Item[]; activeSl
   }, [entries, query]);
 
   return (
-    <aside className="left-rail panel">
+    <aside className="left-rail panel" id="research-sidebar">
       <div className="rail-heading">
         <div><span className="kicker">Progress</span><h2>Research log</h2></div>
         <span className="count-badge">{String(entries.length).padStart(2, "0")}</span>
