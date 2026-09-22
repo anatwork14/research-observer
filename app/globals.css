@@ -572,3 +572,32 @@ body::after { width: 300px; height: 300px; left: -150px; bottom: 8vh; background
   .health-summary { grid-template-columns: repeat(2, 1fr); }
   .health-grid { grid-template-columns: 1fr; }
 }
+
+
+/* Smart collections and advanced query */
+.collection-query-panel { padding: 16px; border-radius: 12px; }
+.collection-query-form { display: flex; flex-direction: column; gap: 7px; }
+.collection-query-form > label { color: var(--muted); font: 8px var(--mono); text-transform: uppercase; letter-spacing: .07em; }
+.collection-query-form > div { display: flex; gap: 7px; }
+.collection-query-form input { min-width: 0; flex: 1; height: 38px; padding: 0 11px; border: 1px solid var(--line); border-radius: 8px; outline: 0; color: var(--ink); background: var(--surface-strong); font: 10px var(--mono); }
+.collection-query-form input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent); }
+.collection-query-form button { min-width: 82px; border: 1px solid var(--accent); border-radius: 8px; color: white; background: var(--accent-deep); font-size: 9px; font-weight: 750; }
+.query-help { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.query-help code { padding: 3px 5px; border-radius: 4px; color: var(--muted); background: var(--canvas); font-size: 7px; }
+.saved-collection-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.saved-collection-card { min-width: 0; min-height: 132px; display: flex; flex-direction: column; padding: 15px; border-radius: 11px; text-decoration: none; }
+.saved-collection-card.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent-wash) 35%, var(--surface)); }
+.saved-collection-card > span { color: var(--muted); font: 8px var(--mono); text-transform: uppercase; }
+.saved-collection-card > strong { margin-top: 7px; font: 600 27px var(--serif); }
+.saved-collection-card > small { margin-top: 4px; color: var(--ink-soft); font-size: 9px; line-height: 1.45; }
+.saved-collection-card > code { margin-top: auto; padding-top: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 7px; }
+.collection-results { margin-top: 12px; }
+
+@media (max-width: 860px) {
+  .saved-collection-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .saved-collection-grid { grid-template-columns: 1fr; }
+  .collection-query-form > div { flex-direction: column; }
+  .collection-query-form button { min-height: 36px; }
+}

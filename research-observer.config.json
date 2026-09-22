@@ -62,5 +62,43 @@
     "reproduces",
     "supersedes",
     "references"
+  ],
+  "savedCollections": [
+    {
+      "id": "active",
+      "label": "Active research",
+      "description": "Everything not marked complete or archived.",
+      "query": "-status:complete -status:archived"
+    },
+    {
+      "id": "questions",
+      "label": "Questions",
+      "description": "Research questions across the workspace.",
+      "query": "type:question"
+    },
+    {
+      "id": "validating",
+      "label": "Validating experiments",
+      "description": "Experiments currently in validation.",
+      "query": "type:experiment status:validating"
+    },
+    {
+      "id": "papers",
+      "label": "Literature with PDFs",
+      "description": "Literature notes backed by local papers.",
+      "query": "type:literature has:pdf"
+    },
+    {
+      "id": "evidence",
+      "label": "PDF evidence",
+      "description": "Durable evidence objects with source provenance.",
+      "query": "type:evidence has:source"
+    },
+    {
+      "id": "contradictions",
+      "label": "Contradictions",
+      "description": "Objects connected through contradiction relationships.",
+      "query": "relationship:contradicts"
+    }
   ]
 }

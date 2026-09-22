@@ -64,6 +64,7 @@ export type ResearchWorkspace = {
     allowedMediaExtensions: string[];
     allowedRelationshipTypes: string[];
     maxAssetBytes: number;
+    savedCollections: Array<{ id: string; label: string; description?: string; query: string }>;
     [key: string]: unknown;
   };
   signature: string;
