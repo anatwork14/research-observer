@@ -1,5 +1,6 @@
 import { Codex } from "@openai/codex-sdk";
 import { NextResponse } from "next/server";
+import { isSameOrigin } from "@/lib/http/same-origin";
 import {
   collectResearchDiff,
   gitStatusPaths,
@@ -20,16 +21,6 @@ type ResearchContext = {
 
 function enabled() {
   return process.env.NODE_ENV !== "production" && process.env.RESEARCH_OBSERVER_CODEX !== "0";
-}
-
-function sameOrigin(request: Request) {
-  const origin = request.headers.get("origin");
-  if (!origin) return false;
-  try {
-    return new URL(origin).origin === new URL(request.url).origin;
-  } catch {
-    return false;
-  }
 }
 
 function clean(value: unknown, max = 500) {
@@ -78,7 +69,7 @@ export async function POST(request: Request) {
   if (!enabled()) {
     return NextResponse.json({ error: "Codex Act mode is unavailable in this environment." }, { status: 503 });
   }
-  if (!sameOrigin(request)) {
+  if (!isSameOrigin(request)) {
     return NextResponse.json({ error: "Cross-origin Act requests are not allowed." }, { status: 403 });
   }
 

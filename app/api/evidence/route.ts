@@ -1,18 +1,9 @@
 import { NextResponse } from "next/server";
 import { createEvidenceNote } from "@/lib/research/evidence-write.mjs";
+import { isSameOrigin } from "@/lib/http/same-origin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-function sameOrigin(request: Request) {
-  const origin = request.headers.get("origin");
-  if (!origin) return false;
-  try {
-    return new URL(origin).origin === new URL(request.url).origin;
-  } catch {
-    return false;
-  }
-}
 
 function writable() {
   if (process.env.RESEARCH_OBSERVER_WRITES === "1") return true;
@@ -29,7 +20,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  if (!sameOrigin(request)) {
+  if (!isSameOrigin(request)) {
     return NextResponse.json({ error: "Cross-origin evidence writes are not allowed." }, { status: 403 });
   }
   if (!writable()) {

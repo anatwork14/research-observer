@@ -36,6 +36,10 @@ export function EvidenceCaptureDialog({
     dialogRef.current?.showModal();
   }
 
+  function close() {
+    dialogRef.current?.close();
+  }
+
   async function save() {
     if (saving) return;
     setSaving(true);
@@ -67,10 +71,10 @@ export function EvidenceCaptureDialog({
     <>
       <button onClick={open}>Add evidence</button>
       <dialog ref={dialogRef} className="evidence-dialog" onClose={() => setError("")}>
-        <form method="dialog" className="evidence-dialog-shell">
+        <form className="evidence-dialog-shell" onSubmit={(event) => { event.preventDefault(); void save(); }}>
           <header>
             <div><span className="kicker">PDF evidence</span><h2>Capture durable evidence</h2></div>
-            <button value="cancel" aria-label="Close evidence capture">×</button>
+            <button type="button" onClick={close} aria-label="Close evidence capture">×</button>
           </header>
 
           <div className="evidence-source-preview">
@@ -104,7 +108,7 @@ export function EvidenceCaptureDialog({
 
           <footer>
             <span>Writes an ordered Markdown evidence note under <code>progress/</code>.</span>
-            <button type="button" className="evidence-save" onClick={() => void save()} disabled={saving || Boolean(created)}>
+            <button type="submit" className="evidence-save" disabled={saving || Boolean(created)}>
               {saving ? "Saving…" : created ? "Saved" : "Create evidence"}
             </button>
           </footer>
