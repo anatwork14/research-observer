@@ -8,6 +8,7 @@ export type CodexResearchContext = {
     slug: string;
     title: string;
     filename: string;
+    research?: string;
   };
   paper?: {
     path: string;

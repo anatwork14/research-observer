@@ -188,7 +188,7 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
 
           <ResearchAssistPanel
             defaultConsensusQuery={[entry.title, entry.summary].filter(Boolean).join(". ")}
-            codexContext={{ note: { slug: entry.slug, title: entry.title, filename: entry.filename } }}
+            codexContext={{ note: { slug: entry.slug, title: entry.title, filename: entry.filename, research: entry.research } }}
           />
 
           <section className="side-card panel syntax-card">
