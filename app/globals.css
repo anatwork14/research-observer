@@ -409,7 +409,7 @@ body::after { width: 300px; height: 300px; left: -150px; bottom: 8vh; background
 .pdf-selection-bar button { flex: 0 0 auto; min-height: 28px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; color: var(--accent-deep); background: var(--accent-wash); font-size: 9px; }
 
 .pdf-inspector { display: flex; flex-direction: column; }
-.pdf-inspector-tabs { display: grid; grid-template-columns: repeat(3, 1fr); padding: 7px; border-bottom: 1px solid var(--line); }
+.pdf-inspector-tabs { display: grid; grid-template-columns: repeat(4, 1fr); padding: 7px; border-bottom: 1px solid var(--line); }
 .pdf-inspector-tabs button { min-height: 31px; border: 0; border-radius: 6px; color: var(--muted); background: transparent; font-size: 9px; font-weight: 700; }
 .pdf-inspector-tabs button.active { color: var(--accent-deep); background: var(--accent-wash); }
 .pdf-panel-body { min-height: 0; flex: 1; overflow-y: auto; padding: 17px; }
@@ -458,3 +458,37 @@ body::after { width: 300px; height: 300px; left: -150px; bottom: 8vh; background
   .pdf-selection-bar { flex-wrap: wrap; }
   .pdf-selection-bar span { flex-basis: 100%; }
 }
+
+
+/* Embedded Codex research assistant */
+.sr-only { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important; }
+.codex-side-card { padding: 0; overflow: hidden; }
+.codex-panel-wrap { padding: 0; }
+.codex-panel { min-width: 0; display: flex; flex-direction: column; }
+.codex-side-card .codex-panel { padding: 16px; }
+.codex-panel-wrap .codex-panel { padding: 16px; }
+.codex-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.codex-heading > div { min-width: 0; display: flex; align-items: center; gap: 8px; }
+.codex-heading > div > div { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.codex-heading strong { font-size: 11px; }
+.codex-heading small { color: var(--muted); font: 8px var(--mono); }
+.codex-mark { display: grid; place-items: center; width: 28px; height: 28px; flex: 0 0 28px; border-radius: 8px; color: #6d4fd1; background: color-mix(in srgb, #8066d8 14%, var(--surface-strong)); }
+.codex-status { padding: 3px 6px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font: 7px var(--mono); text-transform: uppercase; letter-spacing: .06em; }
+.codex-status.ready { color: var(--accent-deep); border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); background: var(--accent-wash); }
+.codex-context { margin-top: 13px; }
+.codex-context-label { display: block; margin-bottom: 6px; color: var(--muted); font: 8px var(--mono); text-transform: uppercase; letter-spacing: .07em; }
+.codex-context > div { display: flex; flex-wrap: wrap; gap: 5px; }
+.codex-chip { max-width: 100%; padding: 4px 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 999px; color: #6348ba; background: color-mix(in srgb, #8066d8 11%, var(--surface-strong)); font: 8px var(--mono); }
+.codex-chip.muted { color: var(--muted); background: var(--canvas); }
+.codex-unavailable, .codex-error { margin: 11px 0 0; padding: 8px 9px; border-radius: 6px; color: var(--muted); background: color-mix(in srgb, var(--canvas) 75%, transparent); font-size: 9px; line-height: 1.45; }
+.codex-error { color: #a03d3d; background: color-mix(in srgb, #c94d4d 8%, var(--surface-strong)); }
+.codex-prompt { display: block; margin-top: 12px; }
+.codex-prompt textarea { width: 100%; resize: vertical; min-height: 88px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 7px; outline: 0; color: var(--ink); background: var(--surface-strong); font: 10px/1.5 var(--sans); }
+.codex-prompt textarea:focus { border-color: #8066d8; box-shadow: 0 0 0 3px color-mix(in srgb, #8066d8 12%, transparent); }
+.codex-prompt textarea:disabled { opacity: .6; cursor: not-allowed; }
+.codex-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 7px; }
+.codex-actions > span { color: var(--muted); font: 7px var(--mono); }
+.codex-actions button { min-height: 30px; padding: 0 11px; border: 1px solid color-mix(in srgb, #8066d8 45%, var(--line)); border-radius: 7px; color: #5a40ae; background: color-mix(in srgb, #8066d8 10%, var(--surface-strong)); font-size: 9px; font-weight: 750; }
+.codex-actions button:disabled { opacity: .4; cursor: not-allowed; }
+.codex-answer { margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--line); }
+.codex-answer p { margin: 7px 0 0; color: var(--ink-soft); font-size: 10px; line-height: 1.65; white-space: pre-wrap; }

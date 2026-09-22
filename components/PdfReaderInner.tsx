@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import type { PdfRelatedNote } from "@/components/PdfReader";
+import { CodexPanel } from "@/components/CodexPanel";
 
 pdfjs.GlobalWorkerOptions.workerSrc = "/_research/pdfjs/pdf.worker.min.mjs";
 
@@ -103,7 +104,7 @@ export default function PdfReaderInner({
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [stageWidth, setStageWidth] = useState(920);
-  const [panel, setPanel] = useState<"search" | "text" | "notes">("notes");
+  const [panel, setPanel] = useState<"search" | "text" | "notes" | "agent">("notes");
   const [pageText, setPageText] = useState("");
   const [textLoading, setTextLoading] = useState(false);
   const [search, setSearch] = useState("");
@@ -267,6 +268,7 @@ export default function PdfReaderInner({
                 <span>{selection.length > 90 ? selection.slice(0, 87) + "…" : selection}</span>
                 <button onClick={() => navigator.clipboard.writeText(selection)}>Copy</button>
                 <button onClick={() => navigator.clipboard.writeText(`> ${selection}\n\nSource: ${title}, p. ${pageNumber}`)}>Copy evidence</button>
+                <button onClick={() => setPanel("agent")}>Ask Codex</button>
               </div>
             )}
           </main>
@@ -276,6 +278,7 @@ export default function PdfReaderInner({
               <button className={panel === "notes" ? "active" : ""} onClick={() => setPanel("notes")}>Notes</button>
               <button className={panel === "search" ? "active" : ""} onClick={() => setPanel("search")}>Search</button>
               <button className={panel === "text" ? "active" : ""} onClick={() => setPanel("text")}>Text</button>
+              <button className={panel === "agent" ? "active" : ""} onClick={() => setPanel("agent")}>Agent</button>
             </div>
 
             {panel === "notes" && (
@@ -315,6 +318,17 @@ export default function PdfReaderInner({
                 <span className="kicker">Accessible text view</span>
                 <h3>Page {pageNumber}</h3>
                 <p className="pdf-text-view">{textLoading ? "Extracting text…" : pageText || "Open this tab to extract selectable page text."}</p>
+              </div>
+            )}
+
+            {panel === "agent" && (
+              <div className="pdf-panel-body codex-panel-wrap">
+                <CodexPanel
+                  context={{
+                    paper: { path, title, page: pageNumber },
+                    selection: selection || undefined,
+                  }}
+                />
               </div>
             )}
           </aside>

@@ -5,6 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { ResearchNav } from "@/components/ResearchNav";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
+import { CodexPanel } from "@/components/CodexPanel";
 import { getProgressEntries, getProgressEntry } from "@/lib/progress";
 
 export async function generateStaticParams() {
@@ -138,6 +139,10 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
                 ))}
               </div>
             </div>
+          </section>
+
+          <section className="side-card panel codex-side-card">
+            <CodexPanel context={{ note: { slug: entry.slug, title: entry.title, filename: entry.filename } }} />
           </section>
 
           <section className="side-card panel syntax-card">

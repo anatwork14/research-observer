@@ -32,7 +32,8 @@
     "remark-gfm": "4.0.1",
     "remark-math": "6.0.0",
     "react-pdf": "11.0.0",
-    "pdfjs-dist": "6.3.289"
+    "pdfjs-dist": "6.3.289",
+    "@openai/codex-sdk": "0.155.1"
   },
   "devDependencies": {
     "eslint": "9.0.0",
