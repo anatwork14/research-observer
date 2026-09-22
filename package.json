@@ -7,8 +7,7 @@
     "node": ">=22 <25"
   },
   "scripts": {
-    "predev": "npm run research:compile",
-    "dev": "next dev",
+    "dev": "node scripts/dev-research.mjs",
     "prebuild": "npm run research:compile",
     "build": "next build",
     "start": "next start",

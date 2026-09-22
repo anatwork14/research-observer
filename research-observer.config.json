@@ -46,5 +46,6 @@
     ".json",
     ".txt"
   ],
-  "maxAssetBytes": 262144000
+  "maxAssetBytes": 262144000,
+  "strictVocabulary": false
 }

@@ -16,7 +16,8 @@ async function fixture(t) {
       allowedTypes: ["note", "question", "experiment", "result"],
       allowedStatuses: ["investigating", "validating", "complete"],
       allowedMediaExtensions: [".svg", ".png"],
-      maxAssetBytes: 1048576
+      maxAssetBytes: 1048576,
+      strictVocabulary: true
     })
   );
   t.after(() => fs.rm(root, { recursive: true, force: true }));
@@ -80,6 +81,12 @@ test("compiler creates stable routes, relationships, assets and static indexes",
   const index = JSON.parse(await fs.readFile(path.join(root, "public", "_research", "search.json"), "utf8"));
   assert.equal(index.entries[0].slug, "retrieval-question");
   assert.match(index.entries[0].text, /See the result/);
+
+  const copiedAsset = await fs.readFile(
+    path.join(root, "public", "_research", "media", "figures", "recall.svg"),
+    "utf8"
+  );
+  assert.match(copiedAsset, /<svg/);
 });
 
 test("doctor diagnostics catch invalid metadata, broken links and missing assets", async (t) => {
@@ -111,4 +118,33 @@ test("doctor diagnostics catch invalid metadata, broken links and missing assets
   assert.ok(codes.has("link-broken"));
   assert.ok(codes.has("asset-missing"));
   assert.ok(workspace.stats.errors >= 5);
+});
+
+
+test("compiler ignores links inside fenced code examples", async (t) => {
+  const root = await fixture(t);
+  const note = [
+    "---",
+    "id: code-example",
+    "type: note",
+    "status: complete",
+    "---",
+    "",
+    "# Code example",
+    "",
+    "\`\`\`md",
+    "[planned](99_missing.md)",
+    "![fake](figures/not-real.png)",
+    "\`\`\`",
+    ""
+  ].join("\n");
+
+  await fs.writeFile(path.join(root, "progress", "00_code.md"), note);
+  const workspace = await compileResearchWorkspace({ rootDir: root, fresh: true });
+  const errorCodes = workspace.diagnostics
+    .filter((item) => item.severity === "error")
+    .map((item) => item.code);
+
+  assert.equal(errorCodes.includes("link-broken"), false);
+  assert.equal(errorCodes.includes("asset-missing"), false);
 });

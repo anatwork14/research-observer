@@ -145,16 +145,22 @@ export function CommandPalette({ entries }: { entries: NavEntry[] }) {
     setSelected(0);
     requestAnimationFrame(() => inputRef.current?.focus());
 
-    if (index === null) {
-      fetch("/_research/search.json", { cache: "force-cache" })
-        .then((response) => {
-          if (!response.ok) throw new Error("Search index unavailable");
-          return response.json();
-        })
-        .then((payload) => setIndex(Array.isArray(payload.entries) ? payload.entries : []))
-        .catch(() => setIndex([]));
-    }
-  }, [index, open]);
+    const controller = new AbortController();
+    fetch("/_research/search.json?ts=" + Date.now(), {
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error("Search index unavailable");
+        return response.json();
+      })
+      .then((payload) => setIndex(Array.isArray(payload.entries) ? payload.entries : []))
+      .catch((error) => {
+        if ((error as Error).name !== "AbortError") setIndex([]);
+      });
+
+    return () => controller.abort();
+  }, [open]);
 
   const results = useMemo(() => {
     if (!index) {

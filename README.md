@@ -167,19 +167,19 @@ Store assets under `progress/` and reference them with relative paths:
 
 Supported media includes common browser-viewable image formats, PDF, MP4/WebM/OGV video, MP3/WAV/M4A/AAC/FLAC audio, plus CSV/JSON/TXT downloads.
 
-The media route uses real-path confinement, extension allowlisting, streaming, cache validators, and HTTP byte-range responses for large assets.
+During research compilation, approved local assets are copied to `public/_research/media/` and served as static deployment assets. This avoids relying on the runtime server filesystem and lets the hosting layer/CDN handle caching and byte-range delivery.
 
 ## Configuration
 
-`research-observer.config.json` controls the workspace contract, including allowed research types/statuses, media extensions, asset-size warnings, and the progress directory.
+`research-observer.config.json` controls the workspace contract, including suggested research types/statuses, media extensions, asset-size warnings, and the progress directory. By default, unknown type/status values are warnings for backward compatibility; set `strictVocabulary: true` to make them doctor errors.
 
 If you intentionally extend the research vocabulary, update the config and `AGENTS.md` together.
 
 ## Static-first rendering
 
-Research note routes are generated statically from the committed workspace. The media route remains a Node.js route handler because it supports streaming and byte ranges.
+Research note routes are pre-generated from the committed workspace, while development still permits newly added notes without restarting. Search and approved local research media are generated into `public/_research/` before production builds.
 
-The app therefore follows a static-first model rather than requiring request-time Markdown parsing for note rendering or search.
+The app therefore follows a static-first deployment model without requiring request-time Markdown parsing or access to the source `progress/` filesystem.
 
 ## Dependency reproducibility
 

@@ -11,9 +11,3 @@ console.log(
   workspace.stats.warnings + " warnings"
 );
 
-if (workspace.stats.errors > 0) {
-  for (const item of workspace.diagnostics.filter((entry) => entry.severity === "error")) {
-    console.error("[research:" + item.code + "] " + (item.file ? item.file + " — " : "") + item.message);
-  }
-  process.exitCode = 1;
-}

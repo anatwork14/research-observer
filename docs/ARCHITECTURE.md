@@ -48,19 +48,19 @@ lib/research/compiler.mjs
 - Search reads the generated static index in the browser.
 - Markdown content is read by the compiler/Server Components, not by a per-query search endpoint.
 
-### Node runtime path
+### Research media path
 
-`app/media/[...path]/route.ts` remains a Node.js route because research media can be large and benefits from streaming/range requests.
+Approved local research assets are copied by the compiler into `public/_research/media/` while preserving their relative paths.
 
-The route must maintain these properties:
+This deliberately avoids request-time filesystem access. The deployment/static hosting layer is responsible for efficient delivery, caching, and byte-range support.
 
-- lexical path confinement
-- real-path confinement to prevent symlink escapes
-- strict file-extension/MIME allowlist
-- streaming rather than whole-file buffering
-- HTTP Range support
-- cache validators
-- `nosniff` and same-origin resource policy
+The compiler remains responsible for:
+
+- rejecting symlinks in the research source tree
+- preventing source path escapes
+- enforcing the configured extension allowlist
+- validating referenced assets
+- copying only approved local assets into generated public output
 
 ## Local quality gate
 

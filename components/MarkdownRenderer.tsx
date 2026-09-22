@@ -13,14 +13,19 @@ function extension(src: string) {
   return src.split(/[?#]/)[0].split(".").pop()?.toLowerCase() ?? "";
 }
 
-function isExternal(src: string) {
-  return /^(https?:|data:|blob:)/i.test(src);
+function isDirectUrl(src: string) {
+  return /^(https?:|data:|blob:|mailto:|tel:)/i.test(src) || src.startsWith("/") || src.startsWith("#");
 }
 
 function mediaUrl(src: string) {
-  if (!src || isExternal(src) || src.startsWith("/")) return src;
-  const cleaned = src.replace(/^\.\//, "").replace(/^(\.\.\/)+/, "");
-  return `/media/${cleaned.split("/").map(encodeURIComponent).join("/")}`;
+  if (!src || isDirectUrl(src)) return src;
+
+  const suffixIndex = src.search(/[?#]/);
+  const pathname = suffixIndex >= 0 ? src.slice(0, suffixIndex) : src;
+  const suffix = suffixIndex >= 0 ? src.slice(suffixIndex) : "";
+  const cleaned = pathname.replace(/^\.\//, "").replace(/^(\.\.\/)+/, "");
+  const encoded = cleaned.split("/").filter(Boolean).map(encodeURIComponent).join("/");
+  return `/_research/media/${encoded}${suffix}`;
 }
 
 function Media({ src, alt }: { src: string; alt?: string }) {
