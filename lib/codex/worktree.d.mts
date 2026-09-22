@@ -39,6 +39,7 @@ export function loadProposal(root: string, id: string): Promise<{ metadata: {
   createdAt: string;
   files: string[];
   valid: boolean;
+  reviewable: boolean;
   doctor: { code: number; output: string };
   summary: string;
 }; patch: string }>;

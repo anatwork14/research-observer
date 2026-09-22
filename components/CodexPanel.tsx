@@ -123,7 +123,7 @@ export function CodexPanel({ context }: { context: CodexResearchContext }) {
   }
 
   async function applyProposal() {
-    if (!proposal?.id || !proposal.valid || applying) return;
+    if (!proposal?.id || !proposal.valid || !proposal.allowed || !proposal.reviewable || applying) return;
     setApplying(true);
     setError("");
     try {
