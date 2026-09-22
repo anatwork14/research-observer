@@ -192,7 +192,7 @@ In local development, Research Observer exposes an optional Codex **Ask** inspec
 
 - **Ask** is read-only analysis.
 - **Draft** is also read-only and returns a proposed research change without writing files.
-- **Act** runs Codex in a detached Git worktree with workspace-write access there, rejects any changes outside `progress/**` and any `AGENTS.md` policy-file edit, runs `npm run doctor` against the proposal, and presents the patch for explicit human review.
+- **Act** requires a clean `progress/**` working tree so its detached Git worktree cannot reason over stale evidence. It then runs Codex with workspace-write access there, rejects changes outside `progress/**` and any `AGENTS.md` policy-file edit, runs `npm run doctor` against the proposal, and presents the patch for explicit human review.
 - **Apply** is a separate user action. Oversized or binary patches are intentionally non-applicable because the UI cannot fully review them. For reviewable text patches, Apply refuses overlapping live edits, checks the patch with Git, applies it, reruns the doctor, and rolls the patch back if validation fails.
 - Selected PDF text is treated as untrusted evidence, not agent instructions.
 - Production embedded Codex is disabled until a separate authenticated agent service is configured.

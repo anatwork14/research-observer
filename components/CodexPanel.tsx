@@ -201,7 +201,7 @@ export function CodexPanel({ context }: { context: CodexResearchContext }) {
 
       {mode === "act" && (
         <p className="codex-mode-note">
-          Act never edits the live tree first. Codex works in a detached worktree, only <code>progress/**</code> changes are accepted, and you review the diff before Apply.
+          Act never edits the live tree first. It requires committed/stashed <code>progress/**</code> changes so the detached worktree matches your evidence, then you review the diff before Apply.
         </p>
       )}
 

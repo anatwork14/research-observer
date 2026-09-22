@@ -2,6 +2,7 @@ import { Codex } from "@openai/codex-sdk";
 import { NextResponse } from "next/server";
 import {
   collectResearchDiff,
+  gitStatusPaths,
   runResearchDoctor,
   storeProposal,
   withDetachedWorktree,
@@ -97,6 +98,18 @@ export async function POST(request: Request) {
   const context = contextText(body.context ?? {});
 
   try {
+    const dirtyResearch = (await gitStatusPaths(root)).filter(
+      (file) => file === "progress" || file.startsWith("progress/"),
+    );
+    if (dirtyResearch.length) {
+      return NextResponse.json(
+        {
+          error: "Act requires a clean research tree so the isolated worktree matches the evidence you reviewed.",
+          dirtyFiles: dirtyResearch.slice(0, 50),
+        },
+        { status: 409, headers: { "Cache-Control": "no-store" } },
+      );
+    }
     const proposal = await withDetachedWorktree(root, async (worktree) => {
       const codex = new Codex();
       const thread = codex.startThread({
