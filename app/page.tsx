@@ -1,8 +1,6 @@
 import { redirect } from "next/navigation";
 import { getProgressEntries } from "@/lib/progress";
 
-export const dynamic = "force-static";
-
 export default async function Home() {
   const entries = await getProgressEntries();
   if (entries.length) redirect(`/progress/${entries[0].slug}`);
