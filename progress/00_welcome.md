@@ -1,8 +1,12 @@
 ---
+id: welcome
 title: Welcome to Research Observer
 summary: A minimal example showing the ordered Markdown workflow.
-status: start here
-tags: [research, workflow]
+type: note
+status: complete
+tags:
+  - research
+  - workflow
 ---
 
 # Welcome to Research Observer
