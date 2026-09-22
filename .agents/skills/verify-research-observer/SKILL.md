@@ -483,3 +483,87 @@ Existing-note Consensus citations: PASS | FAIL | SKIP (reason)
 New Research Consensus search: PASS | FAIL | SKIP (reason)
 New Research Codex planning: PASS | FAIL | SKIP (reason)
 ```
+
+
+## Tablet / iPad responsive verification
+
+When a feature changes responsive layout, explicitly test tablet widths rather than inferring them from desktop/mobile behavior.
+
+Target CSS viewport widths when the browser tool supports them:
+
+- 768 px — iPad portrait baseline
+- 820 or 834 px — modern iPad/Air portrait
+- 1024 px — iPad landscape / compact desktop baseline
+- 1180 px — larger iPad landscape
+- 1366 px — 12.9/13-inch iPad Pro landscape / wide tablet
+
+At each available tablet width verify:
+
+### Global workbench header
+
+- brand/search/layout/theme controls remain reachable,
+- workspace tabs move to a dedicated horizontal row where required,
+- all workspace tabs can be reached by horizontal scrolling without clipping the active tab,
+- tab scrolling does not force the full page to overflow horizontally,
+- coarse-pointer targets are approximately 44 px high,
+- no sticky hover transform remains after tapping on touch-oriented browsers.
+
+### Note reader
+
+At 901–1180 px:
+
+- research rail + reader remain side-by-side,
+- research rail is narrower than desktop but remains readable,
+- right context rail moves below the reader in two usable columns,
+- closing/opening either rail still animates without leaving an empty grid column,
+- focus mode gives the reader the full available width,
+- note skeleton matches the same structure.
+
+At 761–900 px:
+
+- reader receives the full content width,
+- research navigation becomes a compact two-column selector above the reader,
+- context cards render in two columns below the reader,
+- left/right rail toggles collapse their content vertically instead of leaving reserved space,
+- long Markdown tables scroll inside the article rather than widening the page,
+- focus mode does not leave hidden interactive content focusable,
+- note skeleton uses the same single-column tablet structure.
+
+### Dashboard / collections / health / instruction / graph
+
+- collection headings stack cleanly in portrait tablet widths,
+- health summary uses two columns and health cards use one column where appropriate,
+- saved collections stay at two columns until phone widths,
+- evidence cards remain at two columns in portrait tablets,
+- instruction workbench becomes single-column in portrait tablet widths,
+- graph canvas can scroll horizontally inside itself without causing page-level horizontal overflow.
+
+### PDF reader
+
+At portrait tablet widths (roughly 721–900 px):
+
+- the PDF page gets full content width,
+- thumbnails become a horizontal strip below the document stage,
+- the inspector sits below the thumbnails,
+- page/view controls wrap without overlap,
+- selection toolbar can wrap to two rows,
+- zoom/search/page controls have touch-sized targets,
+- route-level PDF skeleton follows the same stage → thumbnails → inspector order,
+- no large horizontal page overflow occurs.
+
+At landscape tablet widths (>900 px):
+
+- the compact side-thumbnail PDF layout remains usable,
+- inspector placement remains readable,
+- toolbar controls do not collide.
+
+### Touch / orientation regressions
+
+When supported, test with a coarse-pointer/touch emulation and rotate portrait ↔ landscape:
+
+- controls remain at least about 44 px high,
+- no content remains clipped after rotation,
+- horizontal scrollers keep their own overflow instead of widening the body,
+- persisted rail/focus state remains valid across reload/orientation changes.
+
+If the browser environment cannot emulate exact tablet widths or touch input, report the tablet verification as PARTIAL and list which viewport/touch cases were source-verified only.
