@@ -171,7 +171,7 @@ During research compilation, approved local assets are copied to `public/_resear
 
 ## Configuration
 
-`research-observer.config.json` controls the workspace contract, including allowed research types/statuses, media extensions, asset-size warnings, and the progress directory.
+`research-observer.config.json` controls the workspace contract, including suggested research types/statuses, media extensions, asset-size warnings, and the progress directory. By default, unknown type/status values are warnings for backward compatibility; set `strictVocabulary: true` to make them doctor errors.
 
 If you intentionally extend the research vocabulary, update the config and `AGENTS.md` together.
 

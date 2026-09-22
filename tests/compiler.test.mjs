@@ -16,7 +16,8 @@ async function fixture(t) {
       allowedTypes: ["note", "question", "experiment", "result"],
       allowedStatuses: ["investigating", "validating", "complete"],
       allowedMediaExtensions: [".svg", ".png"],
-      maxAssetBytes: 1048576
+      maxAssetBytes: 1048576,
+      strictVocabulary: true
     })
   );
   t.after(() => fs.rm(root, { recursive: true, force: true }));
