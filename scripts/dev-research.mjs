@@ -74,6 +74,5 @@ process.on("SIGTERM", () => shutdown("SIGTERM"));
 child.on("exit", (code, signal) => {
   for (const watcher of watchers) watcher.close();
   clearTimeout(timer);
-  if (signal) process.kill(process.pid, signal);
-  else process.exit(code ?? 0);
+  process.exit(code ?? (signal ? 1 : 0));
 });
