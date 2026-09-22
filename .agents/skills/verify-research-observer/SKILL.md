@@ -148,6 +148,17 @@ At minimum visit:
 - one real `/progress/<slug>`
 - `/papers`
 - `/evidence`
+- `/graph`
+- `/collections`
+- `/health`
+- `/instruction`
+
+For the new research-system routes also confirm:
+
+- Graph renders typed edges and a relation filter without browser-console errors.
+- Collections query syntax filters deterministic fields and saved collection links work.
+- Health counts/lists are factual and link back to affected notes.
+- Instruction displays `AGENTS.md`, `progress/AGENTS.md`, and the create-note skill; both copy actions work.
 
 For each route confirm:
 
@@ -199,6 +210,11 @@ Open the paper through `/papers/<path>` and verify:
 - Search finds known fixture text and navigates to the hit page,
 - page deep link `?page=N` opens the expected page,
 - “open original PDF” works,
+- selecting text exposes **Add evidence**,
+- Add evidence creates a real ordered `type: evidence` Markdown note in local development,
+- the created note records source PDF/page and appears in Evidence/Graph/Health as appropriate,
+- invalid/missing relationship targets are rejected,
+- production evidence writes are disabled unless explicitly enabled,
 - Agent tab opens without crashing even when Codex is disabled,
 - related-note link appears for the companion literature note.
 
@@ -333,6 +349,11 @@ Browser overview: PASS | FAIL
 Browser note reader: PASS | FAIL
 Browser papers collection: PASS | FAIL
 PDF reader: PASS | FAIL | SKIP (reason)
+Evidence capture: PASS | FAIL | SKIP (reason)
+Typed graph: PASS | FAIL
+Smart collections: PASS | FAIL
+Research health: PASS | FAIL
+Instruction tab: PASS | FAIL
 Codex Ask/Draft boundary: PASS | FAIL | SKIP (reason)
 Codex Act boundary: PASS | FAIL | SKIP (reason)
 Production smoke test: PASS | FAIL

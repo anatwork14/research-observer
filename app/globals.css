@@ -656,3 +656,37 @@ body::after { width: 300px; height: 300px; left: -150px; bottom: 8vh; background
   .evidence-dialog-shell fieldset { grid-template-columns: 1fr; }
   .evidence-dialog-shell > footer { align-items: stretch; flex-direction: column; }
 }
+
+
+/* LLM instruction workbench */
+.instruction-shell { padding-bottom: 40px; }
+.instruction-principles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; overflow: hidden; margin-bottom: 12px; border-radius: 12px; }
+.instruction-principles > div { display: flex; align-items: center; gap: 10px; padding: 14px; background: var(--surface-strong); }
+.instruction-principles strong { display: grid; place-items: center; width: 25px; height: 25px; border-radius: 50%; color: var(--accent-deep); background: var(--accent-wash); font: 700 9px var(--mono); }
+.instruction-principles span { color: var(--ink-soft); font-size: 9px; }
+.instruction-workbench { display: grid; grid-template-columns: 245px minmax(0, 1fr); gap: 12px; min-height: 680px; }
+.instruction-sources { display: flex; flex-direction: column; min-height: 0; padding: 14px; border-radius: 12px; }
+.instruction-sources nav { display: flex; flex-direction: column; gap: 5px; margin-top: 9px; }
+.instruction-sources nav button { width: 100%; display: flex; flex-direction: column; gap: 3px; padding: 10px; border: 1px solid transparent; border-radius: 8px; color: var(--ink); background: transparent; text-align: left; }
+.instruction-sources nav button:hover, .instruction-sources nav button.active { border-color: var(--line); background: var(--accent-wash); }
+.instruction-sources nav strong { font-size: 10px; }
+.instruction-sources nav small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font: 7px var(--mono); }
+.instruction-copy-all { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--line); }
+.instruction-copy-all button, .instruction-reader > header button { width: 100%; min-height: 34px; border: 1px solid var(--accent); border-radius: 7px; color: var(--accent-deep); background: var(--accent-wash); font-size: 9px; font-weight: 750; }
+.instruction-copy-all p { margin: 7px 0 0; color: var(--muted); font-size: 8px; line-height: 1.45; }
+.instruction-reader { min-width: 0; overflow: hidden; border-radius: 12px; }
+.instruction-reader > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.instruction-reader > header > div { min-width: 0; display: flex; align-items: center; gap: 8px; }
+.instruction-reader > header code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 8px; }
+.instruction-reader > header button { width: auto; padding: 0 10px; }
+.instruction-reader pre { height: 640px; margin: 0; padding: 20px; overflow: auto; color: var(--ink-soft); background: color-mix(in srgb, var(--canvas) 60%, var(--surface)); font: 9px/1.65 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+
+@media (max-width: 860px) {
+  .instruction-principles { grid-template-columns: repeat(2, 1fr); }
+  .instruction-workbench { grid-template-columns: 1fr; }
+  .instruction-sources { min-height: 250px; }
+  .instruction-reader pre { height: 560px; }
+}
+@media (max-width: 520px) {
+  .instruction-principles { grid-template-columns: 1fr; }
+}
