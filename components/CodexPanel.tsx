@@ -34,6 +34,8 @@ type Proposal = {
   patch: string;
   truncated: boolean;
   allowed: boolean;
+  reviewable: boolean;
+  binary?: boolean;
 };
 
 const modeLabels: Record<Mode, string> = {
@@ -106,6 +108,8 @@ export function CodexPanel({ context }: { context: CodexResearchContext }) {
           patch: payload.patch || "",
           truncated: Boolean(payload.truncated),
           allowed: Boolean(payload.allowed),
+          reviewable: Boolean(payload.reviewable),
+          binary: Boolean(payload.binary),
         });
         setAnswer(payload.proposal?.summary || "Codex prepared a research proposal.");
       } else {
@@ -239,15 +243,15 @@ export function CodexPanel({ context }: { context: CodexResearchContext }) {
         <section className="codex-proposal" aria-label="Codex proposed changes">
           <div className="codex-proposal-heading">
             <div>
-              <span className={`codex-validation ${proposal.valid && proposal.allowed ? "passed" : "blocked"}`}>
-                {proposal.valid && proposal.allowed ? "doctor passed" : "blocked"}
+              <span className={`codex-validation ${proposal.valid && proposal.allowed && proposal.reviewable ? "passed" : "blocked"}`}>
+                {proposal.valid && proposal.allowed && proposal.reviewable ? "doctor passed" : proposal.reviewable ? "blocked" : "not reviewable"}
               </span>
               <strong>{proposal.files.length} file{proposal.files.length === 1 ? "" : "s"}</strong>
             </div>
             <button
               className="codex-apply"
               onClick={() => void applyProposal()}
-              disabled={!proposal.valid || !proposal.allowed || applying}
+              disabled={!proposal.valid || !proposal.allowed || !proposal.reviewable || applying}
             >
               {applying ? "Applying…" : "Apply"}
             </button>
@@ -267,8 +271,13 @@ export function CodexPanel({ context }: { context: CodexResearchContext }) {
             <pre>{proposal.doctor?.output || "No doctor output."}</pre>
           </details>
 
-          {!proposal.valid && (
-            <p className="codex-unavailable">Apply is disabled because the proposed worktree did not pass the local research doctor.</p>
+          {!proposal.reviewable && (
+            <p className="codex-unavailable">
+              Apply is disabled because this proposal cannot be fully reviewed in the UI{proposal.binary ? " (binary patch)" : " (diff too large)"}.
+            </p>
+          )}
+          {proposal.reviewable && !proposal.valid && (
+            <p className="codex-unavailable">Apply is disabled because the proposed worktree did not pass the local research doctor or path policy.</p>
           )}
         </section>
       )}

@@ -157,6 +157,8 @@ test("Codex worktree path policy accepts only progress files", async () => {
   assert.deepEqual(parseStatusPaths(status), ["progress/01_note.md", "progress/02_new.md"]);
   assert.equal(allResearchPaths(["progress/01_note.md", "progress/figures/a.svg"]), true);
   assert.equal(allResearchPaths(["progress/01_note.md", "app/page.tsx"]), false);
+  assert.equal(allResearchPaths(["progress/AGENTS.md"]), false);
+  assert.equal(allResearchPaths(["progress/subproject/AGENTS.md"]), false);
   assert.equal(allResearchPaths([]), false);
 });
 

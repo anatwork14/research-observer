@@ -143,7 +143,7 @@ export async function POST(request: Request) {
       const doctorOutput = (doctorResult.stdout + "\n" + doctorResult.stderr).trim().slice(0, 12000);
       return {
         ...diff,
-        valid: diff.allowed && Boolean(diff.patch) && doctorResult.code === 0,
+        valid: diff.allowed && diff.reviewable && Boolean(diff.patch) && doctorResult.code === 0,
         doctor: { code: doctorResult.code, output: doctorOutput },
         summary: turn.finalResponse,
       };
@@ -161,8 +161,10 @@ export async function POST(request: Request) {
     return NextResponse.json({
       proposal: stored,
       patch: proposal.patch.slice(0, 120000),
-      truncated: proposal.patch.length > 120000,
+      truncated: proposal.patchBytes > 120000,
       allowed: proposal.allowed,
+      reviewable: proposal.reviewable,
+      binary: proposal.binary,
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return NextResponse.json(
