@@ -82,15 +82,19 @@ export function DonutChart({
   const total = visible.reduce((sum, item) => sum + item.value, 0);
   const radius = 58;
   const circumference = 2 * Math.PI * radius;
-  let offset = 0;
+  const segments = visible.reduce<Array<{ item: Datum; index: number; length: number; offset: number }>>((result, item, index) => {
+    const length = (item.value / total) * circumference;
+    const offset = result.at(-1)?.offset ?? 0;
+    const previousLength = result.at(-1)?.length ?? 0;
+    result.push({ item, index, length, offset: offset + previousLength });
+    return result;
+  }, []);
 
   return (
     <div className="insight-donut-layout">
       <svg viewBox="0 0 180 180" className="insight-donut-svg" role="img" aria-label={ariaLabel}>
         <circle cx="90" cy="90" r={radius} className="insight-donut-track" />
-        {visible.map((item, index) => {
-          const length = (item.value / total) * circumference;
-          const element = (
+        {segments.map(({ item, index, length, offset }) => (
             <circle
               key={item.key}
               cx="90"
@@ -102,10 +106,7 @@ export function DonutChart({
             >
               <title>{item.label}: {item.value}</title>
             </circle>
-          );
-          offset += length;
-          return element;
-        })}
+        ))}
         <text x="90" y="85" textAnchor="middle" className="insight-donut-total">{total}</text>
         <text x="90" y="105" textAnchor="middle" className="insight-donut-caption">objects</text>
       </svg>

@@ -123,7 +123,7 @@ test("analytics filters one or several research projects deterministically", () 
   const analytics = buildResearchAnalytics(workspace, ["retrieval", "evaluation"]);
   assert.equal(analytics.totals.notes, 4);
   assert.equal(analytics.projects.length, 2);
-  assert.equal(analytics.totals.crossProjectRelationships, 1);
+  assert.equal(analytics.totals.crossProjectRelationships, 2);
   assert.equal(analytics.activity.length, 3);
 });
 
@@ -183,7 +183,9 @@ test("cross-project analytics obey the same selected project scope", () => {
   assert.deepEqual(retrievalOnly.crossProject, []);
 
   const both = buildResearchAnalytics(workspace, ["retrieval", "evaluation"]);
-  assert.equal(both.totals.crossProjectRelationships, 1);
-  assert.equal(both.crossProject[0].sourceResearch, "evaluation");
-  assert.equal(both.crossProject[0].targetResearch, "retrieval");
+  assert.equal(both.totals.crossProjectRelationships, 2);
+  assert.deepEqual(
+    both.crossProject.map(({ sourceResearch, targetResearch }) => [sourceResearch, targetResearch]),
+    [["retrieval", "evaluation"], ["evaluation", "retrieval"]],
+  );
 });

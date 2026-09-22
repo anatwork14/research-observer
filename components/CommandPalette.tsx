@@ -8,6 +8,7 @@ type SearchEntry = NavEntry & {
   summary: string;
   type?: string;
   date?: string;
+  research?: string;
   tags: string[];
   headings: Array<{ level: number; title: string }>;
   text: string;

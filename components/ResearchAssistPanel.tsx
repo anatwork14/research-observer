@@ -28,12 +28,16 @@ export function ResearchAssistPanel({
   const codexTabId = useId();
 
   useEffect(() => {
+    let frame = 0;
     try {
       const stored = window.localStorage.getItem("research-observer-assist-tab");
-      if (stored === "consensus" || stored === "codex") setActive(stored);
+      if (stored === "consensus" || stored === "codex") {
+        frame = window.requestAnimationFrame(() => setActive(stored));
+      }
     } catch {
       // Storage is optional. The default Consensus tab remains usable.
     }
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   function select(service: Service) {
