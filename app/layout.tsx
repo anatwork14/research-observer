@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "katex/dist/katex.min.css";
+import "react-pdf/dist/Page/TextLayer.css";
+import "react-pdf/dist/Page/AnnotationLayer.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
