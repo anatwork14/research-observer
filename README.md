@@ -13,7 +13,7 @@ npm install
 npm run dev
 ```
 
-`predev` automatically runs the research compiler before Next.js starts.
+`npm run dev` starts the research watcher, prepares the local PDF.js runtime, compiles search/media artifacts, and then starts Next.js.
 
 ## The note convention
 
@@ -168,6 +168,40 @@ Store assets under `progress/` and reference them with relative paths:
 Supported media includes common browser-viewable image formats, PDF, MP4/WebM/OGV video, MP3/WAV/M4A/AAC/FLAC audio, plus CSV/JSON/TXT downloads.
 
 During research compilation, approved local assets are copied to `public/_research/media/` and served as static deployment assets. This avoids relying on the runtime server filesystem and lets the hosting layer/CDN handle caching and byte-range delivery.
+
+## PDF research reader
+
+Local PDFs under `progress/` appear in **Papers** and open in a first-class PDF.js/React-PDF reader with page navigation, lazy thumbnails, zoom/rotation, full-document text search, selectable text, extracted text view, related research notes, and page-deep-linked URLs.
+
+For literature notes, companion metadata can be declared with verified values:
+
+```yaml
+type: literature
+pdf: papers/smith-2026.pdf
+authors:
+  - Jane Smith
+year: 2026
+doi: 10.xxxx/verified-doi
+```
+
+The PDF worker, cMaps, standard fonts, and WASM assets are copied from the installed `pdfjs-dist` package into generated local assets; the reader does not require a public CDN.
+
+## Codex Ask mode
+
+In local development, Research Observer exposes an optional Codex **Ask** inspector on research notes and PDFs. The integration uses `@openai/codex-sdk` server-side with a read-only sandbox, approvals disabled, network/web search disabled, and explicit visible research context.
+
+- **Ask** is read-only analysis.
+- **Draft** is also read-only and returns a proposed research change without writing files.
+- **Act** requires a clean `progress/**` working tree so its detached Git worktree cannot reason over stale evidence. It then runs Codex with workspace-write access there, rejects changes outside `progress/**` and any `AGENTS.md` policy-file edit, runs `npm run doctor` against the proposal, and presents the patch for explicit human review.
+- **Apply** is a separate user action. Oversized or binary patches are intentionally non-applicable because the UI cannot fully review them. For reviewable text patches, Apply refuses overlapping live edits, checks the patch with Git, applies it, reruns the doctor, and rolls the patch back if validation fails.
+- Selected PDF text is treated as untrusted evidence, not agent instructions.
+- Production embedded Codex is disabled until a separate authenticated agent service is configured.
+- Set `RESEARCH_OBSERVER_CODEX=0` to disable the local bridge.
+- Optionally set `RESEARCH_OBSERVER_CODEX_MODEL` to select a locally available Codex model.
+
+Research Observer installs matching `@openai/codex-sdk` and `@openai/codex` versions so the SDK can resolve its platform CLI binary. Authenticate Codex locally before using the panel. The UI status check also verifies that the SDK can resolve the installed Codex runtime before reporting it ready. If Codex is unavailable, Overview, Notes, Papers, Evidence, and PDF reading continue to work normally.
+
+Repository-scoped Codex instructions live in root/nested `AGENTS.md` files and reusable workflows live under `.agents/skills/`.
 
 ## Configuration
 

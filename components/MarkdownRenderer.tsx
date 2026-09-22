@@ -17,6 +17,16 @@ function isDirectUrl(src: string) {
   return /^(https?:|data:|blob:|mailto:|tel:)/i.test(src) || src.startsWith("/") || src.startsWith("#");
 }
 
+function paperUrl(src: string) {
+  if (!src || /^(https?:|data:|blob:|mailto:|tel:)/i.test(src) || src.startsWith("/") || src.startsWith("#")) return null;
+  const [pathname, fragment = ""] = src.split("#", 2);
+  if (extension(pathname) !== "pdf") return null;
+  const cleaned = pathname.replace(/^\.\//, "").replace(/^(\.\.\/)+/, "");
+  const encoded = cleaned.split("/").filter(Boolean).map(encodeURIComponent).join("/");
+  const page = /^page=(\d+)$/i.exec(fragment)?.[1];
+  return `/papers/${encoded}${page ? `?page=${page}` : ""}`;
+}
+
 function mediaUrl(src: string) {
   if (!src || isDirectUrl(src)) return src;
 
@@ -43,7 +53,21 @@ function Media({ src, alt }: { src: string; alt?: string }) {
     );
   }
   if (ext === "pdf") {
-    return <figure className="research-media"><object data={resolved} type="application/pdf" className="pdf-frame"><p><a href={resolved}>Open PDF figure</a></p></object>{caption && <figcaption>{caption}</figcaption>}</figure>;
+    const paper = paperUrl(src);
+    return (
+      <figure className="research-media pdf-reference">
+        {paper ? (
+          <Link href={paper} className="pdf-reference-link">
+            <span className="paper-icon">PDF</span>
+            <span><strong>{caption || src.split("/").pop()}</strong><small>Open in Research Observer reader</small></span>
+            <em>→</em>
+          </Link>
+        ) : (
+          <a href={resolved} target="_blank" rel="noreferrer">Open PDF: {caption || src}</a>
+        )}
+        {caption && <figcaption>{caption}</figcaption>}
+      </figure>
+    );
   }
   if (videoTypes.has(ext)) {
     return <figure className="research-media"><video controls preload="metadata" src={resolved}>{caption}</video>{caption && <figcaption>{caption}</figcaption>}</figure>;
@@ -82,6 +106,8 @@ export function MarkdownRenderer({
             void node;
             const internal = markdownTarget(href, linkMap);
             if (internal) return <Link href={internal}>{children}</Link>;
+            const paper = paperUrl(href);
+            if (paper) return <Link href={paper}>{children}</Link>;
             const external = /^https?:\/\//i.test(href);
             return <a href={mediaUrl(href)} target={external ? "_blank" : undefined} rel={external ? "noreferrer" : undefined} {...anchorProps}>{children}</a>;
           },

@@ -23,6 +23,10 @@ export type ResearchEntry = {
   status?: string;
   date?: string;
   tags: string[];
+  authors: string[];
+  year?: number;
+  doi?: string;
+  pdf?: string;
   content: string;
   text: string;
   words: number;

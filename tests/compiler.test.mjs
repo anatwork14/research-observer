@@ -148,3 +148,84 @@ test("compiler ignores links inside fenced code examples", async (t) => {
   assert.equal(errorCodes.includes("link-broken"), false);
   assert.equal(errorCodes.includes("asset-missing"), false);
 });
+
+
+test("Codex worktree path policy accepts only progress files", async () => {
+  const { allResearchPaths, parseStatusPaths } = await import("../lib/codex/worktree.mjs");
+
+  const status = " M progress/01_note.md\0?? progress/02_new.md\0";
+  assert.deepEqual(parseStatusPaths(status), ["progress/01_note.md", "progress/02_new.md"]);
+  assert.equal(allResearchPaths(["progress/01_note.md", "progress/figures/a.svg"]), true);
+  assert.equal(allResearchPaths(["progress/01_note.md", "app/page.tsx"]), false);
+  assert.equal(allResearchPaths(["progress/AGENTS.md"]), false);
+  assert.equal(allResearchPaths(["progress/subproject/AGENTS.md"]), false);
+  assert.equal(allResearchPaths([]), false);
+});
+
+
+test("compiler links verified literature metadata to a local PDF companion", async (t) => {
+  const root = await fixture(t);
+  const configPath = path.join(root, "research-observer.config.json");
+  const config = JSON.parse(await fs.readFile(configPath, "utf8"));
+  config.allowedTypes.push("literature");
+  config.allowedMediaExtensions.push(".pdf");
+  await fs.writeFile(configPath, JSON.stringify(config));
+
+  await fs.mkdir(path.join(root, "progress", "papers"), { recursive: true });
+  const literature = [
+    "---",
+    "id: smith-paper",
+    "title: Smith paper",
+    "type: literature",
+    "status: complete",
+    "pdf: papers/smith.pdf",
+    "authors:",
+    "  - Jane Smith",
+    "year: 2026",
+    "doi: 10.1234/example",
+    "---",
+    "",
+    "# Smith paper",
+    "",
+    "Literature companion note.",
+    ""
+  ].join("\n");
+
+  await Promise.all([
+    fs.writeFile(path.join(root, "progress", "00_literature.md"), literature),
+    fs.writeFile(path.join(root, "progress", "papers", "smith.pdf"), "%PDF-1.4\n% fixture\n")
+  ]);
+
+  const workspace = await compileResearchWorkspace({ rootDir: root, fresh: true });
+  assert.equal(workspace.stats.errors, 0);
+  assert.equal(workspace.entries[0].pdf, "papers/smith.pdf");
+  assert.deepEqual(workspace.entries[0].authors, ["Jane Smith"]);
+  assert.equal(workspace.entries[0].year, 2026);
+  assert.equal(workspace.entries[0].doi, "10.1234/example");
+  assert.ok(workspace.entries[0].assets.includes("papers/smith.pdf"));
+
+  await writeResearchArtifacts({ rootDir: root, fresh: true });
+  const copied = await fs.readFile(path.join(root, "public", "_research", "media", "papers", "smith.pdf"), "utf8");
+  assert.match(copied, /%PDF/);
+});
+
+
+test("Codex proposal storage hashes the reviewed patch", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "research-observer-codex-proposal-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const { storeProposal, loadProposal, deleteProposal } = await import("../lib/codex/worktree.mjs");
+  const patch = "diff --git a/progress/00.md b/progress/00.md\n";
+  const stored = await storeProposal(root, {
+    files: ["progress/00.md"],
+    patch,
+    valid: true,
+    reviewable: true,
+    doctor: { code: 0, output: "ok" },
+    summary: "test"
+  });
+  assert.match(stored.patchSha256, /^[a-f0-9]{64}$/);
+  const loaded = await loadProposal(root, stored.id);
+  assert.equal(loaded.patch, patch);
+  assert.equal(loaded.metadata.patchSha256, stored.patchSha256);
+  await deleteProposal(root, stored.id);
+});

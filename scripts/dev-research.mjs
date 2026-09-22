@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { compileResearchWorkspace, writeResearchArtifacts } from "../lib/research/compiler.mjs";
+import { preparePdfRuntime } from "../lib/research/pdf-runtime.mjs";
 
 const root = process.cwd();
 let timer;
@@ -38,6 +39,7 @@ function scheduleCompile() {
   timer = setTimeout(() => void compile("changed"), 120);
 }
 
+await preparePdfRuntime(root);
 const initial = await compileResearchWorkspace({ rootDir: root, fresh: true });
 await writeResearchArtifacts({ rootDir: root, fresh: true });
 

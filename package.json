@@ -4,11 +4,11 @@
   "private": true,
   "packageManager": "npm@10.9.2",
   "engines": {
-    "node": ">=22 <25"
+    "node": ">=22.13 <25"
   },
   "scripts": {
     "dev": "node scripts/dev-research.mjs",
-    "prebuild": "npm run research:compile",
+    "prebuild": "npm run research:prepare-pdf && npm run research:compile",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
@@ -17,7 +17,8 @@
     "doctor": "node scripts/research-doctor.mjs",
     "test": "node --test tests/*.test.mjs",
     "check": "npm run doctor && npm run test && npm run typecheck && npm run lint",
-    "check:full": "npm run check && npm run build"
+    "check:full": "npm run check && npm run build",
+    "research:prepare-pdf": "node scripts/prepare-pdf-runtime.mjs"
   },
   "dependencies": {
     "github-slugger": "2.0.0",
@@ -29,12 +30,16 @@
     "rehype-katex": "7.0.1",
     "rehype-slug": "6.0.0",
     "remark-gfm": "4.0.1",
-    "remark-math": "6.0.0"
+    "remark-math": "6.0.0",
+    "react-pdf": "11.0.0",
+    "pdfjs-dist": "6.3.289",
+    "@openai/codex-sdk": "0.155.1",
+    "@openai/codex": "0.155.1"
   },
   "devDependencies": {
-    "eslint": "9.0.0",
+    "eslint": "9.39.5",
     "eslint-config-next": "16.3.3",
-    "typescript": "5.9.0",
+    "typescript": "5.9.3",
     "@types/node": "24.0.0",
     "@types/react": "19.0.0",
     "@types/react-dom": "19.0.0"

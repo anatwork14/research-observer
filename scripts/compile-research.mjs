@@ -11,3 +11,8 @@ console.log(
   workspace.stats.warnings + " warnings"
 );
 
+
+if (workspace.stats.errors > 0) {
+  console.error("Research compilation failed because the workspace contains integrity errors.");
+  process.exitCode = 1;
+}

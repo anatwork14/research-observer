@@ -107,6 +107,11 @@ export function CommandPalette({ entries }: { entries: NavEntry[] }) {
   const [index, setIndex] = useState<SearchEntry[] | null>(null);
   const [selected, setSelected] = useState(0);
 
+  function openPalette() {
+    setSelected(0);
+    setOpen(true);
+  }
+
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
@@ -116,7 +121,7 @@ export function CommandPalette({ entries }: { entries: NavEntry[] }) {
       }
       if (event.key === "/" && !open && !isTypingTarget(event.target)) {
         event.preventDefault();
-        setOpen(true);
+        openPalette();
         return;
       }
       if (!open) return;
@@ -142,7 +147,6 @@ export function CommandPalette({ entries }: { entries: NavEntry[] }) {
 
   useEffect(() => {
     if (!open) return;
-    setSelected(0);
     requestAnimationFrame(() => inputRef.current?.focus());
 
     const controller = new AbortController();
@@ -180,7 +184,7 @@ export function CommandPalette({ entries }: { entries: NavEntry[] }) {
 
   return (
     <>
-      <button className="search-trigger" onClick={() => setOpen(true)} aria-label="Search research notes">
+      <button className="search-trigger" onClick={openPalette} aria-label="Search research notes">
         <span>⌕ Search</span><kbd>⌘K</kbd>
       </button>
       {open && (

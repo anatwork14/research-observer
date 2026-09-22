@@ -7,21 +7,18 @@ function isTypingTarget(target: EventTarget | null) {
   return element?.tagName === "INPUT" || element?.tagName === "TEXTAREA" || element?.isContentEditable;
 }
 
+function storedValue(key: string, fallback: boolean) {
+  if (typeof window === "undefined") return fallback;
+  const value = window.localStorage.getItem(key);
+  return value === null ? fallback : value === "open" || value === "on";
+}
+
 export function WorkspaceControls() {
-  const [leftOpen, setLeftOpen] = useState(true);
-  const [rightOpen, setRightOpen] = useState(true);
-  const [focus, setFocus] = useState(false);
-  const [ready, setReady] = useState(false);
+  const [leftOpen, setLeftOpen] = useState(() => storedValue("research-observer-left-rail", true));
+  const [rightOpen, setRightOpen] = useState(() => storedValue("research-observer-right-rail", true));
+  const [focus, setFocus] = useState(() => storedValue("research-observer-focus", false));
 
   useEffect(() => {
-    setLeftOpen(localStorage.getItem("research-observer-left-rail") !== "closed");
-    setRightOpen(localStorage.getItem("research-observer-right-rail") !== "closed");
-    setFocus(localStorage.getItem("research-observer-focus") === "on");
-    setReady(true);
-  }, []);
-
-  useEffect(() => {
-    if (!ready) return;
     const root = document.documentElement;
     root.dataset.leftRail = leftOpen ? "open" : "closed";
     root.dataset.rightRail = rightOpen ? "open" : "closed";
@@ -29,7 +26,7 @@ export function WorkspaceControls() {
     localStorage.setItem("research-observer-left-rail", leftOpen ? "open" : "closed");
     localStorage.setItem("research-observer-right-rail", rightOpen ? "open" : "closed");
     localStorage.setItem("research-observer-focus", focus ? "on" : "off");
-  }, [focus, leftOpen, ready, rightOpen]);
+  }, [focus, leftOpen, rightOpen]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
