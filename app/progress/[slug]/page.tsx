@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import GithubSlugger from "github-slugger";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { ResearchNav } from "@/components/ResearchNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -11,7 +11,8 @@ import { getProgressEntries, getProgressEntry } from "@/lib/progress";
 
 export async function generateStaticParams() {
   const entries = await getProgressEntries();
-  return entries.map((entry) => ({ slug: entry.slug }));
+  const slugs = new Set(entries.flatMap((entry) => [entry.slug, ...entry.aliases]));
+  return [...slugs].map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -39,13 +40,21 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
   const { slug } = await params;
   const [entries, entry] = await Promise.all([getProgressEntries(), getProgressEntry(slug)]);
   if (!entry) notFound();
+  if (slug !== entry.slug) redirect(`/progress/${entry.slug}`);
 
   const index = entries.findIndex((item) => item.slug === entry.slug);
   const previous = index > 0 ? entries[index - 1] : null;
   const next = index < entries.length - 1 ? entries[index + 1] : null;
   const references = entries.filter((item) => entry.linkedSlugs.includes(item.slug));
-  const backlinks = entries.filter((item) => item.slug !== entry.slug && item.linkedSlugs.includes(entry.slug));
+  const backlinks = entries.filter((item) => entry.backlinks.includes(item.slug));
   const neighbors = [previous, next].filter(Boolean);
+  const linkMap = Object.fromEntries(
+    entries.flatMap((item) => [
+      [item.fileSlug, item.slug],
+      [item.slug, item.slug],
+      ...item.aliases.map((alias) => [alias, item.slug]),
+    ]),
+  );
   const bodyContent = stripLeadingTitle(entry.content);
   const headings = extractHeadings(bodyContent);
 
@@ -70,6 +79,7 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
         </div>
         <div className="note-meta">
           {entry.date && <span>{entry.date}</span>}
+          {entry.type && <span>{entry.type}</span>}
           <span>{entry.words.toLocaleString()} words</span>
           <span>{entry.readingMinutes} min read</span>
           {entry.tags.map((tag) => <span key={tag} className="tag-chip">#{tag}</span>)}
@@ -84,7 +94,7 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
             <div><span className="file-chip">MD</span><code>{entry.filename}</code></div>
             <span className="readonly">source of truth</span>
           </div>
-          <article><MarkdownRenderer content={bodyContent} /></article>
+          <article><MarkdownRenderer content={bodyContent} linkMap={linkMap} /></article>
           <footer className="reader-footer">
             <span>{entry.words.toLocaleString()} words</span><span>·</span><span>{entry.readingMinutes} min</span>
             <div className="page-arrows">

@@ -49,15 +49,22 @@ function Media({ src, alt }: { src: string; alt?: string }) {
   return <figure className="research-media unsupported"><a href={resolved}>Open media: {caption || src}</a></figure>;
 }
 
-function markdownTarget(href: string) {
+function markdownTarget(href: string, linkMap: Record<string, string>) {
   const [file, hash] = href.split("#");
   const base = file.split("/").pop();
   if (!base?.toLowerCase().endsWith(".md")) return null;
   const slug = base.replace(/\.md$/i, "");
-  return `/progress/${slug}${hash ? `#${hash}` : ""}`;
+  const route = linkMap[slug] ?? slug;
+  return `/progress/${route}${hash ? `#${hash}` : ""}`;
 }
 
-export function MarkdownRenderer({ content }: { content: string }) {
+export function MarkdownRenderer({
+  content,
+  linkMap = {},
+}: {
+  content: string;
+  linkMap?: Record<string, string>;
+}) {
   return (
     <div className="markdown-body">
       <ReactMarkdown
@@ -68,7 +75,7 @@ export function MarkdownRenderer({ content }: { content: string }) {
           a: ({ href = "", children, ...props }) => {
             const { node, ...anchorProps } = props;
             void node;
-            const internal = markdownTarget(href);
+            const internal = markdownTarget(href, linkMap);
             if (internal) return <Link href={internal}>{children}</Link>;
             const external = /^https?:\/\//i.test(href);
             return <a href={mediaUrl(href)} target={external ? "_blank" : undefined} rel={external ? "noreferrer" : undefined} {...anchorProps}>{children}</a>;
