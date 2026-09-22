@@ -184,7 +184,7 @@ export function CodexPanel({ context }: { context: CodexResearchContext }) {
           >
             {modeLabels[item]}
           </button>
-        )}
+        ))}
       </div>
 
       <div className="codex-context" aria-label="Codex context">

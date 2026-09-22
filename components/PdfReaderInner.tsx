@@ -127,13 +127,13 @@ export default function PdfReaderInner({
     setPageNumber(next);
     setPageDraft(String(next));
     setSelection("");
+    if (panel === "text" || panel === "agent") setTextLoading(true);
     router.replace(`${pathname}?page=${next}`, { scroll: false });
-  }, [numPages, pathname, router]);
+  }, [numPages, panel, pathname, router]);
 
   useEffect(() => {
     if (!pdf || (panel !== "text" && panel !== "agent")) return;
     let cancelled = false;
-    setTextLoading(true);
     pdf.getPage(pageNumber)
       .then((page) => page.getTextContent())
       .then((content) => { if (!cancelled) setPageText(textFromItems(content.items)); })
@@ -185,6 +185,11 @@ export default function PdfReaderInner({
   function captureSelection() {
     const selected = window.getSelection()?.toString().replace(/\s+/g, " ").trim() ?? "";
     setSelection(selected.length >= 3 ? selected : "");
+  }
+
+  function openPanel(nextPanel: "search" | "text" | "notes" | "agent") {
+    setPanel(nextPanel);
+    if (nextPanel === "text" || nextPanel === "agent") setTextLoading(true);
   }
 
   const renderWidth = useMemo(() => {
@@ -268,17 +273,17 @@ export default function PdfReaderInner({
                 <span>{selection.length > 90 ? selection.slice(0, 87) + "…" : selection}</span>
                 <button onClick={() => navigator.clipboard.writeText(selection)}>Copy</button>
                 <button onClick={() => navigator.clipboard.writeText(`> ${selection}\n\nSource: ${title}, p. ${pageNumber}`)}>Copy evidence</button>
-                <button onClick={() => setPanel("agent")}>Ask Codex</button>
+                <button onClick={() => openPanel("agent")}>Ask Codex</button>
               </div>
             )}
           </main>
 
           <aside className="pdf-inspector panel">
             <div className="pdf-inspector-tabs" role="tablist" aria-label="PDF inspector">
-              <button className={panel === "notes" ? "active" : ""} onClick={() => setPanel("notes")}>Notes</button>
-              <button className={panel === "search" ? "active" : ""} onClick={() => setPanel("search")}>Search</button>
-              <button className={panel === "text" ? "active" : ""} onClick={() => setPanel("text")}>Text</button>
-              <button className={panel === "agent" ? "active" : ""} onClick={() => setPanel("agent")}>Agent</button>
+              <button className={panel === "notes" ? "active" : ""} onClick={() => openPanel("notes")}>Notes</button>
+              <button className={panel === "search" ? "active" : ""} onClick={() => openPanel("search")}>Search</button>
+              <button className={panel === "text" ? "active" : ""} onClick={() => openPanel("text")}>Text</button>
+              <button className={panel === "agent" ? "active" : ""} onClick={() => openPanel("agent")}>Agent</button>
             </div>
 
             {panel === "notes" && (
