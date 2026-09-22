@@ -142,3 +142,36 @@ test("version diff reports added and removed Markdown lines", () => {
   assert.ok(diff.lines.some((line) => line.type === "added" && line.text === "New limitation."));
   assert.ok(diff.lines.some((line) => line.type === "removed" && line.text === "Old claim."));
 });
+
+
+test("semantic version groups ignore cross-project supersedes links", () => {
+  const crossProject = [
+    {
+      slug: "alpha-v1",
+      title: "Alpha",
+      research: "alpha",
+      type: "hypothesis",
+      status: "investigating",
+      date: "2026-01-01",
+      order: 10,
+      words: 4,
+      content: "# Alpha",
+      assets: [],
+      relationships: [],
+    },
+    {
+      slug: "beta-v2",
+      title: "Beta",
+      research: "beta",
+      type: "hypothesis",
+      status: "investigating",
+      date: "2026-01-02",
+      order: 11,
+      words: 4,
+      content: "# Beta",
+      assets: [],
+      relationships: [{ type: "supersedes", target: "alpha-v1" }],
+    },
+  ];
+  assert.deepEqual(buildVersionGroups(crossProject), []);
+});

@@ -15,6 +15,8 @@ import { ResearchVersionExplorer } from "@/components/ResearchVersionExplorer";
 import { buildResearchAnalytics } from "@/lib/research/analytics.mjs";
 import { getResearchWorkspace } from "@/lib/progress";
 
+export const dynamic = "force-dynamic";
+
 type View = "overview" | "analytics" | "timeline" | "versions";
 
 function one(value: string | string[] | undefined) {

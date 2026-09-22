@@ -118,15 +118,6 @@ export function DonutChart({
   );
 }
 
-function points(values: number[], width: number, height: number, padX = 28, padY = 24) {
-  const max = Math.max(1, ...values);
-  return values.map((value, index) => {
-    const x = values.length === 1 ? width / 2 : padX + (index / (values.length - 1)) * (width - padX * 2);
-    const y = height - padY - (value / max) * (height - padY * 2);
-    return { x, y, value };
-  });
-}
-
 export function ActivityLineChart({
   data,
 }: {

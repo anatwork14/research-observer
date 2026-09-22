@@ -23,7 +23,7 @@ function parseQuery(query: string) {
   const filters: Record<string, string[]> = {};
   const words: string[] = [];
   for (const token of query.trim().split(/\s+/).filter(Boolean)) {
-    const match = token.match(/^(type|status|tag):(.+)$/i);
+    const match = token.match(/^(type|status|tag|research|project):(.+)$/i);
     if (match) {
       const key = match[1].toLowerCase();
       filters[key] = [...(filters[key] ?? []), match[2].toLowerCase()];
@@ -53,6 +53,8 @@ function runSearch(entries: SearchEntry[], query: string): Result[] {
       if (filters.type?.length && !filters.type.includes((entry.type ?? "").toLowerCase())) return false;
       if (filters.status?.length && !entry.status) return false;
       if (filters.status?.length && !filters.status.includes((entry.status ?? "").toLowerCase())) return false;
+      const researchFilters = [...(filters.research ?? []), ...(filters.project ?? [])];
+      if (researchFilters.length && !researchFilters.includes((entry.research ?? "default").toLowerCase())) return false;
       if (filters.tag?.length && !filters.tag.every((tag) => entry.tags.map((item) => item.toLowerCase()).includes(tag))) return false;
       return true;
     })
@@ -64,6 +66,7 @@ function runSearch(entries: SearchEntry[], query: string): Result[] {
       const tags = entry.tags.join(" ").toLowerCase();
       const status = (entry.status ?? "").toLowerCase();
       const type = (entry.type ?? "").toLowerCase();
+      const research = (entry.research ?? "default").toLowerCase();
       const headingText = entry.headings.map((heading) => heading.title).join(" ").toLowerCase();
       const body = entry.text.toLowerCase();
 
@@ -75,6 +78,7 @@ function runSearch(entries: SearchEntry[], query: string): Result[] {
       if (tags.includes(text)) { score += 50; if (matchedBy === "content") matchedBy = "tag"; }
       if (type.includes(text)) { score += 45; if (matchedBy === "content") matchedBy = "type"; }
       if (status.includes(text)) { score += 40; if (matchedBy === "content") matchedBy = "status"; }
+      if (research.includes(text)) { score += 38; if (matchedBy === "content") matchedBy = "research"; }
       if (headingText.includes(text)) { score += 35; if (matchedBy === "content") matchedBy = "heading"; }
       if (summary.includes(text)) { score += 30; if (matchedBy === "content") matchedBy = "summary"; }
       if (body.includes(text)) score += 15;
@@ -197,7 +201,7 @@ export function CommandPalette({ entries }: { entries: NavEntry[] }) {
                 ref={inputRef}
                 value={query}
                 onChange={(event) => { setQuery(event.target.value); setSelected(0); }}
-                placeholder="Search or filter: type:experiment tag:retrieval…"
+                placeholder="Search or filter: research:retrieval type:experiment…"
                 aria-label="Search research"
               />
               <kbd>ESC</kbd>
@@ -236,7 +240,7 @@ export function CommandPalette({ entries }: { entries: NavEntry[] }) {
               {index !== null && !results.length && <p className="palette-state">No matching research found.</p>}
             </div>
             <div className="palette-hint">
-              <span>↑↓ navigate</span><span>↵ open</span><span>type: · status: · tag:</span>
+              <span>↑↓ navigate</span><span>↵ open</span><span>research: · type: · status: · tag:</span>
             </div>
           </div>
         </div>
