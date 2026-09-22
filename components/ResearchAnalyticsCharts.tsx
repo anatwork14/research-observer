@@ -104,7 +104,7 @@ export function DonutChart({
               strokeDasharray={`${length} ${Math.max(0, circumference - length)}`}
               strokeDashoffset={-offset}
             >
-              <title>{item.label}: {item.value}</title>
+              <desc>{item.label}: {item.value}</desc>
             </circle>
         ))}
         <text x="90" y="85" textAnchor="middle" className="insight-donut-total">{total}</text>
@@ -157,7 +157,7 @@ export function ActivityLineChart({
                 <path d={path} className="insight-line" />
                 {data.map((row, index) => (
                   <circle key={row.month} cx={xAt(index)} cy={yAt(Number(row[item.key]))} r="3.5" className="insight-point">
-                    <title>{row.month} · {item.label}: {row[item.key]}</title>
+                    <desc>{row.month} · {item.label}: {row[item.key]}</desc>
                   </circle>
                 ))}
               </g>
@@ -253,7 +253,7 @@ export function ProjectCompositionChart({ projects }: { projects: ProjectRow[] }
                   const segment = (value / maxTotal) * plot;
                   const node = value > 0 ? (
                     <rect key={key} x={x} y={y + 7} width={segment} height="20" className={`insight-bar ${TONES[index]}`}>
-                      <title>{project.label} · {label}: {value}</title>
+                      <desc>{project.label} · {label}: {value}</desc>
                     </rect>
                   ) : null;
                   x += segment;
