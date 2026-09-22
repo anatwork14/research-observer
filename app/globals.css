@@ -52,9 +52,16 @@ body::after { width: 300px; height: 300px; left: -150px; bottom: 8vh; background
 .site-shell { width: min(1500px, 100%); margin: 0 auto; padding: 0 30px 24px; }
 .panel { background: var(--surface); border: 1px solid color-mix(in srgb, var(--line) 78%, white); box-shadow: var(--shadow); backdrop-filter: blur(18px); }
 .topbar { min-height: 72px; display: flex; gap: 24px; align-items: center; }
-.brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-size: 12px; font-weight: 800; letter-spacing: .1em; }
-.brand em { color: var(--accent); font-style: normal; font-weight: 600; }
-.brand-mark { display: grid; place-items: center; width: 28px; height: 28px; color: var(--canvas); background: var(--ink); border-radius: 50%; font-size: 16px; }
+.brand { display: inline-flex; align-items: center; gap: 11px; min-width: max-content; text-decoration: none; }
+.brand-mark { position: relative; display: grid; place-items: center; width: 36px; height: 36px; flex: 0 0 36px; }
+.brand-logo { position: absolute; inset: 0; width: 36px; height: 36px; }
+.brand-logo-dark { display: none; }
+:root[data-theme="dark"] .brand-logo-light { display: none; }
+:root[data-theme="dark"] .brand-logo-dark { display: block; }
+.brand-copy { display: flex; flex-direction: column; gap: 3px; }
+.brand-copy strong { color: var(--ink); font: 600 14px/1 var(--serif); letter-spacing: .16em; }
+.brand-copy small { color: var(--muted); font: 7px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; }
+.brand:hover .brand-copy strong { color: var(--accent-deep); }
 .workspace-state { display: flex; align-items: center; gap: 8px; color: var(--muted); font: 10px var(--mono); }
 .workspace-state i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent); }
 .icon-button { margin-left: 0; width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--surface); }
@@ -167,7 +174,7 @@ body::after { width: 300px; height: 300px; left: -150px; bottom: 8vh; background
 @media (max-width: 760px) {
   .site-shell { padding: 0 13px 20px; }
   .topbar { min-height: 62px; gap: 8px; }
-  .brand > span:last-child { display: none; }
+  .brand-copy { display: none; }
   .workspace-state { display: none; }
   .note-overview { padding: 23px 20px 20px; }
   .note-heading-row { display: block; }
