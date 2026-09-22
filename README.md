@@ -1,6 +1,6 @@
-# Research Observer
+# Observaire
 
-Research Observer is a convention-driven Next.js workspace for research progress. Plain Markdown remains the source of truth; the application compiles those notes into validated navigation, relationships, diagnostics, and a static search index.
+Observaire is a convention-driven Next.js workspace for research progress. Plain Markdown remains the source of truth; the application compiles those notes into validated navigation, relationships, diagnostics, and a static search index.
 
 Use it for literature exploration, experiments, model development, field notes, design research, lab work, historical research, or any other research process.
 
@@ -152,7 +152,7 @@ $$
 $$
 ```
 
-Use Markdown filenames when linking research notes. Research Observer resolves those links to stable canonical IDs automatically.
+Use Markdown filenames when linking research notes. Observaire resolves those links to stable canonical IDs automatically.
 
 ## Figures and research media
 
@@ -188,7 +188,7 @@ The PDF worker, cMaps, standard fonts, and WASM assets are copied from the insta
 
 ## Codex Ask mode
 
-In local development, Research Observer exposes an optional Codex **Ask** inspector on research notes and PDFs. The integration uses `@openai/codex-sdk` server-side with a read-only sandbox, approvals disabled, network/web search disabled, and explicit visible research context.
+In local development, Observaire exposes an optional Codex **Ask** inspector on research notes and PDFs. The integration uses `@openai/codex-sdk` server-side with a read-only sandbox, approvals disabled, network/web search disabled, and explicit visible research context.
 
 - **Ask** is read-only analysis.
 - **Draft** is also read-only and returns a proposed research change without writing files.
@@ -199,7 +199,7 @@ In local development, Research Observer exposes an optional Codex **Ask** inspec
 - Set `RESEARCH_OBSERVER_CODEX=0` to disable the local bridge.
 - Optionally set `RESEARCH_OBSERVER_CODEX_MODEL` to select a locally available Codex model.
 
-Research Observer installs matching `@openai/codex-sdk` and `@openai/codex` versions so the SDK can resolve its platform CLI binary. Authenticate Codex locally before using the panel. The UI status check also verifies that the SDK can resolve the installed Codex runtime before reporting it ready. If Codex is unavailable, Overview, Notes, Papers, Evidence, and PDF reading continue to work normally.
+Observaire installs matching `@openai/codex-sdk` and `@openai/codex` versions so the SDK can resolve its platform CLI binary. Authenticate Codex locally before using the panel. The UI status check also verifies that the SDK can resolve the installed Codex runtime before reporting it ready. If Codex is unavailable, Overview, Notes, Papers, Evidence, and PDF reading continue to work normally.
 
 Repository-scoped Codex instructions live in root/nested `AGENTS.md` files and reusable workflows live under `.agents/skills/`.
 
@@ -240,7 +240,7 @@ MIT.
 
 ## Typed research graph, evidence, collections, health, and instructions
 
-Research Observer now supports explicit typed relationships in note frontmatter:
+Observaire now supports explicit typed relationships in note frontmatter:
 
 ```yaml
 relationships:
@@ -269,7 +269,7 @@ The **Instruction** tab displays the repository's actual LLM authoring sources (
 
 ## New Research with Consensus
 
-Research Observer can use the Consensus API as an external peer-reviewed literature provider.
+Observaire can use the Consensus API as an external peer-reviewed literature provider.
 
 Configure it **server-side only**:
 
@@ -287,7 +287,7 @@ Open **New Research** in the workspace navigation.
 The workflow is intentionally staged:
 
 1. Enter a topic/question and optional objective.
-2. Research Observer calls Consensus search and shows the returned papers, metadata, takeaways, and eligible full-text passages.
+2. Observaire calls Consensus search and shows the returned papers, metadata, takeaways, and eligible full-text passages.
 3. You screen/select the papers.
 4. Only the selected literature packet is sent to local Codex.
 5. Codex runs read-only, without network/web access, and proposes:
@@ -298,7 +298,7 @@ The workflow is intentionally staged:
    - next actions and cautions.
 6. The proposal remains review-only. It does not create or edit research Markdown automatically.
 
-The public Consensus API currently exposes search, metadata, filters, relevance signals, and optional eligible full-text chunks. Research Observer therefore labels stage 2 a **Consensus-backed evidence overview** rather than pretending the public API exposes Consensus Deep/Research Agent prose synthesis. Codex performs the explicit synthesis/planning step from the selected packet.
+The public Consensus API currently exposes search, metadata, filters, relevance signals, and optional eligible full-text chunks. Observaire therefore labels stage 2 a **Consensus-backed evidence overview** rather than pretending the public API exposes Consensus Deep/Research Agent prose synthesis. Codex performs the explicit synthesis/planning step from the selected packet.
 
 ### Consensus citations in existing research
 
@@ -379,7 +379,7 @@ project:evaluation type:result
 
 ### Semantic research versions
 
-Technical edits remain available through Git history. Research Observer uses the typed `supersedes` relationship for meaningful intellectual versions that should be visible side-by-side:
+Technical edits remain available through Git history. Observaire uses the typed `supersedes` relationship for meaningful intellectual versions that should be visible side-by-side:
 
 ```yaml
 relationships:

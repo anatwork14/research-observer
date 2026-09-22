@@ -1,6 +1,6 @@
 ---
 name: build-research-observer-ui
-description: Implement or revise Research Observer Next.js UI features such as the workbench, Markdown reader, PDF reader, evidence views, search, or Codex inspector. Use for application/UI work, not research-note authoring.
+description: Implement or revise Observaire Next.js UI features such as the workbench, Markdown reader, PDF reader, evidence views, search, or Codex inspector. Use for application/UI work, not research-note authoring.
 ---
 
 1. Read root `AGENTS.md` and `app/AGENTS.md`.

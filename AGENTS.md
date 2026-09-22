@@ -1,10 +1,10 @@
-# AI Authoring Instructions for Research Observer
+# AI Authoring Instructions for Observaire
 
 This file is the authoritative authoring contract for AI agents that create or edit files in `progress/`.
 
 ## Core rule
 
-Research Observer uses plain Markdown as the source of truth. Do not create a separate database, JavaScript registry, or generated metadata file by hand.
+Observaire uses plain Markdown as the source of truth. Do not create a separate database, JavaScript registry, or generated metadata file by hand.
 
 A research note must be stored directly in `progress/` and its filename must begin with a numeric order:
 
@@ -160,7 +160,7 @@ Link to another note by its Markdown filename, using a relative Markdown link:
 See [the baseline experiment](02_baseline_experiment.md).
 ```
 
-Do not manually construct `/progress/...` URLs inside research Markdown. Research Observer resolves note identities and aliases.
+Do not manually construct `/progress/...` URLs inside research Markdown. Observaire resolves note identities and aliases.
 
 When linking to a section:
 
@@ -182,7 +182,7 @@ Reference them with relative paths:
 
 Captions/alt text must describe the information in the figure, not merely say "figure" or "image".
 
-For PDF/video/audio research media, use the same Markdown image syntax because Research Observer upgrades supported extensions into the appropriate viewer:
+For PDF/video/audio research media, use the same Markdown image syntax because Observaire upgrades supported extensions into the appropriate viewer:
 
 ```md
 ![System diagram](figures/system-diagram.pdf)
@@ -212,7 +212,7 @@ Never fabricate citations, DOIs, URLs, quotations, measurements, or experimental
 
 ### Consensus / external scholarly discovery
 
-Consensus is an external discovery provider, not the source of truth for Research Observer.
+Consensus is an external discovery provider, not the source of truth for Observaire.
 
 - Keep `CONSENSUS_API_KEY` server-side. Never place it in Markdown, prompts, client code, screenshots, generated artifacts, or committed files.
 - A Consensus search result is a candidate source until the researcher reviews it.
@@ -340,7 +340,7 @@ Key rules:
 
 ## Multiple research projects
 
-Research Observer can track several research projects in the same repository.
+Observaire can track several research projects in the same repository.
 
 Declare portfolio projects in `research-observer.config.json`:
 
@@ -368,7 +368,7 @@ Rules:
 
 ## Semantic versions of ideas
 
-Git history records technical file revisions. Research Observer's semantic version history records meaningful changes in the research idea.
+Git history records technical file revisions. Observaire's semantic version history records meaningful changes in the research idea.
 
 When an idea, hypothesis, method, result interpretation, or decision is substantially revised, create a new research object only if preserving both versions is useful. Link the new object to the earlier one:
 

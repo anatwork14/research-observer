@@ -1,6 +1,6 @@
 ---
 name: research-doctor
-description: Diagnose and repair Research Observer workspace integrity problems reported by npm run doctor. Use for broken note links, missing assets, invalid IDs/dates/frontmatter, PDF companion problems, aliases, or configuration diagnostics. Do not suppress legitimate errors just to make validation pass.
+description: Diagnose and repair Observaire workspace integrity problems reported by npm run doctor. Use for broken note links, missing assets, invalid IDs/dates/frontmatter, PDF companion problems, aliases, or configuration diagnostics. Do not suppress legitimate errors just to make validation pass.
 ---
 
 1. Run `npm run doctor` and classify every error/warning.

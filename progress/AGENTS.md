@@ -42,7 +42,7 @@ Rules:
 - Do not invent author names, publication years, or DOIs from filenames.
 - When quoting or paraphrasing a PDF, record the page number when known.
 - A durable evidence excerpt should identify the source PDF and page.
-- Prefer Research Observer deep links such as `/papers/...?...page=12` only in generated UI/context. In source Markdown, keep local relative PDF paths portable.
+- Prefer Observaire deep links such as `/papers/...?...page=12` only in generated UI/context. In source Markdown, keep local relative PDF paths portable.
 
 ## Evidence objects and typed relationships
 

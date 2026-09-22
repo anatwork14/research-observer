@@ -32,7 +32,7 @@ export default async function InstructionPage() {
             <p className="eyebrow">Instruction</p>
             <h1>Give an LLM the same research contract.</h1>
             <p>
-              These are the actual repository instructions used by Codex and other agents. Copy the complete pack when asking another LLM to create Research Observer-compatible Markdown.
+              These are the actual repository instructions used by Codex and other agents. Copy the complete pack when asking another LLM to create Observaire-compatible Markdown.
             </p>
           </div>
           <span className="collection-count">3 canonical sources</span>

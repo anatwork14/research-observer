@@ -6,8 +6,8 @@ import "react-pdf/dist/Page/AnnotationLayer.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Research Observer",
-  description: "A convention-driven observer for research notes, experiments, figures, and progress.",
+  title: "Observaire",
+  description: "A research intelligence workspace for evidence, experiments, literature, timelines, and evolving ideas.",
 };
 
 const uiBootstrap = `
@@ -15,6 +15,8 @@ const uiBootstrap = `
   try {
     const root = document.documentElement;
     const read = (key, fallback) => localStorage.getItem(key) ?? fallback;
+    const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    root.dataset.theme = read("research-observer-theme", preferredTheme);
     root.dataset.leftRail = read("research-observer-left-rail", "open");
     root.dataset.rightRail = read("research-observer-right-rail", "open");
     root.dataset.focus = read("research-observer-focus", "off");
@@ -27,7 +29,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
       <body>
         <Script
-          id="research-observer-ui-bootstrap"
+          id="observaire-ui-bootstrap"
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: uiBootstrap }}
         />

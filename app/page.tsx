@@ -93,7 +93,7 @@ export default async function Home() {
         </section>
       </main>
 
-      <footer className="site-footer"><span>RESEARCH OBSERVER</span><span>Observe · Read · Connect · Act</span></footer>
+      <footer className="site-footer"><span>OBSERVAIRE</span><span>Observe · Read · Connect · Act</span></footer>
     </div>
   );
 }

@@ -216,7 +216,7 @@ export default async function InsightsPage({
         )}
       </main>
 
-      <footer className="site-footer"><span>RESEARCH OBSERVER</span><span>Portfolio · Analytics · Timeline · Versions</span></footer>
+      <footer className="site-footer"><span>OBSERVAIRE</span><span>Portfolio · Analytics · Timeline · Versions</span></footer>
     </div>
   );
 }

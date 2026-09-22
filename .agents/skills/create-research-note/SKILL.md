@@ -1,6 +1,6 @@
 ---
 name: create-research-note
-description: Create or revise an ordered Research Observer Markdown note in progress/. Use for questions, literature notes, hypotheses, experiments, results, decisions, datasets, methods, milestones, and evidence objects. Do not use for application source code.
+description: Create or revise an ordered Observaire Markdown note in progress/. Use for questions, literature notes, hypotheses, experiments, results, decisions, datasets, methods, milestones, and evidence objects. Do not use for application source code.
 ---
 
 1. Read the repository root `AGENTS.md` and `progress/AGENTS.md`.

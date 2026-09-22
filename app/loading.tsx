@@ -1,6 +1,6 @@
 export default function Loading() {
   return (
-    <div className="site-shell route-skeleton" aria-busy="true" aria-label="Loading Research Observer">
+    <div className="site-shell route-skeleton" aria-busy="true" aria-label="Loading Observaire">
       <header className="skeleton-topbar" aria-hidden="true">
         <span className="skeleton-block skeleton-brand" />
         <span className="skeleton-block skeleton-tabs" />

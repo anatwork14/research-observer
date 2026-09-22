@@ -1,8 +1,8 @@
-# Research Observer Architecture
+# Observaire Architecture
 
 ## Purpose
 
-Research Observer is a research operating layer over plain files. Markdown is authoritative; generated indexes and UI views are derived.
+Observaire is a research operating layer over plain files. Markdown is authoritative; generated indexes and UI views are derived.
 
 ## Invariants
 
