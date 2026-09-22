@@ -516,3 +516,59 @@ body::after { width: 300px; height: 300px; left: -150px; bottom: 8vh; background
 .codex-diff-details pre, .codex-doctor pre { max-height: 360px; margin: 0; padding: 10px; overflow: auto; color: #dce9e2; background: #14201b; font: 8px/1.55 var(--mono); white-space: pre; }
 
 .paper-meta-line { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-soft); font-size: 9px; line-height: 1.4; }
+
+
+/* Typed research graph */
+.graph-shell { padding-bottom: 40px; }
+.graph-filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; padding: 10px; border-radius: 10px; }
+.graph-filters a { min-height: 28px; display: inline-flex; align-items: center; padding: 0 9px; border-radius: 999px; color: var(--muted); text-decoration: none; font: 8px var(--mono); }
+.graph-filters a:hover, .graph-filters a.active { color: var(--accent-deep); background: var(--accent-wash); }
+.graph-canvas { min-height: 520px; overflow: auto; padding: 12px; border-radius: 14px; }
+.research-graph-svg { display: block; width: 100%; min-width: 760px; height: auto; }
+.graph-edge { stroke: color-mix(in srgb, var(--muted) 45%, transparent); stroke-width: 1.2; }
+.graph-edge.explicit { stroke: color-mix(in srgb, var(--accent) 55%, var(--muted)); stroke-width: 1.7; }
+.graph-edge.implicit { stroke-dasharray: 4 6; opacity: .55; }
+.graph-arrow { fill: color-mix(in srgb, var(--accent) 55%, var(--muted)); }
+.graph-edge-label { fill: var(--muted); font: 8px var(--mono); paint-order: stroke; stroke: var(--surface); stroke-width: 4px; }
+.graph-node circle { fill: var(--surface-strong); stroke: var(--line-strong); stroke-width: 1.5; transition: stroke .15s ease, transform .15s ease; transform-box: fill-box; transform-origin: center; }
+.graph-node:hover circle { stroke: var(--accent); transform: scale(1.08); }
+.graph-node-order { fill: var(--accent-deep); font: 700 10px var(--mono); }
+.graph-node-title { fill: var(--ink); font: 600 9px var(--sans); }
+.graph-node-type { fill: var(--muted); font: 7px var(--mono); text-transform: uppercase; }
+.graph-limit { margin: 8px 4px 2px; color: var(--muted); font-size: 9px; }
+.graph-index { margin-top: 12px; padding: 20px; border-radius: 12px; }
+.relationship-index { display: flex; flex-direction: column; }
+.relationship-index-row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 12px; align-items: center; padding: 11px 0; border-top: 1px solid var(--line); }
+.relationship-index-row a { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); text-decoration: none; font-size: 10px; }
+.relationship-index-row a:last-child { text-align: right; }
+.relationship-index-row > span { padding: 3px 7px; border-radius: 999px; color: var(--accent-deep); background: var(--accent-wash); font: 7px var(--mono); }
+
+/* Research health */
+.health-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; overflow: hidden; margin-bottom: 12px; border-radius: 12px; }
+.health-summary > div { display: flex; flex-direction: column; gap: 7px; padding: 18px; background: var(--surface-strong); }
+.health-summary span { color: var(--muted); font: 8px var(--mono); text-transform: uppercase; letter-spacing: .06em; }
+.health-summary strong { font: 600 28px var(--serif); }
+.health-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.health-card { padding: 18px; border-radius: 12px; }
+.health-card.attention { border-color: color-mix(in srgb, #b97c39 30%, var(--line)); }
+.health-card.clear { border-color: color-mix(in srgb, var(--accent) 25%, var(--line)); }
+.health-card-heading { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 10px; align-items: start; }
+.health-card-heading > span { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; color: var(--accent-deep); background: var(--accent-wash); font-weight: 800; }
+.health-card.attention .health-card-heading > span { color: #9a641f; background: color-mix(in srgb, #c98a3b 12%, var(--surface-strong)); }
+.health-card-heading h2 { margin: 0; font: 600 18px var(--serif); }
+.health-card-heading p { margin: 4px 0 0; color: var(--muted); font-size: 9px; line-height: 1.5; }
+.health-card-heading strong { font: 600 24px var(--serif); }
+.health-items { display: flex; flex-direction: column; margin-top: 12px; }
+.health-items a { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); color: var(--ink-soft); text-decoration: none; font-size: 9px; }
+.health-items a span { color: var(--muted); font: 7px var(--mono); }
+.health-items small { margin-top: 7px; color: var(--muted); }
+.health-diagnostics { margin-top: 12px; }
+.typed-relationship-list { display: flex; flex-direction: column; gap: 5px; margin-top: 7px; }
+.typed-relationship-list a { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 7px; align-items: center; text-decoration: none; }
+.typed-relationship-list em { padding: 2px 5px; border-radius: 999px; color: var(--accent-deep); background: var(--accent-wash); font: 7px var(--mono); font-style: normal; }
+.typed-relationship-list span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-soft); font-size: 9px; }
+
+@media (max-width: 860px) {
+  .health-summary { grid-template-columns: repeat(2, 1fr); }
+  .health-grid { grid-template-columns: 1fr; }
+}
