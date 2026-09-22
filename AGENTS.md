@@ -67,6 +67,7 @@ aliases:
 - `summary`: one factual sentence describing the purpose or finding.
 - `type`: use a value from `research-observer.config.json`.
 - `status`: use a value from `research-observer.config.json`.
+- `research`: optional project identity from `researchProjects` in `research-observer.config.json`. Omit it for the default project. Use lowercase kebab-case.
 - `date`: ISO date only: `YYYY-MM-DD`. Omit it if unknown.
 - `tags`: YAML list of short lowercase labels.
 - `aliases`: optional old IDs/slugs that should continue resolving after a rename.
@@ -89,7 +90,9 @@ year: 2026
 doi: 10.xxxx/verified-doi
 ```
 
-Typed relationships use the vocabulary in `research-observer.config.json`. Example:
+Typed relationships use the vocabulary in `research-observer.config.json`. Use `supersedes` specifically when the new research object is a meaningful intellectual revision of an older object—not merely because a file was edited. This creates semantic version lineage in the Insights → Versions view.
+
+Example:
 
 ```yaml
 relationships:
@@ -333,3 +336,46 @@ Key rules:
 - For Codex Act testing, never use valuable uncommitted research content as a disposable fixture.
 - Report exact commands, Node/npm versions, exit codes, relevant error output, routes tested, browser-console errors, and any files changed.
 - If verification discovers a source bug, fix it on the current feature branch, rerun the failed gate, and clearly distinguish the original failure from the post-fix result.
+
+
+## Multiple research projects
+
+Research Observer can track several research projects in the same repository.
+
+Declare portfolio projects in `research-observer.config.json`:
+
+```json
+"researchProjects": [
+  { "id": "default", "label": "Main research" },
+  { "id": "retrieval", "label": "Retrieval study" },
+  { "id": "evaluation", "label": "Evaluation study" }
+]
+```
+
+Assign a note to a project only when needed:
+
+```yaml
+research: retrieval
+```
+
+Rules:
+
+- A note without `research` belongs to `default`.
+- Do not invent a project ID that is not declared unless the user explicitly asks to extend the portfolio.
+- Cross-project typed relationships are allowed when scientifically meaningful.
+- Do not duplicate a note just to make it visible in two projects. Keep one canonical object and connect it with typed relationships.
+- Use the Insights workspace to compare multiple selected projects at once.
+
+## Semantic versions of ideas
+
+Git history records technical file revisions. Research Observer's semantic version history records meaningful changes in the research idea.
+
+When an idea, hypothesis, method, result interpretation, or decision is substantially revised, create a new research object only if preserving both versions is useful. Link the new object to the earlier one:
+
+```yaml
+relationships:
+  - type: supersedes
+    target: earlier-hypothesis-id
+```
+
+Do not use `supersedes` for spelling fixes, formatting edits, or ordinary maintenance. The Insights → Versions view uses these explicit relationships to build version lineages and Markdown diffs.

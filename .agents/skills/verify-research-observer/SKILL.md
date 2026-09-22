@@ -631,3 +631,76 @@ Search behavior:
 - reduced-motion mode disables the Research Assist spinner animation.
 
 Report any visual improvement as PASS only after the interaction and safety behavior above also pass.
+
+
+## Research Intelligence / multi-research verification
+
+When changes touch research-project identity, Insights, timeline, or version comparison, verify all of the following.
+
+### Compiler / query model
+
+- legacy notes without `research` compile as `research: default`,
+- configured `researchProjects` are validated for unique kebab-case IDs and non-empty labels,
+- an undeclared `research` ID produces the configured vocabulary warning/error but remains visible for recovery,
+- generated manifest/search artifacts include `research`,
+- manifest schema/version and project rollups are deterministic,
+- Graph nodes preserve project identity,
+- `research:<id>` and `project:<id>` advanced queries work,
+- project statistics correctly separate notes, active objects, types, words, relationships, cross-project relationships, warnings/errors, and date range.
+
+### Insights dashboard
+
+Open `/insights` and verify:
+
+- Overview, Analytics, Timeline, and Versions modes are reachable without full-page horizontal overflow,
+- All projects and individual project chips update the same shared scope,
+- multiple projects can be selected at the same time,
+- every chart updates consistently with the selected scope,
+- chart labels/values remain readable in light and dark themes,
+- charts use internal horizontal scrolling when necessary on tablet/mobile instead of widening the body,
+- no chart invents a composite quality/health score.
+
+Verify visualizations:
+
+- object-type horizontal bars,
+- status donut,
+- research pipeline bars,
+- typed-relationship bars,
+- activity-over-time line chart,
+- cross-project composition,
+- factual health heatmap,
+- cross-project dependency matrix.
+
+For activity charts, verify missing months are represented rather than compressed out of the time axis.
+
+### Timeline
+
+With at least two projects and dated fixture notes:
+
+- projects render as aligned timeline lanes,
+- each dated object appears on the correct lane/date,
+- markers link to their canonical note,
+- explicit `supersedes` relationships render as version-lineage connectors when both versions are dated in the same project,
+- undated notes are listed separately rather than assigned fake dates,
+- selecting multiple projects preserves aligned time context.
+
+### Semantic version comparison
+
+Create a temporary fixture chain using explicit `supersedes` relationships and verify:
+
+- only connected semantic versions form a lineage,
+- ordinary edited files without `supersedes` are not presented as semantic versions,
+- default comparison uses the oldest/latest version in the selected lineage,
+- Base/Compare selectors work,
+- word/relationship/asset/status deltas render,
+- added/removed/unchanged Markdown lines are distinguishable,
+- large documents cap the diff preview rather than exhausting the browser,
+- the comparison never restores or mutates research files.
+
+### Note/project navigation
+
+- each note displays its research-project identity,
+- clicking the project identity opens Insights scoped to that project,
+- existing note canonical URLs remain unchanged.
+
+Report multi-research/timeline/version verification separately from generic Graph/Health PASS results.

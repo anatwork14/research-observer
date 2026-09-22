@@ -19,6 +19,10 @@ test("evidence capture writes a validated Markdown evidence object", async (t) =
       allowedStatuses: ["investigating", "complete"],
       allowedRelationshipTypes: ["supports"],
       allowedMediaExtensions: [".pdf"],
+      researchProjects: [
+        { id: "default", label: "Main research" },
+        { id: "retrieval", label: "Retrieval study" }
+      ],
       maxAssetBytes: 1048576,
       savedCollections: []
     })
@@ -30,6 +34,7 @@ test("evidence capture writes a validated Markdown evidence object", async (t) =
       "id: target-question",
       "type: question",
       "status: investigating",
+      "research: retrieval",
       "---",
       "",
       "# Target question",
@@ -50,6 +55,8 @@ test("evidence capture writes a validated Markdown evidence object", async (t) =
   assert.match(created.filename, /^01_evidence_fixture_p3_[a-f0-9]{8}\.md$/);
   const content = await fs.readFile(path.join(root, "progress", created.filename), "utf8");
   assert.match(content, /type: evidence/);
+  assert.match(content, /research: retrieval/);
+  assert.equal(created.research, "retrieval");
   assert.match(content, /page: 3/);
   assert.match(content, /target: target-question/);
   assert.match(content, /> This is a verified fixture excerpt\./);
