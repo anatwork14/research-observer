@@ -175,3 +175,15 @@ test("semantic version groups ignore cross-project supersedes links", () => {
   ];
   assert.deepEqual(buildVersionGroups(crossProject), []);
 });
+
+
+test("cross-project analytics obey the same selected project scope", () => {
+  const retrievalOnly = buildResearchAnalytics(workspace, ["retrieval"]);
+  assert.equal(retrievalOnly.totals.crossProjectRelationships, 0);
+  assert.deepEqual(retrievalOnly.crossProject, []);
+
+  const both = buildResearchAnalytics(workspace, ["retrieval", "evaluation"]);
+  assert.equal(both.totals.crossProjectRelationships, 1);
+  assert.equal(both.crossProject[0].sourceResearch, "evaluation");
+  assert.equal(both.crossProject[0].targetResearch, "retrieval");
+});
