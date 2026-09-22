@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { CommandPalette } from "@/components/CommandPalette";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -30,9 +31,15 @@ export function WorkspaceHeader({
 }) {
   return (
     <header className="topbar workbench-topbar">
-      <Link href="/" className="brand">
-        <span className="brand-mark">◒</span>
-        <span>RESEARCH <em>OBSERVER</em></span>
+      <Link href="/" className="brand" aria-label="Observaire home">
+        <span className="brand-mark" aria-hidden="true">
+          <Image className="brand-logo brand-logo-light" src="/brand/observaire-mark-light.svg" alt="" width={36} height={36} priority />
+          <Image className="brand-logo brand-logo-dark" src="/brand/observaire-mark-dark.svg" alt="" width={36} height={36} priority />
+        </span>
+        <span className="brand-copy">
+          <strong>OBSERVAIRE</strong>
+          <small>Research intelligence</small>
+        </span>
       </Link>
 
       <nav className="workspace-tabs" aria-label="Research workspace">
