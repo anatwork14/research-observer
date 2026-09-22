@@ -4,9 +4,7 @@ import GithubSlugger from "github-slugger";
 import { notFound, redirect } from "next/navigation";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { ResearchNav } from "@/components/ResearchNav";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { CommandPalette } from "@/components/CommandPalette";
-import { WorkspaceControls } from "@/components/WorkspaceControls";
+import { WorkspaceHeader } from "@/components/WorkspaceHeader";
 import { getProgressEntries, getProgressEntry } from "@/lib/progress";
 
 export async function generateStaticParams() {
@@ -60,13 +58,11 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
 
   return (
     <div className="site-shell">
-      <header className="topbar">
-        <Link href="/" className="brand"><span className="brand-mark">◒</span><span>RESEARCH <em>OBSERVER</em></span></Link>
-        <div className="workspace-state"><i /> convention-driven workspace <span>/</span> {entries.length} notes</div>
-        <CommandPalette entries={entries.map(({ slug, order, title, status }) => ({ slug, order, title, status }))} />
-        <WorkspaceControls />
-        <ThemeToggle />
-      </header>
+      <WorkspaceHeader
+        entries={entries.map(({ slug, order, title, status }) => ({ slug, order, title, status }))}
+        active="notes"
+        showWorkspaceControls
+      />
 
       <section className="note-overview panel">
         <div className="note-heading-row">
