@@ -1052,3 +1052,32 @@ body::after { width: 300px; height: 300px; left: -150px; bottom: 8vh; background
   .consensus-overview-grid { grid-template-columns: 1fr 1fr; }
   .experiment-plan-card dl { grid-template-columns: 1fr; }
 }
+
+
+/* Consensus citations inside existing research */
+.consensus-citation-panel { display: flex; flex-direction: column; gap: 10px; }
+.consensus-citation-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.consensus-citation-heading > div:first-child { min-width: 0; display: flex; align-items: center; gap: 8px; }
+.consensus-mark { display: grid; place-items: center; width: 27px; height: 27px; flex: 0 0 27px; border-radius: 7px; color: white; background: var(--accent-deep); font: 800 10px var(--mono); }
+.consensus-citation-heading strong { display: block; font-size: 10px; }
+.consensus-citation-heading small { display: block; margin-top: 2px; color: var(--muted); font-size: 7px; }
+.consensus-citation-intro { margin: 0; color: var(--muted); font-size: 8px; line-height: 1.45; }
+.consensus-citation-search { display: flex; flex-direction: column; gap: 6px; }
+.consensus-citation-search textarea { width: 100%; resize: vertical; min-height: 64px; padding: 8px; border: 1px solid var(--line); border-radius: 7px; outline: 0; color: var(--ink); background: var(--surface-strong); font: 9px/1.45 var(--sans); }
+.consensus-citation-search textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent); }
+.consensus-citation-search button { min-height: 33px; border: 1px solid var(--accent); border-radius: 7px; color: white; background: var(--accent-deep); font-size: 8px; font-weight: 800; }
+.consensus-citation-search button:disabled { opacity: .45; cursor: not-allowed; }
+.consensus-citation-unavailable, .consensus-citation-error { margin: 0; padding: 8px; border-radius: 7px; font-size: 8px; line-height: 1.4; }
+.consensus-citation-unavailable { color: var(--muted); background: var(--canvas); }
+.consensus-citation-error { color: #9e3c3c; background: color-mix(in srgb, #c94d4d 9%, var(--surface-strong)); }
+.consensus-citation-results { display: flex; flex-direction: column; gap: 7px; max-height: 520px; overflow: auto; padding-right: 2px; }
+.consensus-citation-result { padding: 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-strong); }
+.consensus-citation-result > a { display: block; color: var(--ink); text-decoration: none; font: 600 10px/1.35 var(--serif); }
+.consensus-citation-result > a:hover { color: var(--accent-deep); }
+.consensus-citation-result > small { display: block; margin-top: 4px; color: var(--muted); font-size: 7px; line-height: 1.35; }
+.consensus-citation-result > p { margin: 7px 0 0; color: var(--ink-soft); font-size: 8px; line-height: 1.45; }
+.consensus-citation-meta { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
+.consensus-citation-meta span { padding: 2px 4px; border-radius: 999px; color: var(--muted); background: var(--canvas); font: 6px var(--mono); }
+.consensus-citation-actions { display: flex; gap: 5px; margin-top: 8px; }
+.consensus-citation-actions button { flex: 1; min-height: 28px; padding: 0 5px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink-soft); background: var(--surface); font-size: 7px; }
+.consensus-citation-actions button:hover { color: var(--accent-deep); border-color: var(--accent); background: var(--accent-wash); }

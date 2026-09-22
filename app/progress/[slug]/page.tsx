@@ -6,6 +6,7 @@ import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { ResearchNav } from "@/components/ResearchNav";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
 import { CodexPanel } from "@/components/CodexPanel";
+import { ConsensusCitationPanel } from "@/components/ConsensusCitationPanel";
 import { getProgressEntries, getProgressEntry } from "@/lib/progress";
 
 export async function generateStaticParams() {
@@ -181,6 +182,10 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
                 ))}
               </div>
             </div>
+          </section>
+
+          <section className="side-card panel consensus-side-card">
+            <ConsensusCitationPanel defaultQuery={[entry.title, entry.summary].filter(Boolean).join(". ")} />
           </section>
 
           <section className="side-card panel codex-side-card">
