@@ -1,10 +1,23 @@
 # Research Observer
 
-Research Observer is a convention-driven Next.js workspace for research progress. It is intentionally not tied to a thesis: use it for literature exploration, experiments, model development, field notes, design research, lab work, or any other research process.
+Research Observer is a convention-driven Next.js workspace for research progress. Plain Markdown remains the source of truth; the application compiles those notes into validated navigation, relationships, diagnostics, and a static search index.
 
-## The only required convention
+Use it for literature exploration, experiments, model development, field notes, design research, lab work, historical research, or any other research process.
 
-Put Markdown files in `progress/` and prefix each filename with an ordered number:
+## Quick start
+
+Use Node 22 (see `.nvmrc`), install dependencies, then start development:
+
+```bash
+npm install
+npm run dev
+```
+
+`predev` automatically runs the research compiler before Next.js starts.
+
+## The note convention
+
+Put research notes directly in `progress/` and prefix each Markdown filename with a numeric order:
 
 ```text
 progress/
@@ -12,28 +25,126 @@ progress/
 ├── 01_problem_and_questions.md
 ├── 02_first_experiment.md
 ├── 03_results.md
-└── figures/
-    ├── accuracy.svg
-    ├── ablation.png
+├── figures/
+│   ├── accuracy.svg
+│   └── ablation.png
+└── media/
     └── demo.mp4
 ```
 
-Files matching `XX_*.md` (or any numeric prefix such as `100_*.md`) are discovered automatically and sorted by the numeric prefix. There is no JavaScript list to maintain.
+Files matching a numeric prefix such as `00_*.md`, `10_*.md`, or `100_*.md` are discovered automatically. The filename number controls sequence only.
 
-Run locally:
+## Stable research IDs
 
-```bash
-npm install
-npm run dev
+For long-lived work, add a stable `id` in frontmatter. The `id` becomes the canonical URL and should not change when a note is renamed or reordered.
+
+```yaml
+---
+id: reranking-experiment-v2
+title: Reranking experiment v2
+summary: Tests whether reranking improves recall under a fixed latency budget.
+type: experiment
+status: validating
+date: 2026-09-22
+tags:
+  - retrieval
+  - reranking
+aliases:
+  - reranking-v2
+---
 ```
 
-Then open `http://localhost:3000`.
+`id`, `type`, `status`, `date`, `tags`, and `aliases` are optional for hand-written notes, but stable IDs are strongly recommended. Allowed types/statuses live in `research-observer.config.json`.
 
-## Markdown features
+Old filename slugs and declared aliases continue to resolve and redirect to the canonical ID.
 
-Research notes support GitHub-Flavored Markdown, tables, task lists, fenced code, links between progress notes, and KaTeX math through `remark-math` / `rehype-katex`.
+## Instructions for AI-generated research notes
+
+`AGENTS.md` is the authoritative authoring contract for AI agents. It defines:
+
+- filename/order rules
+- stable IDs and aliases
+- allowed metadata
+- Markdown structure
+- internal link syntax
+- figure/media paths
+- math support
+- citation/non-fabrication rules
+- forbidden raw HTML/executable content
+- local validation commands
+
+Any AI that creates or edits files in `progress/` should read `AGENTS.md` first.
+
+## Local integrity checks — no GitHub Actions required
+
+This project intentionally does not assume GitHub Actions. The quality gate lives in the repository and runs locally or in any deployment environment:
+
+```bash
+npm run doctor       # research content integrity
+npm test             # compiler regression tests
+npm run typecheck    # TypeScript
+npm run lint         # ESLint
+npm run check        # doctor + tests + typecheck + lint
+npm run check:full   # everything above + production build
+```
+
+`npm run doctor` reports broken note links, missing assets, invalid IDs/dates/statuses/types, unsafe paths, symlinks, duplicate identities, orphan assets, and other workspace diagnostics. Errors produce a non-zero exit code.
+
+## Research compiler
+
+The app does not independently reinterpret the folder for every feature. `lib/research/compiler.mjs` is the canonical content compiler.
+
+```text
+progress/*.md + research assets
+            │
+            ▼
+    Research compiler
+            │
+     ┌──────┼──────────┐
+     ▼      ▼          ▼
+manifest  search    diagnostics
+     │      index       │
+     └──────┼───────────┘
+            ▼
+         Next.js
+```
+
+`npm run research:compile` writes generated artifacts to `public/_research/`. That directory is ignored by Git because it is regenerated before development/build.
+
+The compiler currently provides:
+
+- ordered note discovery
+- stable IDs + aliases
+- normalized frontmatter
+- word/read-time metadata
+- internal references and backlinks
+- heading extraction
+- asset inventory
+- link/asset validation
+- symlink/path checks
+- workspace diagnostics
+- static search data
+
+## Search
+
+`Cmd/Ctrl + K` (or `/`) opens research search. Search uses the precompiled static index rather than reparsing files on every keystroke.
+
+Structured filters are supported:
+
+```text
+type:experiment
+status:validating
+tag:retrieval
+type:result tag:retrieval latency
+```
+
+## Markdown and math
+
+Research notes support GitHub-Flavored Markdown, tables, task lists, fenced code, note links, and KaTeX math.
 
 ```md
+See [the experiment](02_first_experiment.md).
+
 Inline math: $E = mc^2$
 
 $$
@@ -41,54 +152,52 @@ $$
 $$
 ```
 
-Links to another ordered note become internal Research Observer navigation automatically:
-
-```md
-See [the experiment](02_first_experiment.md).
-```
+Use Markdown filenames when linking research notes. Research Observer resolves those links to stable canonical IDs automatically.
 
 ## Figures and research media
 
-Relative media paths are served from inside `progress/`. Standard Markdown image syntax is enough:
+Store assets under `progress/` and reference them with relative paths:
 
 ```md
 ![Accuracy by epoch](figures/accuracy.svg)
-![Ablation table](figures/ablation.png)
-![PDF figure](figures/system-diagram.pdf)
-![Experiment demo](figures/demo.mp4)
-![Audio sample](figures/sample.wav)
+![PDF diagram](figures/system-diagram.pdf)
+![Experiment demo](media/demo.mp4)
+![Interview audio](media/interview.wav)
 ```
 
-The renderer supports common browser-viewable image formats (`png`, `jpg`, `jpeg`, `gif`, `webp`, `avif`, `svg`, `bmp`), PDF, video (`mp4`, `webm`, `ogv`/`ogg`), and audio (`mp3`, `wav`, `m4a`, `aac`, `flac`). Remote `https://` media also works.
+Supported media includes common browser-viewable image formats, PDF, MP4/WebM/OGV video, MP3/WAV/M4A/AAC/FLAC audio, plus CSV/JSON/TXT downloads.
 
-> Browser support still determines whether a particular codec can becoded. For maximum portability, prefer SVG/PNG/WebP for figures, PDF for multi-page figures, MP4/WebM for video, and MP3/WAV for audio.
+The media route uses real-path confinement, extension allowlisting, streaming, cache validators, and HTTP byte-range responses for large assets.
 
-## Optional frontmatter
+## Configuration
 
-No frontmatter is required. If you want richer labels, add:
+`research-observer.config.json` controls the workspace contract, including allowed research types/statuses, media extensions, asset-size warnings, and the progress directory.
 
-```yaml
----
-title: First retrieval experiment
-summary: Testing whether reranking improves recall under a fixed latency budget.
-status: validating
-date: 2026-09-22
-tags: [retrieval, reranking, experiment]
----
+If you intentionally extend the research vocabulary, update the config and `AGENTS.md` together.
+
+## Static-first rendering
+
+Research note routes are generated statically from the committed workspace. The media route remains a Node.js route handler because it supports streaming and byte ranges.
+
+The app therefore follows a static-first model rather than requiring request-time Markdown parsing for note rendering or search.
+
+## Dependency reproducibility
+
+Direct dependency versions are pinned exactly. A `package-lock.json` is still required for fully deterministic transitive dependency resolution.
+
+When npm registry access is available, run:
+
+```bash
+npm install
+git add package-lock.json
+git commit -m "chore: lock npm dependencies"
 ```
 
-Without frontmatter, Research Observer uses the first `# Heading` as the title, then falls back to the filename.
+After a lockfile is committed, prefer `npm ci` for clean/release installs.
 
-## How it works
+## Architecture
 
-- `lib/progress.ts` scans and sorts `progress/*.md` on the server.
-- `app/progress/[slug]/page.tsx` renders each note with automatic previous/next navigation and inferred Markdown links.
-- `components/MarkdownRenderer.tsx` handles GFM, KaTeX, internal note links, and research media.
-- `app/media/[...path]/route.ts` securely serves relative assets stored under `progress/`.
-
-## Deploy
-
-This is a normal Next.js app and can be deployed anywhere Next.js is supported. Because research notes are read from the project filesystem, commit the `progress/` folder with the app before building/deploying.
+See `docs/ARCHITECTURE.md` for invariants, trust boundaries, compiler flow, and extension guidance.
 
 ## License
 

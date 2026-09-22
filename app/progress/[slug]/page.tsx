@@ -9,6 +9,9 @@ import { CommandPalette } from "@/components/CommandPalette";
 import { WorkspaceControls } from "@/components/WorkspaceControls";
 import { getProgressEntries, getProgressEntry } from "@/lib/progress";
 
+export const dynamic = "force-static";
+export const dynamicParams = false;
+
 export async function generateStaticParams() {
   const entries = await getProgressEntries();
   const slugs = new Set(entries.flatMap((entry) => [entry.slug, ...entry.aliases]));
