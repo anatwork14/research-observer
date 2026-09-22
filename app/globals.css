@@ -601,3 +601,58 @@ body::after { width: 300px; height: 300px; left: -150px; bottom: 8vh; background
   .collection-query-form > div { flex-direction: column; }
   .collection-query-form button { min-height: 36px; }
 }
+
+
+/* Durable PDF evidence capture */
+.evidence-dialog { width: min(680px, calc(100vw - 28px)); max-height: min(780px, calc(100vh - 28px)); padding: 0; border: 1px solid var(--line-strong); border-radius: 14px; color: var(--ink); background: var(--surface); box-shadow: 0 30px 90px rgba(15, 22, 19, .28); }
+.evidence-dialog::backdrop { background: rgba(12, 18, 15, .52); backdrop-filter: blur(4px); }
+.evidence-dialog-shell { display: flex; flex-direction: column; gap: 16px; padding: 20px; }
+.evidence-dialog-shell > header { display: flex; justify-content: space-between; gap: 15px; align-items: start; }
+.evidence-dialog-shell h2 { margin: 3px 0 0; font: 600 25px var(--serif); }
+.evidence-dialog-shell > header > button { width: 32px; height: 32px; border: 1px solid var(--line); border-radius: 7px; color: var(--muted); background: var(--surface-strong); font-size: 18px; }
+.evidence-source-preview { padding: 13px; border: 1px solid var(--line); border-radius: 9px; background: color-mix(in srgb, var(--canvas) 65%, var(--surface)); }
+.evidence-source-preview > strong { display: block; font-size: 11px; }
+.evidence-source-preview > span { display: block; margin-top: 2px; color: var(--muted); font: 8px var(--mono); }
+.evidence-source-preview blockquote { max-height: 190px; overflow: auto; margin: 12px 0 0; padding: 10px 12px; border-left: 2px solid var(--accent); color: var(--ink-soft); background: var(--surface-strong); font: 11px/1.6 var(--serif); }
+.evidence-dialog-shell label { display: flex; flex-direction: column; gap: 6px; }
+.evidence-dialog-shell label > span, .evidence-dialog-shell legend { color: var(--ink-soft); font-size: 9px; font-weight: 700; }
+.evidence-dialog-shell label small, .evidence-dialog-shell legend small { color: var(--muted); font-weight: 400; }
+.evidence-dialog-shell textarea, .evidence-dialog-shell select { width: 100%; border: 1px solid var(--line); border-radius: 7px; outline: 0; color: var(--ink); background: var(--surface-strong); }
+.evidence-dialog-shell textarea { resize: vertical; min-height: 88px; padding: 9px; font: 10px/1.55 var(--sans); }
+.evidence-dialog-shell select { min-height: 36px; padding: 0 8px; font-size: 9px; }
+.evidence-dialog-shell textarea:focus, .evidence-dialog-shell select:focus { border-color: var(--accent); }
+.evidence-dialog-shell fieldset { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 7px; margin: 0; padding: 0; border: 0; }
+.evidence-dialog-shell legend { grid-column: 1 / -1; margin-bottom: 3px; }
+.evidence-dialog-error, .evidence-dialog-success { margin: 0; padding: 9px 10px; border-radius: 7px; font-size: 9px; }
+.evidence-dialog-error { color: #9e3c3c; background: color-mix(in srgb, #c94d4d 10%, var(--surface-strong)); }
+.evidence-dialog-success { color: var(--accent-deep); background: var(--accent-wash); }
+.evidence-dialog-success a { color: inherit; }
+.evidence-dialog-shell > footer { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+.evidence-dialog-shell > footer > span { max-width: 390px; color: var(--muted); font-size: 8px; line-height: 1.4; }
+.evidence-save { min-height: 34px; padding: 0 12px; border: 1px solid var(--accent); border-radius: 7px; color: white; background: var(--accent-deep); font-size: 9px; font-weight: 750; }
+.evidence-save:disabled { opacity: .45; }
+.pdf-related-heading { margin-top: 20px !important; }
+.evidence-object-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.evidence-object-card { min-width: 0; display: flex; flex-direction: column; min-height: 190px; padding: 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-strong); }
+.evidence-object-topline { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font: 8px var(--mono); }
+.evidence-object-topline em { font-style: normal; }
+.evidence-object-title { margin-top: 9px; color: var(--ink); text-decoration: none; font: 600 15px var(--serif); }
+.evidence-object-card > p { margin: 6px 0 10px; color: var(--muted); font-size: 9px; line-height: 1.5; }
+.evidence-source-link { margin-top: auto; color: var(--accent-deep); text-decoration: none; font-size: 8px; }
+.evidence-relations { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
+.evidence-relations a { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-soft); text-decoration: none; font-size: 8px; }
+.evidence-relations em { margin-right: 5px; padding: 2px 5px; border-radius: 999px; color: var(--accent-deep); background: var(--accent-wash); font: 7px var(--mono); font-style: normal; }
+.empty-evidence-object { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 4px; padding: 25px; color: var(--muted); text-align: center; }
+.empty-evidence-object strong { color: var(--ink); font: 600 18px var(--serif); }
+.collection-subheading { display: flex; justify-content: space-between; align-items: end; gap: 20px; margin: 26px 0 12px; padding: 0 2px; }
+.collection-subheading h2 { margin: 3px 0 0; font: 600 25px var(--serif); }
+.collection-subheading > span { color: var(--muted); font: 9px var(--mono); }
+
+@media (max-width: 900px) {
+  .evidence-object-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .evidence-object-grid { grid-template-columns: 1fr; }
+  .evidence-dialog-shell fieldset { grid-template-columns: 1fr; }
+  .evidence-dialog-shell > footer { align-items: stretch; flex-direction: column; }
+}
