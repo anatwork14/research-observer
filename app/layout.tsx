@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "katex/dist/katex.min.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
@@ -24,10 +25,14 @@ const uiBootstrap = `
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: uiBootstrap }} />
-      </head>
-      <body>{children}</body>
+      <body>
+        <Script
+          id="research-observer-ui-bootstrap"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: uiBootstrap }}
+        />
+        {children}
+      </body>
     </html>
   );
 }
