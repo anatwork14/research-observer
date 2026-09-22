@@ -4,10 +4,11 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { WorkspaceControls } from "@/components/WorkspaceControls";
 
 type NavEntry = { slug: string; order: number; title: string; status?: string };
-type Section = "overview" | "notes" | "papers" | "evidence" | "graph" | "collections" | "health" | "instruction";
+type Section = "overview" | "new-research" | "notes" | "papers" | "evidence" | "graph" | "collections" | "health" | "instruction";
 
 const sections: Array<{ key: Section; href: string; label: string }> = [
   { key: "overview", href: "/", label: "Overview" },
+  { key: "new-research", href: "/new-research", label: "New Research" },
   { key: "notes", href: "/progress", label: "Notes" },
   { key: "papers", href: "/papers", label: "Papers" },
   { key: "evidence", href: "/evidence", label: "Evidence" },
