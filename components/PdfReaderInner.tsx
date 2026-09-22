@@ -99,6 +99,7 @@ export default function PdfReaderInner({
   const [pdf, setPdf] = useState<PdfDocumentLike | null>(null);
   const [numPages, setNumPages] = useState(0);
   const [pageNumber, setPageNumber] = useState(Math.max(1, initialPage));
+  const [pageDraft, setPageDraft] = useState(String(Math.max(1, initialPage)));
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [stageWidth, setStageWidth] = useState(920);
@@ -123,6 +124,7 @@ export default function PdfReaderInner({
   const navigate = useCallback((nextPage: number) => {
     const next = clampPage(nextPage, numPages || 1);
     setPageNumber(next);
+    setPageDraft(String(next));
     setSelection("");
     router.replace(`${pathname}?page=${next}`, { scroll: false });
   }, [numPages, pathname, router]);
@@ -197,10 +199,14 @@ export default function PdfReaderInner({
         const document = loaded as unknown as PdfDocumentLike;
         setPdf(document);
       setNumPages(document.numPages);
-        setPageNumber((current) => clampPage(current, document.numPages));
+        setPageNumber((current) => {
+          const next = clampPage(current, document.numPages);
+          setPageDraft(String(next));
+          return next;
+        });
       }}
       loading={<div className="pdf-loading panel">Opening {title}…</div>}
-      error={<div className="pdf-loading panel error">This PDF _failed_ to render. <a href={src}>Open original</a>.</div>}
+      error={<div className="pdf-loading panel error">This PDF failed to render. <a href={src}>Open original</a>.</div>}
     >
       <div className="pdf-workbench">
         <header className="pdf-toolbar panel">
@@ -210,7 +216,20 @@ export default function PdfReaderInner({
           </div>
           <div className="pdf-page-controls">
             <button onClick={() => navigate(pageNumber - 1)} disabled={pageNumber <= 1} aria-label="Previous page">←</button>
-            <label><input value={pageNumber} onChange={(event) => navigate(Number(event.target.value))} inputMode="numeric" aria-label="Current page" /><span>/ {numPages || —"}</span></label>
+            <label>
+              <input
+                value={pageDraft}
+                onChange={(event) => setPageDraft(event.target.value.replace(/\D/g, ""))}
+                onBlur={() => navigate(Number(pageDraft || pageNumber))}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") navigate(Number(pageDraft || pageNumber));
+                  if (event.key === "Escape") setPageDraft(String(pageNumber));
+                }}
+                inputMode="numeric"
+                aria-label="Current page"
+              />
+              <span>/ {numPages || "—"}</span>
+            </label>
             <button onClick={() => navigate(pageNumber + 1)} disabled={!numPages || pageNumber >= numPages} aria-label="Next page">→</button>
           </div>
           <div className="pdf-view-controls">
@@ -269,7 +288,7 @@ export default function PdfReaderInner({
                   ))}
                   {!relatedNotes.length && <span className="connection-empty">No research note references this PDF yet.</span>}
                 </div>
-                <div className="pdf-source-card"><span>Source</span><code>{path}</code><small>Page {pageNumber} of {numPages || —"}</small></div>
+                <div className="pdf-source-card"><span>Source</span><code>{path}</code><small>Page {pageNumber} of {numPages || "—"}</small></div>
               </div>
             )}
 
