@@ -152,6 +152,7 @@ At minimum visit:
 - `/collections`
 - `/health`
 - `/instruction`
+- `/new-research`
 
 For the new research-system routes also confirm:
 
@@ -159,6 +160,7 @@ For the new research-system routes also confirm:
 - Collections query syntax filters deterministic fields and saved collection links work.
 - Health counts/lists are factual and link back to affected notes.
 - Instruction displays `AGENTS.md`, `progress/AGENTS.md`, and the create-note skill; both copy actions work.
+- New Research renders its three-stage Consensus → screening → Codex workflow without browser-console errors.
 
 For each route confirm:
 
@@ -406,3 +408,78 @@ For UI/UX verification on note and PDF routes:
 - Open a PDF under throttling and confirm both route-level and PDF.js internal skeletons appear without large layout shifts.
 - Open Command Palette before its search index resolves and confirm skeleton rows appear.
 - Browser console must show no hydration warnings caused by persisted rail state.
+
+
+## Consensus / New Research verification
+
+This feature must be tested without leaking or committing real credentials.
+
+### Provider unit and API boundary
+
+Run the normal unit suite and additionally confirm:
+
+- Consensus normalizer accepts representative `papers`, `results`, and nested response shapes.
+- page size is bounded by Research Observer.
+- the API key is sent only from the server in the `x-api-key` header.
+- no `CONSENSUS_API_KEY` string/value appears in browser bundles or rendered HTML.
+- cross-origin POSTs to `/api/consensus/search` are rejected.
+- without `CONSENSUS_API_KEY`, New Research and the note citation card remain usable but clearly show Consensus offline.
+- production ignores `CONSENSUS_API_BASE_URL` and uses the official Consensus host.
+
+For deterministic local browser testing, you MAY run a disposable local mock HTTP server that returns a small Consensus-shaped JSON payload and start dev with:
+
+```bash
+CONSENSUS_API_KEY=verification-only \
+CONSENSUS_API_BASE_URL=http://127.0.0.1:<mock-port> \
+RESEARCH_OBSERVER_CODEX=0 \
+npm run dev -- --hostname 127.0.0.1
+```
+
+Never commit the verification key or mock fixture.
+
+### Existing research citations
+
+On a real note:
+
+- the Consensus card is visible in the right context rail,
+- it does not issue a search call until the user explicitly submits,
+- the default query is derived from the current note,
+- returned papers link to their Consensus URL,
+- DOI/journal/year/citation/study metadata render when supplied,
+- **Copy reference** copies a readable source string,
+- **Copy Markdown** copies a Markdown link/reference,
+- no result automatically creates a research relationship or edits Markdown.
+
+### New Research with Consensus
+
+With a deterministic mock or real configured API:
+
+- open `/new-research`,
+- submit a topic,
+- verify the requested year/page-size filters reach the Consensus server,
+- verify returned papers can be included/excluded,
+- verify Consensus takeaways/abstracts are clearly attributed to papers,
+- verify source selection does not mutate `progress/**`.
+
+When an authenticated local Codex session is available:
+
+- record `git status --short` before and after planning,
+- run **Continue to hypotheses & experiments** with at least two selected papers,
+- verify Codex runs read-only with no workspace mutation,
+- verify the plan includes research gaps, falsifiable hypotheses, experiment designs, next actions/cautions,
+- verify every cited source ID maps to a selected paper shown in **Selected literature trace**,
+- verify no non-selected or invented citation appears,
+- verify a cross-origin POST to `/api/research/new/plan` is rejected.
+
+If Codex authentication is unavailable, report the New Research Codex-planning portion as SKIP, not PASS.
+
+### Required report additions
+
+Add these lines to the verification report:
+
+```text
+Consensus provider/API boundary: PASS | FAIL
+Existing-note Consensus citations: PASS | FAIL | SKIP (reason)
+New Research Consensus search: PASS | FAIL | SKIP (reason)
+New Research Codex planning: PASS | FAIL | SKIP (reason)
+```
