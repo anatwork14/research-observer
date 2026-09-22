@@ -24,6 +24,8 @@ export function ResearchAssistPanel({
   const [codexStatus, setCodexStatus] = useState<ServiceStatus>(null);
   const consensusId = useId();
   const codexId = useId();
+  const consensusTabId = useId();
+  const codexTabId = useId();
 
   useEffect(() => {
     try {
@@ -56,6 +58,7 @@ export function ResearchAssistPanel({
 
       <div className="research-assist-tabs" role="tablist" aria-label="Research assist service">
         <button
+          id={consensusTabId}
           type="button"
           role="tab"
           aria-selected={active === "consensus"}
@@ -74,6 +77,7 @@ export function ResearchAssistPanel({
         </button>
 
         <button
+          id={codexTabId}
           type="button"
           role="tab"
           aria-selected={active === "codex"}
@@ -104,6 +108,7 @@ export function ResearchAssistPanel({
       <div
         id={consensusId}
         role="tabpanel"
+        aria-labelledby={consensusTabId}
         className="research-assist-panel"
         hidden={active !== "consensus"}
       >
@@ -117,6 +122,7 @@ export function ResearchAssistPanel({
       <div
         id={codexId}
         role="tabpanel"
+        aria-labelledby={codexTabId}
         className="research-assist-panel"
         hidden={active !== "codex"}
       >

@@ -159,8 +159,12 @@ export function CodexPanel({
       if (!response.ok) throw new Error(payload.error || payload.reason || "Codex request failed.");
 
       if (mode === "act") {
+        const candidate = payload.proposal;
+        if (!candidate || typeof candidate.id !== "string" || !Array.isArray(candidate.files)) {
+          throw new Error("Codex returned an invalid Act proposal.");
+        }
         setProposal({
-          ...payload.proposal,
+          ...candidate,
           patch: payload.patch || "",
           truncated: Boolean(payload.truncated),
           allowed: Boolean(payload.allowed),
@@ -227,14 +231,13 @@ export function CodexPanel({
         </span>
       </div>
 
-      <div className="codex-mode-tabs" role="tablist" aria-label="Codex mode">
+      <div className="codex-mode-tabs" role="group" aria-label="Codex mode">
         {(["ask", "draft", "act"] as Mode[]).map((item) => (
           <button
             key={item}
             className={mode === item ? "active" : ""}
             onClick={() => selectMode(item)}
-            aria-selected={mode === item}
-            role="tab"
+            aria-pressed={mode === item}
             disabled={running || applying || Boolean(proposal && mode !== item)}
             title={proposal && mode !== item ? "Review or dismiss the current proposal before switching modes." : modeMeta[item].description}
           >

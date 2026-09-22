@@ -92,8 +92,8 @@ export function ConsensusCitationPanel({
     setQuery((base || query.trim()) + suffix);
   }
 
-  async function runSearch() {
-    const nextQuery = query.trim();
+  async function runSearch(queryOverride?: string) {
+    const nextQuery = (queryOverride ?? query).trim();
     if (!nextQuery || searching || !status?.enabled) return;
 
     searchController.current?.abort();
@@ -103,6 +103,7 @@ export function ConsensusCitationPanel({
     setSearched(true);
     setLastQuery(nextQuery);
     setError("");
+    setPapers([]);
 
     try {
       const response = await fetch("/api/consensus/search", {
@@ -208,7 +209,7 @@ export function ConsensusCitationPanel({
         <div className="assist-state-card error" role="alert">
           <strong>Search needs attention</strong>
           <p>{error}</p>
-          {lastQuery && status?.enabled && <button type="button" onClick={() => void runSearch()}>Retry</button>}
+          {lastQuery && status?.enabled && <button type="button" onClick={() => void runSearch(lastQuery)}>Retry</button>}
         </div>
       )}
 
