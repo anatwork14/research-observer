@@ -33,6 +33,7 @@ export function storeProposal(root: string, proposal: {
   reviewable: boolean;
   doctor: { code: number; output: string };
   summary: string;
+  patchSha256: string;
 }>;
 export function loadProposal(root: string, id: string): Promise<{ metadata: {
   id: string;
@@ -42,5 +43,6 @@ export function loadProposal(root: string, id: string): Promise<{ metadata: {
   reviewable: boolean;
   doctor: { code: number; output: string };
   summary: string;
+  patchSha256: string;
 }; patch: string }>;
 export function deleteProposal(root: string, id: string): Promise<void>;

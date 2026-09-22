@@ -37,6 +37,16 @@ function availability() {
   };
 }
 
+function sameOrigin(request: Request) {
+  const origin = request.headers.get("origin");
+  if (!origin) return false;
+  try {
+    return new URL(origin).origin === new URL(request.url).origin;
+  } catch {
+    return false;
+  }
+}
+
 function clean(value: unknown, max = 500) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
@@ -87,6 +97,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (!sameOrigin(request)) {
+    return NextResponse.json({ error: "Cross-origin Codex requests are not allowed." }, { status: 403 });
+  }
   const state = availability();
   if (!state.enabled) {
     return NextResponse.json(state, { status: 503, headers: { "Cache-Control": "no-store" } });

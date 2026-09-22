@@ -208,3 +208,24 @@ test("compiler links verified literature metadata to a local PDF companion", asy
   const copied = await fs.readFile(path.join(root, "public", "_research", "media", "papers", "smith.pdf"), "utf8");
   assert.match(copied, /%PDF/);
 });
+
+
+test("Codex proposal storage hashes the reviewed patch", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "research-observer-codex-proposal-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const { storeProposal, loadProposal, deleteProposal } = await import("../lib/codex/worktree.mjs");
+  const patch = "diff --git a/progress/00.md b/progress/00.md\n";
+  const stored = await storeProposal(root, {
+    files: ["progress/00.md"],
+    patch,
+    valid: true,
+    reviewable: true,
+    doctor: { code: 0, output: "ok" },
+    summary: "test"
+  });
+  assert.match(stored.patchSha256, /^[a-f0-9]{64}$/);
+  const loaded = await loadProposal(root, stored.id);
+  assert.equal(loaded.patch, patch);
+  assert.equal(loaded.metadata.patchSha256, stored.patchSha256);
+  await deleteProposal(root, stored.id);
+});

@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import {
   deleteProposal,
@@ -49,8 +50,12 @@ export async function POST(request: Request) {
   const root = process.cwd();
   try {
     const { metadata, patch } = await loadProposal(root, id);
-    if (!metadata.valid) {
-      return NextResponse.json({ error: "This proposal did not pass validation and cannot be applied." }, { status: 409 });
+    const patchSha256 = crypto.createHash("sha256").update(patch, "utf8").digest("hex");
+    if (patchSha256 !== metadata.patchSha256) {
+      return NextResponse.json({ error: "The stored proposal changed after review and cannot be applied." }, { status: 409 });
+    }
+    if (!metadata.valid || !metadata.reviewable) {
+      return NextResponse.json({ error: "This proposal did not pass validation/reviewability checks and cannot be applied." }, { status: 409 });
     }
 
     const dirty = await gitStatusPaths(root);
