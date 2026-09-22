@@ -131,7 +131,7 @@ export default function PdfReaderInner({
   }, [numPages, pathname, router]);
 
   useEffect(() => {
-    if (!pdf || panel !== "text") return;
+    if (!pdf || (panel !== "text" && panel !== "agent")) return;
     let cancelled = false;
     setTextLoading(true);
     pdf.getPage(pageNumber)
@@ -327,6 +327,7 @@ export default function PdfReaderInner({
                   context={{
                     paper: { path, title, page: pageNumber },
                     selection: selection || undefined,
+                    pageText: pageText || undefined,
                   }}
                 />
               </div>

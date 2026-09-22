@@ -14,6 +14,7 @@ export type CodexResearchContext = {
     page: number;
   };
   selection?: string;
+  pageText?: string;
 };
 
 type Status = {
@@ -69,6 +70,7 @@ export function CodexPanel({ context }: { context: CodexResearchContext }) {
     if (context.note) values.push(context.note.title);
     if (context.paper) values.push(`${context.paper.title} · p.${context.paper.page}`);
     if (context.selection) values.push("Selected PDF text");
+    else if (context.pageText) values.push("Current page text");
     return values;
   }, [context]);
 

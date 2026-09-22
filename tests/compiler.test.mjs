@@ -159,3 +159,50 @@ test("Codex worktree path policy accepts only progress files", async () => {
   assert.equal(allResearchPaths(["progress/01_note.md", "app/page.tsx"]), false);
   assert.equal(allResearchPaths([]), false);
 });
+
+
+test("compiler links verified literature metadata to a local PDF companion", async (t) => {
+  const root = await fixture(t);
+  const configPath = path.join(root, "research-observer.config.json");
+  const config = JSON.parse(await fs.readFile(configPath, "utf8"));
+  config.allowedTypes.push("literature");
+  config.allowedMediaExtensions.push(".pdf");
+  await fs.writeFile(configPath, JSON.stringify(config));
+
+  await fs.mkdir(path.join(root, "progress", "papers"), { recursive: true });
+  const literature = [
+    "---",
+    "id: smith-paper",
+    "title: Smith paper",
+    "type: literature",
+    "status: complete",
+    "pdf: papers/smith.pdf",
+    "authors:",
+    "  - Jane Smith",
+    "year: 2026",
+    "doi: 10.1234/example",
+    "---",
+    "",
+    "# Smith paper",
+    "",
+    "Literature companion note.",
+    ""
+  ].join("\n");
+
+  await Promise.all([
+    fs.writeFile(path.join(root, "progress", "00_literature.md"), literature),
+    fs.writeFile(path.join(root, "progress", "papers", "smith.pdf"), "%PDF-1.4\n% fixture\n")
+  ]);
+
+  const workspace = await compileResearchWorkspace({ rootDir: root, fresh: true });
+  assert.equal(workspace.stats.errors, 0);
+  assert.equal(workspace.entries[0].pdf, "papers/smith.pdf");
+  assert.deepEqual(workspace.entries[0].authors, ["Jane Smith"]);
+  assert.equal(workspace.entries[0].year, 2026);
+  assert.equal(workspace.entries[0].doi, "10.1234/example");
+  assert.ok(workspace.entries[0].assets.includes("papers/smith.pdf"));
+
+  await writeResearchArtifacts({ rootDir: root, fresh: true });
+  const copied = await fs.readFile(path.join(root, "public", "_research", "media", "papers", "smith.pdf"), "utf8");
+  assert.match(copied, /%PDF/);
+});

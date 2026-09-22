@@ -514,3 +514,5 @@ body::after { width: 300px; height: 300px; left: -150px; bottom: 8vh; background
 .codex-diff-details, .codex-doctor { margin-top: 9px; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
 .codex-diff-details summary, .codex-doctor summary { padding: 8px 9px; cursor: pointer; color: var(--muted); background: color-mix(in srgb, var(--canvas) 65%, transparent); font: 8px var(--mono); }
 .codex-diff-details pre, .codex-doctor pre { max-height: 360px; margin: 0; padding: 10px; overflow: auto; color: #dce9e2; background: #14201b; font: 8px/1.55 var(--mono); white-space: pre; }
+
+.paper-meta-line { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-soft); font-size: 9px; line-height: 1.4; }

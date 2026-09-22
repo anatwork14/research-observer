@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "npm@10.9.2",
   "engines": {
-    "node": ">=22 <25"
+    "node": ">=22.13 <25"
   },
   "scripts": {
     "dev": "node scripts/dev-research.mjs",
