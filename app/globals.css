@@ -1546,3 +1546,865 @@ body::after { width: 300px; height: 300px; left: -150px; bottom: 8vh; background
     transform: none;
   }
 }
+
+
+/* Unified Research Assist: Consensus + Codex */
+.research-assist-card {
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+  container-type: inline-size;
+  border-color: color-mix(in srgb, var(--accent) 18%, var(--line));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent-wash) 16%, transparent), transparent 110px),
+    var(--surface);
+}
+
+.research-assist-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 17px 17px 12px;
+}
+
+.research-assist-header > div { min-width: 0; }
+
+.research-assist-header h3 {
+  margin: 4px 0 0;
+  font: 600 20px/1.15 var(--serif);
+  letter-spacing: -.025em;
+}
+
+.research-assist-header p {
+  max-width: 480px;
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.research-assist-guard {
+  flex: 0 0 auto;
+  padding: 4px 7px;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
+  border-radius: 999px;
+  color: var(--accent-deep);
+  background: color-mix(in srgb, var(--accent-wash) 62%, var(--surface-strong));
+  font: 7px var(--mono);
+  text-transform: uppercase;
+  letter-spacing: .065em;
+}
+
+.research-assist-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  margin: 0 12px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--canvas) 70%, transparent);
+}
+
+.research-assist-tabs > button {
+  min-width: 0;
+  min-height: 54px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: 7px;
+  align-items: center;
+  padding: 7px 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--muted);
+  background: transparent;
+  text-align: left;
+  transition:
+    color var(--motion-fast) ease,
+    background-color var(--motion-base) var(--ease-soft),
+    border-color var(--motion-base) var(--ease-soft),
+    box-shadow var(--motion-base) var(--ease-soft);
+}
+
+.research-assist-tabs > button:hover:not(:disabled) {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--surface-strong) 75%, transparent);
+}
+
+.research-assist-tabs > button.active.consensus {
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--line));
+  background: color-mix(in srgb, var(--accent-wash) 55%, var(--surface-strong));
+  box-shadow: 0 5px 16px color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.research-assist-tabs > button.active.codex {
+  color: var(--ink);
+  border-color: color-mix(in srgb, #8066d8 24%, var(--line));
+  background: color-mix(in srgb, #8066d8 8%, var(--surface-strong));
+  box-shadow: 0 5px 16px color-mix(in srgb, #8066d8 7%, transparent);
+}
+
+.research-assist-service-mark {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: var(--accent-deep);
+  background: var(--accent-wash);
+  font: 800 9px var(--mono);
+}
+
+.research-assist-tabs .codex .research-assist-service-mark {
+  color: #684ebe;
+  background: color-mix(in srgb, #8066d8 12%, var(--surface-strong));
+}
+
+.research-assist-service-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.research-assist-service-copy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: inherit;
+  font-size: 9px;
+}
+
+.research-assist-service-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 7px;
+}
+
+.research-assist-state {
+  position: relative;
+  padding-left: 9px;
+  color: var(--muted);
+  font: 6px var(--mono);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.research-assist-state::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: var(--line-strong);
+}
+
+.research-assist-state.ready::before {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 13%, transparent);
+}
+
+.research-assist-boundary {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 7px;
+  align-items: start;
+  margin: 10px 14px 0;
+  padding: 8px 9px;
+  border-radius: 8px;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--canvas) 68%, transparent);
+}
+
+.research-assist-boundary > span {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  color: var(--accent-deep);
+  background: var(--surface-strong);
+  font-size: 10px;
+}
+
+.research-assist-boundary p {
+  margin: 2px 0 0;
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.research-assist-panel {
+  min-width: 0;
+  padding: 14px;
+}
+
+.research-assist-panel[hidden] { display: none; }
+
+.research-assist-footer {
+  padding: 9px 14px 11px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  background: color-mix(in srgb, var(--canvas) 45%, transparent);
+  font: 7px/1.45 var(--mono);
+}
+
+.assist-section-heading {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.assist-section-heading > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.assist-section-heading strong {
+  color: var(--ink);
+  font: 600 15px/1.25 var(--serif);
+}
+
+.assist-section-heading > span {
+  flex: 0 0 auto;
+  padding: 3px 6px;
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--canvas);
+  font: 7px var(--mono);
+}
+
+.assist-mode-safety {
+  flex: 0 0 auto;
+  padding: 4px 6px !important;
+  border: 1px solid var(--line);
+  border-radius: 999px !important;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.assist-mode-safety.readonly {
+  color: var(--accent-deep) !important;
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--line));
+  background: var(--accent-wash) !important;
+}
+
+.assist-mode-safety.review {
+  color: #6348ba !important;
+  border-color: color-mix(in srgb, #8066d8 24%, var(--line));
+  background: color-mix(in srgb, #8066d8 9%, var(--surface-strong)) !important;
+}
+
+.assist-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.assist-quick-actions > button {
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--surface-strong);
+  font-size: 7px;
+}
+
+.assist-quick-actions > button:hover:not(:disabled) {
+  color: var(--accent-deep);
+  border-color: var(--accent);
+  background: var(--accent-wash);
+}
+
+.assist-quick-actions > button:disabled {
+  opacity: .42;
+  cursor: not-allowed;
+}
+
+.assist-state-card {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink-soft);
+  background: var(--surface-strong);
+}
+
+.assist-state-card strong {
+  display: block;
+  color: var(--ink);
+  font-size: 9px;
+}
+
+.assist-state-card p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+.assist-state-card > button {
+  min-height: 28px;
+  margin-top: 8px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink-soft);
+  background: var(--surface);
+  font-size: 7px;
+}
+
+.assist-state-card.muted {
+  background: color-mix(in srgb, var(--canvas) 72%, transparent);
+}
+
+.assist-state-card.error {
+  border-color: color-mix(in srgb, #c94d4d 28%, var(--line));
+  background: color-mix(in srgb, #c94d4d 7%, var(--surface-strong));
+}
+
+.assist-state-card.error strong { color: #a03d3d; }
+
+.assist-state-card.success {
+  border-color: color-mix(in srgb, var(--accent) 26%, var(--line));
+  background: color-mix(in srgb, var(--accent-wash) 58%, var(--surface-strong));
+}
+
+.assist-results-label {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 7px;
+  color: var(--muted);
+  font: 7px var(--mono);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.assist-results-label strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-soft);
+  font: 7px var(--mono);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.assist-spinner {
+  width: 10px;
+  height: 10px;
+  display: inline-block;
+  flex: 0 0 auto;
+  margin-right: 5px;
+  border: 1.5px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  vertical-align: -1px;
+  animation: assist-spin .7s linear infinite;
+}
+
+@keyframes assist-spin {
+  to { transform: rotate(360deg); }
+}
+
+.assist-integrity-note {
+  margin: 10px 0 0;
+  padding-top: 9px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font: 7px/1.5 var(--mono);
+}
+
+/* Consensus inside Research Assist */
+.consensus-citation-panel.embedded {
+  gap: 0;
+}
+
+.consensus-citation-search {
+  gap: 7px;
+}
+
+.consensus-citation-search label { display: block; }
+
+.consensus-citation-search textarea {
+  min-height: 82px;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.consensus-citation-search textarea:disabled {
+  opacity: .58;
+  cursor: not-allowed;
+}
+
+.consensus-search-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.consensus-search-actions > span {
+  color: var(--muted);
+  font: 7px var(--mono);
+}
+
+.consensus-search-actions > button {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 11px;
+  border: 1px solid var(--accent);
+  border-radius: 7px;
+  color: white;
+  background: var(--accent-deep);
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.consensus-search-actions > button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+.assist-result-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 11px;
+}
+
+.assist-result-skeleton > div {
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-strong);
+}
+
+.assist-result-skeleton .title {
+  width: 68%;
+  height: 11px;
+}
+
+.assist-result-skeleton .line {
+  width: 92%;
+  height: 8px;
+  margin-top: 8px;
+}
+
+.assist-result-skeleton .line.short { width: 57%; }
+
+.consensus-citation-results {
+  max-height: 620px;
+  gap: 8px;
+  margin-top: 11px;
+  padding-right: 3px;
+  overscroll-behavior: contain;
+}
+
+.consensus-citation-result {
+  padding: 11px;
+  border-radius: 9px;
+  transition:
+    border-color var(--motion-base) var(--ease-soft),
+    box-shadow var(--motion-base) var(--ease-soft);
+}
+
+.consensus-citation-result:hover {
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--line));
+}
+
+.consensus-result-topline {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+
+.consensus-result-topline > span {
+  color: var(--muted);
+  font: 7px var(--mono);
+}
+
+.consensus-citation-result > a {
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.consensus-citation-result > small {
+  margin-top: 5px;
+  font-size: 8px;
+}
+
+.consensus-citation-meta {
+  justify-content: flex-end;
+  margin-top: 0;
+}
+
+.consensus-citation-meta span {
+  padding: 3px 5px;
+  font-size: 6px;
+}
+
+.consensus-result-details {
+  margin-top: 9px;
+  border-top: 1px solid var(--line);
+}
+
+.consensus-result-details summary {
+  padding: 8px 0 3px;
+  cursor: pointer;
+  color: var(--accent-deep);
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.consensus-result-details p {
+  margin: 5px 0 0;
+  color: var(--ink-soft);
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+.consensus-citation-actions {
+  display: grid;
+  grid-template-columns: auto repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.consensus-citation-actions a,
+.consensus-citation-actions button {
+  min-height: 31px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 7px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink-soft);
+  background: var(--surface);
+  text-decoration: none;
+  font-size: 7px;
+}
+
+.consensus-citation-actions a:hover,
+.consensus-citation-actions button:hover {
+  color: var(--accent-deep);
+  border-color: var(--accent);
+  background: var(--accent-wash);
+}
+
+/* Codex inside Research Assist */
+.codex-panel.embedded { padding: 0; }
+
+.research-assist-card .codex-mode-tabs {
+  margin-top: 0;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 9px;
+}
+
+.research-assist-card .codex-mode-tabs button {
+  min-width: 0;
+  min-height: 46px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 5px 6px;
+}
+
+.research-assist-card .codex-mode-tabs button strong {
+  color: inherit;
+  font-size: 8px;
+}
+
+.research-assist-card .codex-mode-tabs button small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 6px;
+}
+
+.research-assist-card .codex-mode-tabs button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.research-assist-card .codex-context {
+  margin-top: 10px;
+  padding: 9px;
+  border-radius: 8px;
+  background: color-mix(in srgb, #8066d8 5%, var(--canvas));
+}
+
+.research-assist-card .codex-context-label {
+  margin-bottom: 5px;
+}
+
+.research-assist-card .codex-chip {
+  border: 1px solid color-mix(in srgb, #8066d8 14%, var(--line));
+  background: color-mix(in srgb, #8066d8 7%, var(--surface-strong));
+}
+
+.research-assist-card .codex-mode-note {
+  margin-top: 10px;
+  padding: 9px 10px;
+  border: 1px solid color-mix(in srgb, #8066d8 18%, var(--line));
+  border-left-width: 2px;
+  border-radius: 7px;
+}
+
+.research-assist-card .codex-mode-note strong {
+  display: block;
+  color: #6348ba;
+  font-size: 8px;
+}
+
+.research-assist-card .codex-mode-note p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+.codex-quick-actions {
+  margin-top: 10px;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.codex-quick-actions > button {
+  width: 100%;
+  min-height: 31px;
+  border-radius: 7px;
+  text-align: left;
+  line-height: 1.35;
+}
+
+.codex-quick-actions > button:hover:not(:disabled) {
+  color: #6348ba;
+  border-color: color-mix(in srgb, #8066d8 40%, var(--line));
+  background: color-mix(in srgb, #8066d8 8%, var(--surface-strong));
+}
+
+.research-assist-card .codex-prompt {
+  margin-top: 9px;
+}
+
+.research-assist-card .codex-prompt textarea {
+  min-height: 104px;
+  border-radius: 8px;
+  font-size: 9px;
+}
+
+.research-assist-card .codex-actions {
+  margin-top: 7px;
+}
+
+.research-assist-card .codex-actions button {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.research-assist-card .codex-answer {
+  margin-top: 12px;
+  padding: 11px;
+  border: 1px solid color-mix(in srgb, #8066d8 16%, var(--line));
+  border-radius: 8px;
+  background: color-mix(in srgb, #8066d8 5%, var(--surface-strong));
+}
+
+.research-assist-card .codex-answer p {
+  margin-top: 6px;
+  font-size: 9px;
+  line-height: 1.6;
+}
+
+.research-assist-card .codex-proposal {
+  margin-top: 12px;
+  padding: 11px;
+  border: 1px solid color-mix(in srgb, #8066d8 18%, var(--line));
+  border-radius: 9px;
+  background: var(--surface-strong);
+}
+
+.codex-proposal-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.codex-dismiss,
+.research-assist-card .codex-apply {
+  min-height: 31px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 8px;
+  font-weight: 750;
+}
+
+.codex-dismiss {
+  border: 1px solid var(--line);
+  color: var(--muted);
+  background: var(--surface);
+}
+
+.codex-dismiss:hover:not(:disabled) {
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
+
+.research-assist-card .codex-diff-details,
+.research-assist-card .codex-doctor {
+  border-radius: 8px;
+}
+
+.research-assist-card .codex-diff-details summary,
+.research-assist-card .codex-doctor summary {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+}
+
+.right-rail > .research-assist-card {
+  min-width: 0;
+}
+
+@media (min-width: 761px) and (max-width: 1180px) {
+  .right-rail > .research-assist-card {
+    grid-column: 1 / -1;
+  }
+
+  .research-assist-panel {
+    padding: 16px 18px 18px;
+  }
+
+  .research-assist-header {
+    padding-inline: 18px;
+  }
+
+  .research-assist-tabs {
+    margin-inline: 14px;
+  }
+
+  .consensus-citation-results {
+    max-height: 760px;
+  }
+}
+
+@container (max-width: 360px) {
+  .research-assist-header {
+    padding: 15px 14px 11px;
+  }
+
+  .research-assist-header p {
+    font-size: 8px;
+  }
+
+  .research-assist-tabs {
+    margin-inline: 10px;
+  }
+
+  .research-assist-tabs > button {
+    grid-template-columns: 24px minmax(0, 1fr);
+    min-height: 52px;
+    gap: 6px;
+    padding-inline: 7px;
+  }
+
+  .research-assist-service-mark {
+    width: 24px;
+    height: 24px;
+  }
+
+  .research-assist-service-copy small {
+    display: none;
+  }
+
+  .research-assist-state {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .research-assist-boundary {
+    margin-inline: 12px;
+  }
+
+  .research-assist-panel {
+    padding: 12px;
+  }
+
+  .assist-section-heading strong {
+    font-size: 14px;
+  }
+
+  .consensus-citation-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .consensus-citation-actions a {
+    grid-column: 1 / -1;
+  }
+
+  .research-assist-card .codex-mode-tabs button small {
+    display: none;
+  }
+
+  .codex-proposal-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .codex-proposal-actions {
+    width: 100%;
+  }
+
+  .codex-proposal-actions > button {
+    flex: 1;
+  }
+}
+
+@media (pointer: coarse) {
+  .research-assist-tabs > button,
+  .assist-quick-actions > button,
+  .consensus-search-actions > button,
+  .consensus-citation-actions a,
+  .consensus-citation-actions button,
+  .research-assist-card .codex-mode-tabs button,
+  .research-assist-card .codex-actions button,
+  .codex-dismiss,
+  .research-assist-card .codex-apply,
+  .assist-state-card > button {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assist-spinner { animation: none !important; }
+}

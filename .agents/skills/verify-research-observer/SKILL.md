@@ -567,3 +567,67 @@ When supported, test with a coarse-pointer/touch emulation and rotate portrait â
 - persisted rail/focus state remains valid across reload/orientation changes.
 
 If the browser environment cannot emulate exact tablet widths or touch input, report the tablet verification as PARTIAL and list which viewport/touch cases were source-verified only.
+
+
+## Research Assist (Consensus + Codex) UX verification
+
+When changes touch the note-side Consensus/Codex experience, verify the unified **Research Assist** surface on a real note.
+
+### Shell and service tabs
+
+- A single Research Assist panel replaces separate Consensus and Codex cards.
+- The header clearly explains the distinction between external literature discovery and local reasoning.
+- Consensus and Codex are exposed as keyboard/touch-accessible tabs with `role="tab"`, `aria-selected`, and matching tab panels.
+- Both service availability states are visible on the tabs.
+- Switching tabs does not lose in-progress state inside the other service.
+- The last selected service is restored on reload when localStorage is available; storage denial must not break the panel.
+- At tablet widths where the context rail has two columns, Research Assist spans both columns.
+- At narrow desktop/right-rail widths the component remains readable without horizontal page overflow.
+
+### Consensus interaction
+
+Before pressing Search:
+
+- opening a note must issue only the lightweight status GET and no literature-search POST,
+- the default query should be derived from the current note,
+- Support / Challenge / Reviews helpers change the query but do not automatically send it.
+
+Search behavior:
+
+- Cmd/Ctrl+Enter and **Search literature** both submit,
+- a visible loading skeleton appears while searching,
+- returned result count and searched query are shown,
+- no-result response renders a useful empty state,
+- provider/network failure renders an inline error state with Retry,
+- a second request cannot race/overwrite a newer request,
+- returned papers show provenance metadata without treating citation counts/ranking as proof,
+- relevance/takeaway text is collapsed behind an inspectable disclosure,
+- **Open source**, **Copy reference**, and **Copy Markdown** all work,
+- clipboard failure becomes a visible error instead of an unhandled rejection,
+- search results never create notes/relationships or edit Markdown automatically.
+
+### Codex interaction
+
+- Ask / Draft / Act each explain their intent in the mode control.
+- Ask and Draft visibly state read-only behavior.
+- Act visibly states review is required and explains the isolated-worktree flow.
+- prompt starters fill the prompt but never submit automatically,
+- Cmd/Ctrl+Enter and the primary action both submit,
+- working state is visible,
+- API errors become inline retryable states,
+- successful Ask/Draft response is readable without overflowing the rail,
+- Act proposal displays validation state, touched files, diff, doctor output, Apply, and Dismiss,
+- while an Act proposal exists, switching away or entering another prompt is blocked so the reviewed proposal cannot be accidentally lost,
+- Dismiss explicitly clears the proposal and re-enables mode switching,
+- Apply remains disabled unless the existing valid/allowed/reviewable safety checks pass,
+- the redesign must not alter same-origin, read-only, worktree, patch-hash, doctor, or Apply security boundaries.
+
+### Touch / accessibility
+
+- on coarse pointers, service tabs, quick actions, primary actions, copy/source controls, Codex mode controls, Retry/Dismiss/Apply are approximately 44 px high,
+- focus-visible state is present for buttons/links/textareas,
+- tab panels use `hidden` so inactive content is not keyboard-focusable,
+- loading and success/error updates use appropriate live regions where present,
+- reduced-motion mode disables the Research Assist spinner animation.
+
+Report any visual improvement as PASS only after the interaction and safety behavior above also pass.

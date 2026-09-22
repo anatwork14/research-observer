@@ -5,8 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { ResearchNav } from "@/components/ResearchNav";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
-import { CodexPanel } from "@/components/CodexPanel";
-import { ConsensusCitationPanel } from "@/components/ConsensusCitationPanel";
+import { ResearchAssistPanel } from "@/components/ResearchAssistPanel";
 import { getProgressEntries, getProgressEntry } from "@/lib/progress";
 
 export async function generateStaticParams() {
@@ -184,13 +183,10 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
             </div>
           </section>
 
-          <section className="side-card panel consensus-side-card">
-            <ConsensusCitationPanel defaultQuery={[entry.title, entry.summary].filter(Boolean).join(". ")} />
-          </section>
-
-          <section className="side-card panel codex-side-card">
-            <CodexPanel context={{ note: { slug: entry.slug, title: entry.title, filename: entry.filename } }} />
-          </section>
+          <ResearchAssistPanel
+            defaultConsensusQuery={[entry.title, entry.summary].filter(Boolean).join(". ")}
+            codexContext={{ note: { slug: entry.slug, title: entry.title, filename: entry.filename } }}
+          />
 
           <section className="side-card panel syntax-card">
             <span className="kicker">Media support</span>

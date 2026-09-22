@@ -38,13 +38,54 @@ type Proposal = {
   binary?: boolean;
 };
 
-const modeLabels: Record<Mode, string> = {
-  ask: "Ask",
-  draft: "Draft",
-  act: "Act",
+const modeMeta: Record<Mode, { label: string; description: string; action: string; placeholder: string }> = {
+  ask: {
+    label: "Ask",
+    description: "Reason over research",
+    action: "Ask Codex",
+    placeholder: "Ask how this evidence relates to the research…",
+  },
+  draft: {
+    label: "Draft",
+    description: "Write without editing",
+    action: "Create draft",
+    placeholder: "Draft a research note, synthesis, or evidence update…",
+  },
+  act: {
+    label: "Act",
+    description: "Prepare reviewed changes",
+    action: "Prepare changes",
+    placeholder: "Describe the research-file change to prepare…",
+  },
 };
 
-export function CodexPanel({ context }: { context: CodexResearchContext }) {
+const quickPrompts: Record<Mode, string[]> = {
+  ask: [
+    "What is the strongest unresolved question here?",
+    "What evidence contradicts or weakens this note?",
+    "What should I investigate next?",
+  ],
+  draft: [
+    "Draft a concise synthesis from the current evidence.",
+    "Draft the next-steps section without inventing results.",
+    "Draft a research gap statement with explicit uncertainty.",
+  ],
+  act: [
+    "Prepare a small update to this research note based on the current evidence.",
+    "Prepare a new follow-up question note linked to this research.",
+    "Prepare a clarification of limitations without changing factual claims.",
+  ],
+};
+
+export function CodexPanel({
+  context,
+  embedded = false,
+  onStatusChange,
+}: {
+  context: CodexResearchContext;
+  embedded?: boolean;
+  onStatusChange?: (status: Status) => void;
+}) {
   const router = useRouter();
   const [status, setStatus] = useState<Status | null>(null);
   const [mode, setMode] = useState<Mode>("ask");
@@ -60,14 +101,20 @@ export function CodexPanel({ context }: { context: CodexResearchContext }) {
     const controller = new AbortController();
     fetch("/api/codex/ask", { signal: controller.signal, cache: "no-store" })
       .then((response) => response.json())
-      .then((payload) => setStatus({ enabled: Boolean(payload.enabled), reason: payload.reason }))
+      .then((payload) => {
+        const next = { enabled: Boolean(payload.enabled), reason: payload.reason };
+        setStatus(next);
+        onStatusChange?.(next);
+      })
       .catch((requestError) => {
         if ((requestError as Error).name !== "AbortError") {
-          setStatus({ enabled: false, reason: "Codex status is unavailable." });
+          const next = { enabled: false, reason: "Codex status is unavailable." };
+          setStatus(next);
+          onStatusChange?.(next);
         }
       });
     return () => controller.abort();
-  }, []);
+  }, [onStatusChange]);
 
   const chips = useMemo(() => {
     const values: string[] = [];
@@ -77,6 +124,15 @@ export function CodexPanel({ context }: { context: CodexResearchContext }) {
     else if (context.pageText) values.push("Current page text");
     return values;
   }, [context]);
+
+  function selectMode(next: Mode) {
+    if (next === mode || running || applying) return;
+    if (proposal) return;
+    setMode(next);
+    setError("");
+    setAnswer("");
+    setAppliedMessage("");
+  }
 
   async function run() {
     const instruction = prompt.trim();
@@ -144,26 +200,30 @@ export function CodexPanel({ context }: { context: CodexResearchContext }) {
     }
   }
 
-  const actionLabel = mode === "act" ? "Prepare changes" : mode === "draft" ? "Draft" : "Ask";
-  const placeholder =
-    mode === "act"
-      ? "Describe the research-file change to prepare…"
-      : mode === "draft"
-        ? "Draft a research note, synthesis, or evidence update…"
-        : "Ask how this evidence relates to the research…";
-
   return (
-    <section className="codex-panel" aria-label="Codex research assistant">
-      <div className="codex-heading">
-        <div>
-          <span className="codex-mark" aria-hidden="true">✦</span>
+    <section className={`codex-panel ${embedded ? "embedded" : ""}`} aria-label="Codex research assistant">
+      {!embedded && (
+        <div className="codex-heading">
           <div>
-            <strong>Codex</strong>
-            <small>{mode === "act" ? "Act · isolated worktree" : `${modeLabels[mode]} · read-only`}</small>
+            <span className="codex-mark" aria-hidden="true">✦</span>
+            <div>
+              <strong>Codex</strong>
+              <small>{mode === "act" ? "Act · isolated worktree" : `${modeMeta[mode].label} · read-only`}</small>
+            </div>
           </div>
+          <span className={`codex-status ${status?.enabled ? "ready" : ""}`}>
+            {status === null ? "checking" : status.enabled ? "ready" : "offline"}
+          </span>
         </div>
-        <span className={`codex-status ${status?.enabled ? "ready" : ""}`}>
-          {status === null ? "checking" : status.enabled ? "ready" : "offline"}
+      )}
+
+      <div className="assist-section-heading">
+        <div>
+          <span className="kicker">Local reasoning</span>
+          <strong>{modeMeta[mode].description}</strong>
+        </div>
+        <span className={`assist-mode-safety ${mode === "act" ? "review" : "readonly"}`}>
+          {mode === "act" ? "review required" : "read-only"}
         </span>
       </div>
 
@@ -172,23 +232,20 @@ export function CodexPanel({ context }: { context: CodexResearchContext }) {
           <button
             key={item}
             className={mode === item ? "active" : ""}
-            onClick={() => {
-              setMode(item);
-              setError("");
-              setAnswer("");
-              setProposal(null);
-              setAppliedMessage("");
-            }}
+            onClick={() => selectMode(item)}
             aria-selected={mode === item}
             role="tab"
+            disabled={running || applying || Boolean(proposal && mode !== item)}
+            title={proposal && mode !== item ? "Review or dismiss the current proposal before switching modes." : modeMeta[item].description}
           >
-            {modeLabels[item]}
+            <strong>{modeMeta[item].label}</strong>
+            <small>{modeMeta[item].description}</small>
           </button>
         ))}
       </div>
 
       <div className="codex-context" aria-label="Codex context">
-        <span className="codex-context-label">Context</span>
+        <span className="codex-context-label">Using</span>
         <div>
           {chips.map((chip) => <span key={chip} className="codex-chip">{chip}</span>)}
           {!chips.length && <span className="codex-chip muted">Workspace</span>}
@@ -196,23 +253,40 @@ export function CodexPanel({ context }: { context: CodexResearchContext }) {
       </div>
 
       {status && !status.enabled && (
-        <p className="codex-unavailable">{status.reason || "Codex is unavailable in this environment."}</p>
+        <div className="assist-state-card muted">
+          <strong>Codex is unavailable</strong>
+          <p>{status.reason || "Codex is unavailable in this environment."}</p>
+        </div>
       )}
 
       {mode === "act" && (
-        <p className="codex-mode-note">
-          Act never edits the live tree first. It requires committed/stashed <code>progress/**</code> changes so the detached worktree matches your evidence, then you review the diff before Apply.
-        </p>
+        <div className="codex-mode-note">
+          <strong>Safe Act flow</strong>
+          <p>Codex edits an isolated worktree first. You review the diff and validation output before Apply can touch live research.</p>
+        </div>
       )}
+
+      <div className="assist-quick-actions codex-quick-actions" aria-label="Codex prompt starters">
+        {quickPrompts[mode].map((item) => (
+          <button
+            key={item}
+            type="button"
+            onClick={() => setPrompt(item)}
+            disabled={!status?.enabled || running || applying || Boolean(proposal)}
+          >
+            {item}
+          </button>
+        ))}
+      </div>
 
       <label className="codex-prompt">
         <span className="sr-only">Codex instruction</span>
         <textarea
           value={prompt}
           onChange={(event) => setPrompt(event.target.value)}
-          placeholder={placeholder}
+          placeholder={modeMeta[mode].placeholder}
           rows={4}
-          disabled={!status?.enabled || running || applying}
+          disabled={!status?.enabled || running || applying || Boolean(proposal)}
           onKeyDown={(event) => {
             if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
               event.preventDefault();
@@ -224,17 +298,32 @@ export function CodexPanel({ context }: { context: CodexResearchContext }) {
 
       <div className="codex-actions">
         <span>⌘/Ctrl + Enter</span>
-        <button onClick={() => void run()} disabled={!status?.enabled || running || applying || !prompt.trim()}>
-          {running ? "Working…" : actionLabel}
+        <button onClick={() => void run()} disabled={!status?.enabled || running || applying || Boolean(proposal) || !prompt.trim()}>
+          {running ? <><span className="assist-spinner" aria-hidden="true" />Working…</> : modeMeta[mode].action}
         </button>
       </div>
 
-      {error && <p className="codex-error">{error}</p>}
-      {appliedMessage && <p className="codex-success">{appliedMessage}</p>}
+      {error && (
+        <div className="assist-state-card error" role="alert">
+          <strong>Codex needs attention</strong>
+          <p>{error}</p>
+          {status?.enabled && prompt.trim() && !proposal && <button type="button" onClick={() => void run()}>Retry</button>}
+        </div>
+      )}
+
+      {appliedMessage && (
+        <div className="assist-state-card success" aria-live="polite">
+          <strong>Research updated</strong>
+          <p>{appliedMessage}</p>
+        </div>
+      )}
 
       {answer && (
         <div className="codex-answer" aria-live="polite">
-          <span className="kicker">{mode === "act" ? "Agent summary" : "Codex response"}</span>
+          <div className="assist-results-label">
+            <span>{mode === "act" ? "Agent summary" : "Codex response"}</span>
+            <strong>{modeMeta[mode].label}</strong>
+          </div>
           <p>{answer}</p>
         </div>
       )}
@@ -248,13 +337,26 @@ export function CodexPanel({ context }: { context: CodexResearchContext }) {
               </span>
               <strong>{proposal.files.length} file{proposal.files.length === 1 ? "" : "s"}</strong>
             </div>
-            <button
-              className="codex-apply"
-              onClick={() => void applyProposal()}
-              disabled={!proposal.valid || !proposal.allowed || !proposal.reviewable || applying}
-            >
-              {applying ? "Applying…" : "Apply"}
-            </button>
+            <div className="codex-proposal-actions">
+              <button
+                type="button"
+                className="codex-dismiss"
+                onClick={() => {
+                  setProposal(null);
+                  setAnswer("");
+                }}
+                disabled={applying}
+              >
+                Dismiss
+              </button>
+              <button
+                className="codex-apply"
+                onClick={() => void applyProposal()}
+                disabled={!proposal.valid || !proposal.allowed || !proposal.reviewable || applying}
+              >
+                {applying ? "Applying…" : "Apply"}
+              </button>
+            </div>
           </div>
 
           <div className="codex-files">
@@ -272,12 +374,16 @@ export function CodexPanel({ context }: { context: CodexResearchContext }) {
           </details>
 
           {!proposal.reviewable && (
-            <p className="codex-unavailable">
-              Apply is disabled because this proposal cannot be fully reviewed in the UI{proposal.binary ? " (binary patch)" : " (diff too large)"}.
-            </p>
+            <div className="assist-state-card muted">
+              <strong>Apply disabled</strong>
+              <p>This proposal cannot be fully reviewed in the UI{proposal.binary ? " because it contains a binary patch." : " because the diff is too large."}</p>
+            </div>
           )}
           {proposal.reviewable && !proposal.valid && (
-            <p className="codex-unavailable">Apply is disabled because the proposed worktree did not pass the local research doctor or path policy.</p>
+            <div className="assist-state-card error">
+              <strong>Apply disabled</strong>
+              <p>The proposed worktree did not pass the research doctor or path policy.</p>
+            </div>
           )}
         </section>
       )}
