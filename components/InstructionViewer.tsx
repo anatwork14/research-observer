@@ -16,9 +16,9 @@ export function InstructionViewer({ sources }: { sources: InstructionSource[] })
 
   const combined = useMemo(() => {
     const preface = [
-      "# Research Observer — LLM authoring instruction pack",
+      "# Observaire — LLM authoring instruction pack",
       "",
-      "Use the following repository instructions when generating or editing Research Observer Markdown.",
+      "Use the following repository instructions when generating or editing Observaire Markdown.",
       "Treat them as authoritative. Do not invent facts, citations, measurements, relationships, source metadata, or target files.",
       "",
     ].join("\n");
