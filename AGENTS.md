@@ -70,6 +70,22 @@ aliases:
 - `date`: ISO date only: `YYYY-MM-DD`. Omit it if unknown.
 - `tags`: YAML list of short lowercase labels.
 - `aliases`: optional old IDs/slugs that should continue resolving after a rename.
+- `pdf`: optional local PDF companion path relative to the note, normally `papers/paper-name.pdf`.
+- `authors`: optional YAML list of verified author names for a literature note.
+- `year`: optional four-digit publication year.
+- `doi`: optional verified DOI. Never infer or fabricate one.
+
+For a literature note with a local paper, prefer:
+
+```yaml
+type: literature
+pdf: papers/smith-2026.pdf
+authors:
+  - Jane Smith
+  - Wei Chen
+year: 2026
+doi: 10.xxxx/verified-doi
+```
 
 Do not add arbitrary frontmatter keys unless the repository rules are intentionally being extended.
 
