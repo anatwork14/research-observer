@@ -124,7 +124,7 @@ When linking to a section:
 See [failure analysis](05_evaluation.md#failure-analysis).
 ```
 
-Never create a link to a note that does not exist unless the text clearly marks it as a planned future note. The local doctor treats unresolved internal links as errors.
+Never create a Markdown link to a note that does not exist. The local doctor treats unresolved internal links as errors. If future work is only planned, mention the planned note as plain text or inline code until the target file exists.
 
 ## Figures and research media
 

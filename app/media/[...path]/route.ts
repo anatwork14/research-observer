@@ -140,8 +140,11 @@ async function respond(request: Request, context: { params: Promise<{ path: stri
     "Last-Modified": lastModified,
     "X-Content-Type-Options": "nosniff",
     "Cross-Origin-Resource-Policy": "same-origin",
-    "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:",
   };
+
+  if (resolved.contentType === "image/svg+xml") {
+    headers["Content-Security-Policy"] = "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:";
+  }
 
   if (partial) {
     headers["Content-Range"] = "bytes " + range.start + "-" + range.end + "/" + size;
