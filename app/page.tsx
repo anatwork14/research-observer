@@ -35,11 +35,11 @@ export default async function Home() {
               evidence, decisions, and integrity signals already present in the workspace.
             </p>
           </div>
-          <div className="dashboard-health" aria-label="Workspace health">
+          <Link href="/health" className="dashboard-health" aria-label="Open workspace health">
             <span className={stats.errors ? "health-dot error" : "health-dot"} />
             <strong>{stats.errors ? `${stats.errors} integrity errors` : "Workspace integrity clear"}</strong>
-            <small>{stats.warnings} warnings · {stats.links} research links</small>
-          </div>
+            <small>{stats.warnings} warnings · {stats.relationships} typed relations</small>
+          </Link>
         </section>
 
         <section className="metric-grid" aria-label="Research summary">

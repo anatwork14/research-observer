@@ -7,7 +7,7 @@ const PdfReaderInner = dynamic(() => import("@/components/PdfReaderInner"), {
   loading: () => <div className="pdf-loading panel">Loading PDF workspace…</div>,
 });
 
-export type PdfRelatedNote = { slug: string; order: number; title: string; type?: string };
+export type PdfRelatedNote = { slug: string; order: number; title: string; type?: string; sourcePage?: number };
 
 export function PdfReader(props: {
   src: string;
@@ -15,6 +15,8 @@ export function PdfReader(props: {
   title: string;
   initialPage: number;
   relatedNotes: PdfRelatedNote[];
+  relationshipTypes: string[];
+  relationshipTargets: Array<{ slug: string; title: string; type?: string }>;
 }) {
   return <PdfReaderInner {...props} />;
 }

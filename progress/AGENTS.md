@@ -44,6 +44,21 @@ Rules:
 - A durable evidence excerpt should identify the source PDF and page.
 - Prefer Research Observer deep links such as `/papers/...?...page=12` only in generated UI/context. In source Markdown, keep local relative PDF paths portable.
 
+## Evidence objects and typed relationships
+
+When a PDF passage becomes durable research evidence, prefer a dedicated ordered Markdown note with `type: evidence`. Record the local PDF path and page under `source`. Put the exact excerpt in a Markdown blockquote and keep interpretation outside the quote.
+
+Use `relationships` when the research meaning is stronger than an ordinary hyperlink. Supported relationship types are configured in `research-observer.config.json`. Common meanings:
+
+- `answers`: result/evidence answers a question.
+- `investigates`: experiment investigates a question.
+- `produces`: experiment produces a result.
+- `supports` / `contradicts`: evidence bears on another research object.
+- `based_on`: a decision is grounded in evidence/results.
+- `builds_on`, `derived_from`, `uses`, `reproduces`, `supersedes`: research lineage.
+
+Relationship targets must already exist. Never create a relationship to a planned/nonexistent object.
+
 ## Linking
 
 - Link research notes by relative Markdown filename.

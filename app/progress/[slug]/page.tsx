@@ -60,6 +60,12 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
   const next = index < entries.length - 1 ? entries[index + 1] : null;
   const references = entries.filter((item) => entry.linkedSlugs.includes(item.slug));
   const backlinks = entries.filter((item) => entry.backlinks.includes(item.slug));
+  const outgoingTyped = entry.relationships
+    .map((relation) => ({ relation, target: entries.find((item) => item.slug === relation.target) }))
+    .filter((item) => item.target);
+  const incomingTyped = entry.incomingRelationships
+    .map((relation) => ({ relation, source: entries.find((item) => item.slug === relation.source) }))
+    .filter((item) => item.source);
   const neighbors = [previous, next].filter(Boolean);
   const linkMap = Object.fromEntries(
     entries.flatMap((item) => [
@@ -115,7 +121,7 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
           </footer>
         </section>
 
-        <aside className="right-rail">
+        <aside className="right-rail" id="research-context-sidebar">
           <section className="side-card panel">
             <span className="kicker">On this page</span>
             <nav className="outline-list">
@@ -126,6 +132,28 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
           <section className="side-card panel">
             <span className="kicker">Connections</span>
             <h3>Research relationships</h3>
+
+            <div className="connection-group typed-connections">
+              <span className="connection-group-title">→ Typed relationships</span>
+              <div className="typed-relationship-list">
+                {outgoingTyped.length ? outgoingTyped.map(({ relation, target }) => target && (
+                  <Link key={`${relation.type}-${target.slug}`} href={`/progress/${target.slug}`}>
+                    <em>{relation.type}</em><span>{target.title}</span>
+                  </Link>
+                )) : <span className="connection-empty">No typed outgoing relationships.</span>}
+              </div>
+            </div>
+
+            <div className="connection-group typed-connections">
+              <span className="connection-group-title">← Incoming typed</span>
+              <div className="typed-relationship-list">
+                {incomingTyped.length ? incomingTyped.map(({ relation, source }) => source && (
+                  <Link key={`${relation.type}-${source.slug}`} href={`/progress/${source.slug}`}>
+                    <em>{relation.type}</em><span>{source.title}</span>
+                  </Link>
+                )) : <span className="connection-empty">No typed incoming relationships.</span>}
+              </div>
+            </div>
 
             <div className="connection-group">
               <span className="connection-group-title">← Referenced by</span>

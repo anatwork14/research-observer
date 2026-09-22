@@ -39,8 +39,9 @@ export default async function PaperPage({
 
   const relatedNotes = workspace.entries
     .filter((entry) => entry.assets.includes(asset.path))
-    .map(({ slug, order, title, type }) => ({ slug, order, title, type }));
+    .map(({ slug, order, title, type, source }) => ({ slug, order, title, type, sourcePage: source?.pdf === asset.path ? source.page : undefined }));
   const navEntries = workspace.entries.map(({ slug, order, title, status }) => ({ slug, order, title, status }));
+  const relationshipTargets = workspace.entries.map(({ slug, title, type }) => ({ slug, title, type }));
   const initialPage = Math.max(1, Number.parseInt(query.page ?? "1", 10) || 1);
 
   return (
@@ -52,6 +53,8 @@ export default async function PaperPage({
         title={displayTitle(asset.path)}
         initialPage={initialPage}
         relatedNotes={relatedNotes}
+        relationshipTypes={workspace.config.allowedRelationshipTypes}
+        relationshipTargets={relationshipTargets}
       />
     </div>
   );

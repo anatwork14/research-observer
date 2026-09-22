@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import type { PdfRelatedNote } from "@/components/PdfReader";
 import { CodexPanel } from "@/components/CodexPanel";
+import { EvidenceCaptureDialog } from "@/components/EvidenceCaptureDialog";
 
 pdfjs.GlobalWorkerOptions.workerSrc = "/_research/pdfjs/pdf.worker.min.mjs";
 
@@ -87,12 +88,16 @@ export default function PdfReaderInner({
   title,
   initialPage,
   relatedNotes,
+  relationshipTypes,
+  relationshipTargets,
 }: {
   src: string;
   path: string;
   title: string;
   initialPage: number;
   relatedNotes: PdfRelatedNote[];
+  relationshipTypes: string[];
+  relationshipTargets: Array<{ slug: string; title: string; type?: string }>;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -211,7 +216,14 @@ export default function PdfReaderInner({
           return next;
         });
       }}
-      loading={<div className="pdf-loading panel">Opening {title}…</div>}
+      loading={
+        <div className="pdf-loading panel pdf-document-loading" aria-busy="true">
+          <span className="skeleton-block pdf-loading-title" />
+          <span className="skeleton-block pdf-loading-line" />
+          <span className="skeleton-block pdf-loading-page" />
+          <small>Opening {title}…</small>
+        </div>
+      }
       error={<div className="pdf-loading panel error">This PDF failed to render. <a href={src}>Open original</a>.</div>}
     >
       <div className="pdf-workbench">
@@ -265,7 +277,15 @@ export default function PdfReaderInner({
                 rotate={rotation}
                 renderTextLayer
                 renderAnnotationLayer
-                loading={<div className="pdf-page-loading">Rendering page {pageNumber}…</div>}
+                loading={
+                  <div className="pdf-page-loading pdf-page-skeleton" aria-busy="true">
+                    <span className="skeleton-block wide" />
+                    <span className="skeleton-block" />
+                    <span className="skeleton-block short" />
+                    <span className="skeleton-block wide" />
+                    <small>Rendering page {pageNumber}…</small>
+                  </div>
+                }
               />
             </div>
             {selection && (
@@ -273,6 +293,14 @@ export default function PdfReaderInner({
                 <span>{selection.length > 90 ? selection.slice(0, 87) + "…" : selection}</span>
                 <button onClick={() => navigator.clipboard.writeText(selection)}>Copy</button>
                 <button onClick={() => navigator.clipboard.writeText(`> ${selection}\n\nSource: ${title}, p. ${pageNumber}`)}>Copy evidence</button>
+                <EvidenceCaptureDialog
+                  paperPath={path}
+                  paperTitle={title}
+                  page={pageNumber}
+                  quote={selection}
+                  relationshipTypes={relationshipTypes}
+                  targets={relationshipTargets}
+                />
                 <button onClick={() => openPanel("agent")}>Ask Codex</button>
               </div>
             )}
@@ -289,12 +317,21 @@ export default function PdfReaderInner({
             {panel === "notes" && (
               <div className="pdf-panel-body">
                 <span className="kicker">Related research</span>
-                <h3>Notes referencing this paper</h3>
+                <h3>Evidence excerpts</h3>
+                <div className="connection-list pdf-evidence-list">
+                  {relatedNotes.filter((note) => note.type === "evidence").map((note) => (
+                    <Link key={note.slug} href={`/progress/${note.slug}`}>
+                      <span>{note.sourcePage ? `p.${note.sourcePage}` : String(note.order).padStart(2, "0")}</span>{note.title}
+                    </Link>
+                  ))}
+                  {!relatedNotes.some((note) => note.type === "evidence") && <span className="connection-empty">Select PDF text and choose Add evidence to create the first excerpt.</span>}
+                </div>
+                <h3 className="pdf-related-heading">Related notes</h3>
                 <div className="connection-list">
-                  {relatedNotes.map((note) => (
+                  {relatedNotes.filter((note) => note.type !== "evidence").map((note) => (
                     <Link key={note.slug} href={`/progress/${note.slug}`}><span>{String(note.order).padStart(2, "0")}</span>{note.title}</Link>
                   ))}
-                  {!relatedNotes.length && <span className="connection-empty">No research note references this PDF yet.</span>}
+                  {!relatedNotes.some((note) => note.type !== "evidence") && <span className="connection-empty">No companion research notes yet.</span>}
                 </div>
                 <div className="pdf-source-card"><span>Source</span><code>{path}</code><small>Page {pageNumber} of {numPages || "—"}</small></div>
               </div>

@@ -236,3 +236,32 @@ See `docs/ARCHITECTURE.md` for invariants, trust boundaries, compiler flow, and 
 ## License
 
 MIT.
+
+
+## Typed research graph, evidence, collections, health, and instructions
+
+Research Observer now supports explicit typed relationships in note frontmatter:
+
+```yaml
+relationships:
+  - type: produces
+    target: retrieval-result
+  - type: supports
+    target: decision-use-reranker
+```
+
+The Graph view visualizes these relationships while preserving ordinary Markdown links as weaker `references` edges.
+
+PDF selections can be captured as durable `type: evidence` Markdown notes with source PDF/page provenance. Local development enables evidence writes by default; production remains read-only unless `RESEARCH_OBSERVER_WRITES=1` is explicitly configured.
+
+Collections provide deterministic saved views and an advanced query language such as:
+
+```text
+type:experiment status:validating
+type:evidence has:source relationship:contradicts
+tag:retrieval -status:archived
+```
+
+The Health view reports factual gaps such as unanswered questions, experiments without results, decisions without basis, incomplete literature metadata, evidence without source provenance, and missing stable IDs.
+
+The **Instruction** tab displays the repository's actual LLM authoring sources (`AGENTS.md`, `progress/AGENTS.md`, and the create-note skill) and provides a copyable combined prompt.
