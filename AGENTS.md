@@ -268,3 +268,26 @@ Run the [baseline experiment](02_baseline_experiment.md) and record both retriev
 ```
 
 If a requested note cannot comply with these rules because required facts or target files are unknown, omit uncertain metadata and explicitly mark unresolved facts instead of inventing them.
+
+
+## Verification delegation for coding agents
+
+When an agent has normal package-registry access, a local browser, or a deployment sandbox, it SHOULD help close verification gaps rather than merely report that another agent could do so.
+
+For full application verification, follow the repository skill:
+
+```text
+.agents/skills/verify-research-observer/SKILL.md
+```
+
+Key rules:
+
+- GitHub Actions are **not** part of the verification plan.
+- Verify the exact branch/commit requested; report the commit SHA before running tests.
+- Do not weaken TypeScript, ESLint, compiler diagnostics, security guards, or tests to obtain a passing result.
+- Do not replace pinned dependencies with older versions merely to make installation easier.
+- A failing check is evidence to diagnose and fix, not something to bypass.
+- Keep verification-generated state uncommitted unless the task explicitly requires a lockfile or a real source fix.
+- For Codex Act testing, never use valuable uncommitted research content as a disposable fixture.
+- Report exact commands, Node/npm versions, exit codes, relevant error output, routes tested, browser-console errors, and any files changed.
+- If verification discovers a source bug, fix it on the current feature branch, rerun the failed gate, and clearly distinguish the original failure from the post-fix result.
