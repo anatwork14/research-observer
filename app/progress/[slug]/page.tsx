@@ -20,8 +20,21 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return entry ? { title: `${entry.title} · Research Observer`, description: entry.summary } : {};
 }
 
-function stripLeadingTitle(content: string) {
-  return content.replace(/^\s*#\s+.+(?:\r?\n)+/, "");
+function normalizeHeading(value: string) {
+  return value
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/[*_`~]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLocaleLowerCase();
+}
+
+function stripLeadingTitle(content: string, title: string) {
+  const match = content.match(/^\s*#\s+(.+?)(?:\r?\n)+/);
+  if (!match) return content;
+  return normalizeHeading(match[1]) === normalizeHeading(title)
+    ? content.slice(match[0].length)
+    : content;
 }
 
 function extractHeadings(content: string) {
@@ -37,7 +50,8 @@ function extractHeadings(content: string) {
 
 export default async function ProgressPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const [entries, entry] = await Promise.all([getProgressEntries(), getProgressEntry(slug)]);
+  const entries = await getProgressEntries();
+  const entry = entries.find((item) => item.slug === slug || item.aliases.includes(slug)) ?? null;
   if (!entry) notFound();
   if (slug !== entry.slug) redirect(`/progress/${entry.slug}`);
 
@@ -54,7 +68,7 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
       ...item.aliases.map((alias) => [alias, item.slug]),
     ]),
   );
-  const bodyContent = stripLeadingTitle(entry.content);
+  const bodyContent = stripLeadingTitle(entry.content, entry.title);
   const headings = extractHeadings(bodyContent);
 
   return (
