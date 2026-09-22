@@ -59,3 +59,20 @@ test("Consensus query builder bounds result count and applies research filters",
   assert.equal(params.get("include_full_text_chunks"), "true");
   assert.deepEqual(params.getAll("study_types"), ["meta-analysis", "systematic review"]);
 });
+
+
+test("Consensus normalizer accepts nested data result shapes", () => {
+  const normalized = normalizeConsensusSearch({
+    data: {
+      results: [{
+        id: "nested-1",
+        title: "Nested result",
+        authors: ["Researcher"],
+        url: "https://consensus.app/papers/details/nested-1/",
+      }],
+    },
+  });
+
+  assert.equal(normalized.papers.length, 1);
+  assert.equal(normalized.papers[0].id, "nested-1");
+});

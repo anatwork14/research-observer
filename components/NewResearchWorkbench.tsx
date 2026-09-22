@@ -18,8 +18,19 @@ type Paper = {
   fullTextChunks: Array<{ text: string; section?: string }>;
 };
 
+type PlanSource = {
+  sourceId: string;
+  title: string;
+  authors: string[];
+  year?: number;
+  journal?: string;
+  doi?: string;
+  url: string;
+};
+
 type Plan = {
   overview?: string;
+  sources?: PlanSource[];
   researchGaps?: Array<{ title: string; rationale: string; sourceIds: string[] }>;
   hypotheses?: Array<{
     title: string;
@@ -156,12 +167,18 @@ export function NewResearchWorkbench() {
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "Codex research planning failed.");
-      setPlan(payload.plan ?? null);
+      setPlan(payload.plan ? { ...payload.plan, sources: Array.isArray(payload.sources) ? payload.sources : [] } : null);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Codex research planning failed.");
     } finally {
       setPlanning(false);
     }
+  }
+
+  function sourceTitles(sourceIds: string[] | undefined) {
+    if (!sourceIds?.length) return "No specific paper cited.";
+    const byId = new Map((plan?.sources ?? []).map((source) => [source.sourceId, source]));
+    return sourceIds.map((id) => byId.get(id)?.title ?? id).join("; ");
   }
 
   function togglePaper(paper: Paper) {
@@ -283,13 +300,13 @@ export function NewResearchWorkbench() {
             <section>
               <span className="kicker">Research gaps</span>
               {(plan.researchGaps ?? []).map((gap, index) => (
-                <article key={`${gap.title}-${index}`}><span>{String(index + 1).padStart(2, "0")}</span><div><h3>{gap.title}</h3><p>{gap.rationale}</p><small>Sources: {(gap.sourceIds ?? []).join(", ") || "none cited"}</small></div></article>
+                <article key={`${gap.title}-${index}`}><span>{String(index + 1).padStart(2, "0")}</span><div><h3>{gap.title}</h3><p>{gap.rationale}</p><small>Sources: {sourceTitles(gap.sourceIds)}</small></div></article>
               ))}
             </section>
             <section>
               <span className="kicker">Hypotheses</span>
               {(plan.hypotheses ?? []).map((hypothesis, index) => (
-                <article key={`${hypothesis.title}-${index}`}><span>H{index + 1}</span><div><h3>{hypothesis.title}</h3><p>{hypothesis.statement}</p><strong>Falsification</strong><small>{hypothesis.falsificationCriterion}</small></div></article>
+                <article key={`${hypothesis.title}-${index}`}><span>H{index + 1}</span><div><h3>{hypothesis.title}</h3><p>{hypothesis.statement}</p><strong>Falsification</strong><small>{hypothesis.falsificationCriterion}</small><strong>Literature basis</strong><small>{sourceTitles(hypothesis.sourceIds)}</small></div></article>
               ))}
             </section>
           </div>
@@ -309,6 +326,20 @@ export function NewResearchWorkbench() {
               </article>
             ))}
           </div>
+
+          {(plan.sources ?? []).length > 0 && (
+            <div className="research-plan-sources">
+              <span className="kicker">Selected literature trace</span>
+              <div>
+                {plan.sources?.map((source) => (
+                  <a key={source.sourceId} href={source.url} target="_blank" rel="noreferrer">
+                    <strong>{source.title}</strong>
+                    <small>{[source.authors?.[0], source.year, source.journal].filter(Boolean).join(" · ")}</small>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="research-plan-footer">
             <div><span className="kicker">Next actions</span><ol>{(plan.nextActions ?? []).map((action) => <li key={action}>{action}</li>)}</ol></div>

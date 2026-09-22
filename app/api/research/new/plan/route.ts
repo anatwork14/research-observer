@@ -55,13 +55,14 @@ function paperPacket(paper: Paper, index: number) {
         text: clean(chunk.text, 1800),
       })).filter((chunk) => chunk.text)
     : [];
+  const doi = clean(paper.doi, 300);
   return {
-    source_id: clean(paper.id, 160) || `source-${index + 1}`,
+    source_id: clean(paper.id, 160) || (doi ? `doi:${doi}` : `source-${index + 1}`),
     title: clean(paper.title, 500),
     authors: Array.isArray(paper.authors) ? paper.authors.filter((item): item is string => typeof item === "string").slice(0, 20) : [],
     year: Number.isFinite(Number(paper.year)) ? Math.trunc(Number(paper.year)) : undefined,
     journal: clean(paper.journal, 300),
-    doi: clean(paper.doi, 300),
+    doi,
     url: clean(paper.url, 1000),
     study_type: clean(paper.studyType, 160),
     citation_count: Number.isFinite(Number(paper.citationCount)) ? Math.max(0, Math.trunc(Number(paper.citationCount))) : undefined,
@@ -159,7 +160,16 @@ export async function POST(request: Request) {
     const raw = turn.finalResponse || "";
     try {
       const plan = parseJson(raw);
-      return NextResponse.json({ plan, readOnly: true }, { headers: { "Cache-Control": "no-store" } });
+      const sources = papers.map((paper) => ({
+        sourceId: paper.source_id,
+        title: paper.title,
+        authors: paper.authors,
+        year: paper.year,
+        journal: paper.journal,
+        doi: paper.doi || undefined,
+        url: paper.url,
+      }));
+      return NextResponse.json({ plan, sources, readOnly: true }, { headers: { "Cache-Control": "no-store" } });
     } catch {
       return NextResponse.json(
         { error: "Codex returned a research plan that was not valid JSON.", raw: raw.slice(0, 20000) },

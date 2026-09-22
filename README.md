@@ -265,3 +265,59 @@ tag:retrieval -status:archived
 The Health view reports factual gaps such as unanswered questions, experiments without results, decisions without basis, incomplete literature metadata, evidence without source provenance, and missing stable IDs.
 
 The **Instruction** tab displays the repository's actual LLM authoring sources (`AGENTS.md`, `progress/AGENTS.md`, and the create-note skill) and provides a copyable combined prompt.
+
+
+## New Research with Consensus
+
+Research Observer can use the Consensus API as an external peer-reviewed literature provider.
+
+Configure it **server-side only**:
+
+```bash
+cp .env.example .env.local
+# then set CONSENSUS_API_KEY in .env.local
+```
+
+Create/manage the key from the Consensus API & MCP dashboard. Never expose the key in browser code or commit it to the repository.
+
+### New Research
+
+Open **New Research** in the workspace navigation.
+
+The workflow is intentionally staged:
+
+1. Enter a topic/question and optional objective.
+2. Research Observer calls Consensus search and shows the returned papers, metadata, takeaways, and eligible full-text passages.
+3. You screen/select the papers.
+4. Only the selected literature packet is sent to local Codex.
+5. Codex runs read-only, without network/web access, and proposes:
+   - a literature synthesis,
+   - research gaps,
+   - falsifiable hypotheses,
+   - experiment designs,
+   - next actions and cautions.
+6. The proposal remains review-only. It does not create or edit research Markdown automatically.
+
+The public Consensus API currently exposes search, metadata, filters, relevance signals, and optional eligible full-text chunks. Research Observer therefore labels stage 2 a **Consensus-backed evidence overview** rather than pretending the public API exposes Consensus Deep/Research Agent prose synthesis. Codex performs the explicit synthesis/planning step from the selected packet.
+
+### Consensus citations in existing research
+
+Every research note includes a **Consensus** card in the right context rail.
+
+Searching is manual so simply opening notes does not consume Consensus calls. From returned papers you can:
+
+- inspect the Consensus source,
+- review takeaways/abstract context,
+- see DOI/study/citation metadata when available,
+- copy a readable reference,
+- copy a portable Markdown citation.
+
+Consensus search rank, semantic score, and citation count are discovery signals. They are not treated as scientific evidence or as automatic `supports`/`contradicts` relationships.
+
+### Environment variables
+
+```text
+CONSENSUS_API_KEY=...
+```
+
+For local verification only, `CONSENSUS_API_BASE_URL` may point at a mock server. Production ignores that override and always calls `https://api.consensus.app`.

@@ -1081,3 +1081,14 @@ body::after { width: 300px; height: 300px; left: -150px; bottom: 8vh; background
 .consensus-citation-actions { display: flex; gap: 5px; margin-top: 8px; }
 .consensus-citation-actions button { flex: 1; min-height: 28px; padding: 0 5px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink-soft); background: var(--surface); font-size: 7px; }
 .consensus-citation-actions button:hover { color: var(--accent-deep); border-color: var(--accent); background: var(--accent-wash); }
+
+
+.research-plan-sources { margin-top: 13px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-strong); }
+.research-plan-sources > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 9px; }
+.research-plan-sources a { min-width: 0; display: flex; flex-direction: column; gap: 3px; padding: 9px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); background: var(--canvas); text-decoration: none; }
+.research-plan-sources a:hover { border-color: var(--accent); background: var(--accent-wash); }
+.research-plan-sources strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 8px; }
+.research-plan-sources small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 7px; }
+@media (max-width: 700px) {
+  .research-plan-sources > div { grid-template-columns: 1fr; }
+}
