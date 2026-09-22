@@ -492,3 +492,25 @@ body::after { width: 300px; height: 300px; left: -150px; bottom: 8vh; background
 .codex-actions button:disabled { opacity: .4; cursor: not-allowed; }
 .codex-answer { margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--line); }
 .codex-answer p { margin: 7px 0 0; color: var(--ink-soft); font-size: 10px; line-height: 1.65; white-space: pre-wrap; }
+
+
+.codex-mode-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; margin-top: 12px; padding: 3px; border: 1px solid var(--line); border-radius: 8px; background: color-mix(in srgb, var(--canvas) 68%, transparent); }
+.codex-mode-tabs button { min-height: 29px; border: 0; border-radius: 6px; color: var(--muted); background: transparent; font-size: 8px; font-weight: 750; }
+.codex-mode-tabs button.active { color: #5d43b3; background: color-mix(in srgb, #8066d8 12%, var(--surface-strong)); }
+.codex-mode-note { margin: 10px 0 0; padding: 8px 9px; border-left: 2px solid #8066d8; color: var(--muted); background: color-mix(in srgb, #8066d8 6%, transparent); font-size: 8px; line-height: 1.5; }
+.codex-mode-note code { color: #5d43b3; }
+.codex-success { margin: 10px 0 0; padding: 8px 9px; border-radius: 6px; color: var(--accent-deep); background: var(--accent-wash); font-size: 9px; line-height: 1.45; }
+.codex-proposal { margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--line); }
+.codex-proposal-heading { display: flex; justify-content: space-between; gap: 9px; align-items: center; }
+.codex-proposal-heading > div { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.codex-proposal-heading strong { color: var(--ink-soft); font-size: 9px; }
+.codex-validation { padding: 4px 6px; border-radius: 999px; font: 7px var(--mono); text-transform: uppercase; }
+.codex-validation.passed { color: var(--accent-deep); background: var(--accent-wash); }
+.codex-validation.blocked { color: #a03d3d; background: color-mix(in srgb, #c94d4d 10%, var(--surface-strong)); }
+.codex-apply { min-height: 30px; padding: 0 12px; border: 1px solid var(--accent); border-radius: 7px; color: white; background: var(--accent-deep); font-size: 9px; font-weight: 800; }
+.codex-apply:disabled { opacity: .35; cursor: not-allowed; }
+.codex-files { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+.codex-files code { max-width: 100%; overflow: hidden; text-overflow: ellipsis; padding: 3px 5px; border-radius: 4px; color: var(--ink-soft); background: var(--canvas); font-size: 7px; }
+.codex-diff-details, .codex-doctor { margin-top: 9px; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+.codex-diff-details summary, .codex-doctor summary { padding: 8px 9px; cursor: pointer; color: var(--muted); background: color-mix(in srgb, var(--canvas) 65%, transparent); font: 8px var(--mono); }
+.codex-diff-details pre, .codex-doctor pre { max-height: 360px; margin: 0; padding: 10px; overflow: auto; color: #dce9e2; background: #14201b; font: 8px/1.55 var(--mono); white-space: pre; }

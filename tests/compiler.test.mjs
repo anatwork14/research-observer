@@ -148,3 +148,14 @@ test("compiler ignores links inside fenced code examples", async (t) => {
   assert.equal(errorCodes.includes("link-broken"), false);
   assert.equal(errorCodes.includes("asset-missing"), false);
 });
+
+
+test("Codex worktree path policy accepts only progress files", async () => {
+  const { allResearchPaths, parseStatusPaths } = await import("../lib/codex/worktree.mjs");
+
+  const status = " M progress/01_note.md\0?? progress/02_new.md\0";
+  assert.deepEqual(parseStatusPaths(status), ["progress/01_note.md", "progress/02_new.md"]);
+  assert.equal(allResearchPaths(["progress/01_note.md", "progress/figures/a.svg"]), true);
+  assert.equal(allResearchPaths(["progress/01_note.md", "app/page.tsx"]), false);
+  assert.equal(allResearchPaths([]), false);
+});

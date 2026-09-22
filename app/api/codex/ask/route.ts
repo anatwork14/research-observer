@@ -73,7 +73,7 @@ export async function POST(request: Request) {
     return NextResponse.json(state, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
 
-  let body: { prompt?: unknown; context?: AskContext };
+  let body: { prompt?: unknown; context?: AskContext; mode?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -86,6 +86,7 @@ export async function POST(request: Request) {
   }
 
   const researchContext = buildContext(body.context ?? {});
+  const mode = body.mode === "draft" ? "draft" : "ask";
   const systemBoundary = [
     "You are running inside Research Observer Ask mode.",
     "This turn is READ ONLY. Do not edit, create, delete, rename, or patch files.",
@@ -95,7 +96,9 @@ export async function POST(request: Request) {
     "Do not fabricate citations, page numbers, experiment results, measurements, DOI values, or claims.",
     "When factual support exists in the workspace, identify the note filename or PDF path/page in the answer.",
     "If evidence is insufficient, state what is missing.",
-    "Answer the user's research question directly and concisely.",
+    mode === "draft"
+      ? "DRAFT mode: propose concrete Markdown/research changes, but do not edit files. Make the proposal reviewable and identify target files."
+      : "ASK mode: answer the user's research question directly and concisely.",
   ].join("\n");
 
   const prompt =
@@ -119,7 +122,7 @@ export async function POST(request: Request) {
     });
     const turn = await thread.run(prompt);
     return NextResponse.json(
-      { answer: turn.finalResponse, mode: "ask", readOnly: true },
+      { answer: turn.finalResponse, mode, readOnly: true },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {

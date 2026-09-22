@@ -29,3 +29,6 @@ pnpm-debug.log*
 
 # TypeScript
 *.tsbuildinfo
+
+# Local Research Observer/Codex transient state
+/.research-observer/

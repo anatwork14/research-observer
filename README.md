@@ -190,7 +190,10 @@ The PDF worker, cMaps, standard fonts, and WASM assets are copied from the insta
 
 In local development, Research Observer exposes an optional Codex **Ask** inspector on research notes and PDFs. The integration uses `@openai/codex-sdk` server-side with a read-only sandbox, approvals disabled, network/web search disabled, and explicit visible research context.
 
-- Ask mode cannot edit the workspace.
+- **Ask** is read-only analysis.
+- **Draft** is also read-only and returns a proposed research change without writing files.
+- **Act** runs Codex in a detached Git worktree with workspace-write access there, rejects any changes outside `progress/**`, runs `npm run doctor` against the proposal, and presents the patch for explicit human review.
+- **Apply** is a separate user action. It refuses overlapping live edits, checks the patch with Git, applies it, reruns the doctor, and rolls the patch back if validation fails.
 - Selected PDF text is treated as untrusted evidence, not agent instructions.
 - Production embedded Codex is disabled until a separate authenticated agent service is configured.
 - Set `RESEARCH_OBSERVER_CODEX=0` to disable the local bridge.
