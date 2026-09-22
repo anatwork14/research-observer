@@ -1,4 +1,4 @@
-# Research Observer Application Instructions
+# Observaire Application Instructions
 
 These instructions apply to application code under `app/` and complement the repository-root `AGENTS.md`.
 
@@ -41,7 +41,7 @@ These instructions apply to application code under `app/` and complement the rep
 - Keep modes distinct: Ask (read-only), Draft (proposed changes), Act (explicitly approved workspace changes).
 - Do not silently mutate research files from an Ask interaction.
 - Writing modes must surface proposed files/diffs and validation results.
-- If the local Codex backend is unavailable, the rest of Research Observer must continue working normally.
+- If the local Codex backend is unavailable, the rest of Observaire must continue working normally.
 
 ## Validation
 
