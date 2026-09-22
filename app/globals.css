@@ -1137,6 +1137,14 @@ body::after { width: 300px; height: 300px; left: -150px; bottom: 8vh; background
     gap: 12px;
   }
 
+  :root[data-left-rail="closed"] .workspace-grid,
+  :root[data-left-rail="closed"][data-right-rail="open"] .workspace-grid,
+  :root[data-left-rail="closed"][data-right-rail="closed"] .workspace-grid,
+  :root[data-focus="on"] .workspace-grid {
+    grid-template-columns: 0 minmax(0, 1fr);
+    column-gap: 0;
+  }
+
   :root[data-left-rail="open"][data-right-rail="closed"] .workspace-grid {
     grid-template-columns: 196px minmax(0, 1fr);
   }
@@ -1161,9 +1169,22 @@ body::after { width: 300px; height: 300px; left: -150px; bottom: 8vh; background
     grid-column: 1 / -1;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
+    max-height: 5000px;
+    transition:
+      max-height var(--motion-slow) var(--ease-standard),
+      opacity var(--motion-base) var(--ease-soft),
+      transform var(--motion-slow) var(--ease-standard),
+      visibility 0s linear var(--motion-base);
   }
 
   :root[data-left-rail="closed"] .right-rail { grid-column: 2; }
+
+  :root[data-right-rail="closed"] .right-rail,
+  :root[data-focus="on"] .right-rail {
+    max-height: 0;
+    min-height: 0;
+    margin: 0;
+  }
 
   .side-card { padding: 16px; }
 
