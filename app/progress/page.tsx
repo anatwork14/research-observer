@@ -5,13 +5,14 @@ import { getProgressEntries } from "@/lib/progress";
 export default async function ProgressIndexPage({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string; status?: string }>;
+  searchParams: Promise<{ type?: string; status?: string; research?: string }>;
 }) {
   const entries = await getProgressEntries();
   const filters = await searchParams;
   const visible = entries.filter((entry) => {
     if (filters.type && entry.type !== filters.type) return false;
     if (filters.status && entry.status !== filters.status) return false;
+    if (filters.research && entry.research !== filters.research) return false;
     return true;
   });
   const navEntries = entries.map(({ slug, order, title, status }) => ({ slug, order, title, status }));
@@ -38,6 +39,7 @@ export default async function ProgressIndexPage({
                 <small>{entry.summary || entry.filename}</small>
               </span>
               <span className="note-index-meta">
+                <em className="research-project-chip">{entry.research}</em>
                 {entry.type && <em>{entry.type}</em>}
                 {entry.status && <em>{entry.status}</em>}
                 <small>{entry.readingMinutes} min</small>

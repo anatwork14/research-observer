@@ -332,3 +332,99 @@ test("compiler resolves typed relationships and derives research health", async 
   const graph = JSON.parse(await fs.readFile(path.join(root, "public", "_research", "graph.json"), "utf8"));
   assert.equal(graph.edges.filter((edge) => edge.explicit).length, 4);
 });
+
+
+test("compiler assigns research projects and derives portfolio stats", async (t) => {
+  const root = await fixture(t);
+  const configPath = path.join(root, "research-observer.config.json");
+  const config = JSON.parse(await fs.readFile(configPath, "utf8"));
+  config.researchProjects = [
+    { id: "default", label: "Main research" },
+    { id: "retrieval", label: "Retrieval study", description: "Search and reranking work." },
+    { id: "evaluation", label: "Evaluation study" }
+  ];
+  config.allowedTypes.push("hypothesis", "evidence");
+  config.allowedRelationshipTypes = ["supports"];
+  await fs.writeFile(configPath, JSON.stringify(config));
+
+  const retrieval = [
+    "---",
+    "id: retrieval-hypothesis",
+    "research: retrieval",
+    "type: hypothesis",
+    "status: investigating",
+    "date: 2026-09-01",
+    "---",
+    "",
+    "# Retrieval hypothesis",
+    ""
+  ].join("\n");
+  const evaluation = [
+    "---",
+    "id: evaluation-result",
+    "research: evaluation",
+    "type: result",
+    "status: complete",
+    "date: 2026-09-03",
+    "relationships:",
+    "  - type: supports",
+    "    target: retrieval-hypothesis",
+    "---",
+    "",
+    "# Evaluation result",
+    ""
+  ].join("\n");
+  const defaultNote = [
+    "---",
+    "id: default-note",
+    "type: note",
+    "status: complete",
+    "---",
+    "",
+    "# Default",
+    ""
+  ].join("\n");
+
+  await Promise.all([
+    fs.writeFile(path.join(root, "progress", "00_retrieval.md"), retrieval),
+    fs.writeFile(path.join(root, "progress", "01_evaluation.md"), evaluation),
+    fs.writeFile(path.join(root, "progress", "02_default.md"), defaultNote)
+  ]);
+
+  const workspace = await compileResearchWorkspace({ rootDir: root, fresh: true });
+  assert.equal(workspace.schemaVersion, 3);
+  assert.equal(workspace.entries.find((entry) => entry.slug === "retrieval-hypothesis")?.research, "retrieval");
+  assert.equal(workspace.entries.find((entry) => entry.slug === "default-note")?.research, "default");
+
+  const retrievalProject = workspace.projects.find((project) => project.id === "retrieval");
+  const evaluationProject = workspace.projects.find((project) => project.id === "evaluation");
+  assert.equal(retrievalProject?.notes, 1);
+  assert.equal(retrievalProject?.hypotheses, 1);
+  assert.equal(evaluationProject?.results, 1);
+  assert.equal(evaluationProject?.crossProjectRelationships, 1);
+
+  await writeResearchArtifacts({ rootDir: root, fresh: true });
+  const manifest = JSON.parse(await fs.readFile(path.join(root, "public", "_research", "manifest.json"), "utf8"));
+  assert.equal(manifest.schemaVersion, 3);
+  assert.equal(manifest.projects.length, 3);
+  assert.equal(manifest.entries.find((entry) => entry.slug === "evaluation-result").research, "evaluation");
+});
+
+test("compiler reports undeclared research project IDs", async (t) => {
+  const root = await fixture(t);
+  await fs.writeFile(path.join(root, "progress", "00_unknown.md"), [
+    "---",
+    "id: unknown-project-note",
+    "research: undeclared-project",
+    "type: note",
+    "status: complete",
+    "---",
+    "",
+    "# Unknown project",
+    ""
+  ].join("\n"));
+
+  const workspace = await compileResearchWorkspace({ rootDir: root, fresh: true });
+  assert.ok(workspace.diagnostics.some((item) => item.code === "research-project-unknown"));
+  assert.ok(workspace.projects.some((project) => project.id === "undeclared-project"));
+});

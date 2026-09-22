@@ -1,13 +1,15 @@
+import Image from "next/image";
 import Link from "next/link";
 import { CommandPalette } from "@/components/CommandPalette";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { WorkspaceControls } from "@/components/WorkspaceControls";
 
 type NavEntry = { slug: string; order: number; title: string; status?: string };
-type Section = "overview" | "new-research" | "notes" | "papers" | "evidence" | "graph" | "collections" | "health" | "instruction";
+type Section = "overview" | "insights" | "new-research" | "notes" | "papers" | "evidence" | "graph" | "collections" | "health" | "instruction";
 
 const sections: Array<{ key: Section; href: string; label: string }> = [
   { key: "overview", href: "/", label: "Overview" },
+  { key: "insights", href: "/insights", label: "Insights" },
   { key: "new-research", href: "/new-research", label: "New Research" },
   { key: "notes", href: "/progress", label: "Notes" },
   { key: "papers", href: "/papers", label: "Papers" },
@@ -29,9 +31,15 @@ export function WorkspaceHeader({
 }) {
   return (
     <header className="topbar workbench-topbar">
-      <Link href="/" className="brand">
-        <span className="brand-mark">◒</span>
-        <span>RESEARCH <em>OBSERVER</em></span>
+      <Link href="/" className="brand" aria-label="Observaire home">
+        <span className="brand-mark" aria-hidden="true">
+          <Image className="brand-logo brand-logo-light" src="/brand/observaire-mark-light.svg" alt="" width={36} height={36} priority />
+          <Image className="brand-logo brand-logo-dark" src="/brand/observaire-mark-dark.svg" alt="" width={36} height={36} priority />
+        </span>
+        <span className="brand-copy">
+          <strong>OBSERVAIRE</strong>
+          <small>Research intelligence</small>
+        </span>
       </Link>
 
       <nav className="workspace-tabs" aria-label="Research workspace">

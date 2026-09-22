@@ -49,7 +49,7 @@ export default async function CollectionsPage({
             </div>
           </form>
           <div className="query-help">
-            <code>type:</code><code>status:</code><code>tag:</code><code>author:</code><code>has:pdf</code><code>has:source</code><code>relationship:</code><code>target:</code><code>after:</code><code>before:</code><code>-status:</code>
+            <code>type:</code><code>status:</code><code>research:</code><code>tag:</code><code>author:</code><code>has:pdf</code><code>has:source</code><code>relationship:</code><code>target:</code><code>after:</code><code>before:</code><code>-status:</code>
           </div>
         </section>
 
@@ -76,6 +76,7 @@ export default async function CollectionsPage({
                 <small>{entry.summary || entry.filename}</small>
               </span>
               <span className="note-index-meta">
+                <em>{entry.research}</em>
                 {entry.type && <em>{entry.type}</em>}
                 {entry.status && <em>{entry.status}</em>}
                 {entry.relationships.length > 0 && <small>{entry.relationships.length} relations</small>}

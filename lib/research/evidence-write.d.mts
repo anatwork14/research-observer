@@ -5,4 +5,4 @@ export function createEvidenceNote(options: {
   quote: string;
   comment?: string;
   relationship?: { type: string; target: string };
-}): Promise<{ id: string; slug: string; filename: string; order: number }>;
+}): Promise<{ id: string; slug: string; filename: string; order: number; research: string }>;

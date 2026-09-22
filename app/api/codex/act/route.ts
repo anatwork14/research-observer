@@ -13,7 +13,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type ResearchContext = {
-  note?: { slug?: string; title?: string; filename?: string };
+  note?: { slug?: string; title?: string; filename?: string; research?: string };
   paper?: { path?: string; title?: string; page?: number };
   selection?: string;
   pageText?: string;
@@ -31,8 +31,14 @@ function contextText(context: ResearchContext) {
   const lines: string[] = [];
   const noteTitle = clean(context.note?.title);
   const noteFilename = clean(context.note?.filename);
+  const noteResearch = clean(context.note?.research);
   if (noteTitle || noteFilename) {
-    lines.push("Research note: " + (noteTitle || "(untitled)") + (noteFilename ? " [" + noteFilename + "]" : ""));
+    lines.push(
+      "Research note: " +
+      (noteTitle || "(untitled)") +
+      (noteFilename ? " [" + noteFilename + "]" : "") +
+      (noteResearch ? " · research project: " + noteResearch : "")
+    );
   }
 
   const paperTitle = clean(context.paper?.title);

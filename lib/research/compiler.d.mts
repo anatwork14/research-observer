@@ -33,6 +33,7 @@ export type ResearchEntry = {
   summary: string;
   type?: string;
   status?: string;
+  research: string;
   date?: string;
   tags: string[];
   authors: string[];
@@ -64,14 +65,36 @@ export type ResearchWorkspace = {
     allowedMediaExtensions: string[];
     allowedRelationshipTypes: string[];
     maxAssetBytes: number;
+    researchProjects: Array<{ id: string; label: string; description?: string }>;
     savedCollections: Array<{ id: string; label: string; description?: string; query: string }>;
     [key: string]: unknown;
   };
   signature: string;
   entries: ResearchEntry[];
   assets: Array<{ path: string; extension: string; size: number }>;
+  projects: Array<{
+    id: string;
+    label: string;
+    description?: string;
+    notes: number;
+    active: number;
+    questions: number;
+    hypotheses: number;
+    literature: number;
+    experiments: number;
+    results: number;
+    evidence: number;
+    decisions: number;
+    words: number;
+    relationships: number;
+    crossProjectRelationships: number;
+    errors: number;
+    warnings: number;
+    firstDate?: string;
+    latestDate?: string;
+  }>;
   graph: {
-    nodes: Array<{ slug: string; title: string; type?: string; status?: string; order: number }>;
+    nodes: Array<{ slug: string; title: string; type?: string; status?: string; research: string; order: number }>;
     edges: Array<{ source: string; target: string; type: string; explicit: boolean }>;
   };
   health: {

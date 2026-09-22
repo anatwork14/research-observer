@@ -81,3 +81,13 @@ npm run check
 ```
 
 Do not assume GitHub Actions exist; validation is local-first.
+
+
+## Research project and version identity
+
+- Notes may declare `research: <project-id>` to participate in a named portfolio project from `research-observer.config.json`.
+- If `research` is omitted, the note belongs to `default`.
+- Preserve one canonical note rather than copying the same evidence into multiple projects.
+- Cross-project relationships are permitted when they express a real dependency or evidence relationship.
+- Use `relationships: [{ type: supersedes, target: ... }]` only for meaningful research/idea versions that should remain independently reviewable.
+- Ordinary edits to the same idea should remain edits to the same Markdown file and stable ID.

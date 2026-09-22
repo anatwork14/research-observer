@@ -483,3 +483,224 @@ Existing-note Consensus citations: PASS | FAIL | SKIP (reason)
 New Research Consensus search: PASS | FAIL | SKIP (reason)
 New Research Codex planning: PASS | FAIL | SKIP (reason)
 ```
+
+
+## Tablet / iPad responsive verification
+
+When a feature changes responsive layout, explicitly test tablet widths rather than inferring them from desktop/mobile behavior.
+
+Target CSS viewport widths when the browser tool supports them:
+
+- 768 px — iPad portrait baseline
+- 820 or 834 px — modern iPad/Air portrait
+- 1024 px — iPad landscape / compact desktop baseline
+- 1180 px — larger iPad landscape
+- 1366 px — 12.9/13-inch iPad Pro landscape / wide tablet
+
+At each available tablet width verify:
+
+### Global workbench header
+
+- brand/search/layout/theme controls remain reachable,
+- workspace tabs move to a dedicated horizontal row where required,
+- all workspace tabs can be reached by horizontal scrolling without clipping the active tab,
+- tab scrolling does not force the full page to overflow horizontally,
+- coarse-pointer targets are approximately 44 px high,
+- no sticky hover transform remains after tapping on touch-oriented browsers.
+
+### Note reader
+
+At 901–1180 px:
+
+- research rail + reader remain side-by-side,
+- research rail is narrower than desktop but remains readable,
+- right context rail moves below the reader in two usable columns,
+- closing/opening either rail still animates without leaving an empty grid column,
+- focus mode gives the reader the full available width,
+- note skeleton matches the same structure.
+
+At 761–900 px:
+
+- reader receives the full content width,
+- research navigation becomes a compact two-column selector above the reader,
+- context cards render in two columns below the reader,
+- left/right rail toggles collapse their content vertically instead of leaving reserved space,
+- long Markdown tables scroll inside the article rather than widening the page,
+- focus mode does not leave hidden interactive content focusable,
+- note skeleton uses the same single-column tablet structure.
+
+### Dashboard / collections / health / instruction / graph
+
+- collection headings stack cleanly in portrait tablet widths,
+- health summary uses two columns and health cards use one column where appropriate,
+- saved collections stay at two columns until phone widths,
+- evidence cards remain at two columns in portrait tablets,
+- instruction workbench becomes single-column in portrait tablet widths,
+- graph canvas can scroll horizontally inside itself without causing page-level horizontal overflow.
+
+### PDF reader
+
+At portrait tablet widths (roughly 721–900 px):
+
+- the PDF page gets full content width,
+- thumbnails become a horizontal strip below the document stage,
+- the inspector sits below the thumbnails,
+- page/view controls wrap without overlap,
+- selection toolbar can wrap to two rows,
+- zoom/search/page controls have touch-sized targets,
+- route-level PDF skeleton follows the same stage → thumbnails → inspector order,
+- no large horizontal page overflow occurs.
+
+At landscape tablet widths (>900 px):
+
+- the compact side-thumbnail PDF layout remains usable,
+- inspector placement remains readable,
+- toolbar controls do not collide.
+
+### Touch / orientation regressions
+
+When supported, test with a coarse-pointer/touch emulation and rotate portrait ↔ landscape:
+
+- controls remain at least about 44 px high,
+- no content remains clipped after rotation,
+- horizontal scrollers keep their own overflow instead of widening the body,
+- persisted rail/focus state remains valid across reload/orientation changes.
+
+If the browser environment cannot emulate exact tablet widths or touch input, report the tablet verification as PARTIAL and list which viewport/touch cases were source-verified only.
+
+
+## Research Assist (Consensus + Codex) UX verification
+
+When changes touch the note-side Consensus/Codex experience, verify the unified **Research Assist** surface on a real note.
+
+### Shell and service tabs
+
+- A single Research Assist panel replaces separate Consensus and Codex cards.
+- The header clearly explains the distinction between external literature discovery and local reasoning.
+- Consensus and Codex are exposed as keyboard/touch-accessible tabs with `role="tab"`, `aria-selected`, and matching tab panels.
+- Both service availability states are visible on the tabs.
+- Switching tabs does not lose in-progress state inside the other service.
+- The last selected service is restored on reload when localStorage is available; storage denial must not break the panel.
+- At tablet widths where the context rail has two columns, Research Assist spans both columns.
+- At narrow desktop/right-rail widths the component remains readable without horizontal page overflow.
+
+### Consensus interaction
+
+Before pressing Search:
+
+- opening a note must issue only the lightweight status GET and no literature-search POST,
+- the default query should be derived from the current note,
+- Support / Challenge / Reviews helpers change the query but do not automatically send it.
+
+Search behavior:
+
+- Cmd/Ctrl+Enter and **Search literature** both submit,
+- a visible loading skeleton appears while searching,
+- returned result count and searched query are shown,
+- no-result response renders a useful empty state,
+- provider/network failure renders an inline error state with Retry,
+- a second request cannot race/overwrite a newer request,
+- returned papers show provenance metadata without treating citation counts/ranking as proof,
+- relevance/takeaway text is collapsed behind an inspectable disclosure,
+- **Open source**, **Copy reference**, and **Copy Markdown** all work,
+- clipboard failure becomes a visible error instead of an unhandled rejection,
+- search results never create notes/relationships or edit Markdown automatically.
+
+### Codex interaction
+
+- Ask / Draft / Act each explain their intent in the mode control.
+- Ask and Draft visibly state read-only behavior.
+- Act visibly states review is required and explains the isolated-worktree flow.
+- prompt starters fill the prompt but never submit automatically,
+- Cmd/Ctrl+Enter and the primary action both submit,
+- working state is visible,
+- API errors become inline retryable states,
+- successful Ask/Draft response is readable without overflowing the rail,
+- Act proposal displays validation state, touched files, diff, doctor output, Apply, and Dismiss,
+- while an Act proposal exists, switching away or entering another prompt is blocked so the reviewed proposal cannot be accidentally lost,
+- Dismiss explicitly clears the proposal and re-enables mode switching,
+- Apply remains disabled unless the existing valid/allowed/reviewable safety checks pass,
+- the redesign must not alter same-origin, read-only, worktree, patch-hash, doctor, or Apply security boundaries.
+
+### Touch / accessibility
+
+- on coarse pointers, service tabs, quick actions, primary actions, copy/source controls, Codex mode controls, Retry/Dismiss/Apply are approximately 44 px high,
+- focus-visible state is present for buttons/links/textareas,
+- tab panels use `hidden` so inactive content is not keyboard-focusable,
+- loading and success/error updates use appropriate live regions where present,
+- reduced-motion mode disables the Research Assist spinner animation.
+
+Report any visual improvement as PASS only after the interaction and safety behavior above also pass.
+
+
+## Research Intelligence / multi-research verification
+
+When changes touch research-project identity, Insights, timeline, or version comparison, verify all of the following.
+
+### Compiler / query model
+
+- legacy notes without `research` compile as `research: default`,
+- configured `researchProjects` are validated for unique kebab-case IDs and non-empty labels,
+- an undeclared `research` ID produces the configured vocabulary warning/error but remains visible for recovery,
+- generated manifest/search artifacts include `research`,
+- manifest schema/version and project rollups are deterministic,
+- Graph nodes preserve project identity,
+- `research:<id>` and `project:<id>` advanced queries work,
+- project statistics correctly separate notes, active objects, types, words, relationships, cross-project relationships, warnings/errors, and date range.
+
+### Insights dashboard
+
+Open `/insights` and verify:
+
+- Overview, Analytics, Timeline, and Versions modes are reachable without full-page horizontal overflow,
+- All projects and individual project chips update the same shared scope,
+- multiple projects can be selected at the same time,
+- every chart updates consistently with the selected scope,
+- chart labels/values remain readable in light and dark themes,
+- charts use internal horizontal scrolling when necessary on tablet/mobile instead of widening the body,
+- no chart invents a composite quality/health score.
+
+Verify visualizations:
+
+- object-type horizontal bars,
+- status donut,
+- research pipeline bars,
+- typed-relationship bars,
+- activity-over-time line chart,
+- cross-project composition,
+- factual health heatmap,
+- cross-project dependency matrix.
+
+For activity charts, verify missing months are represented rather than compressed out of the time axis.
+
+### Timeline
+
+With at least two projects and dated fixture notes:
+
+- projects render as aligned timeline lanes,
+- each dated object appears on the correct lane/date,
+- markers link to their canonical note,
+- explicit `supersedes` relationships render as version-lineage connectors when both versions are dated in the same project,
+- undated notes are listed separately rather than assigned fake dates,
+- selecting multiple projects preserves aligned time context.
+
+### Semantic version comparison
+
+Create a temporary fixture chain using explicit `supersedes` relationships and verify:
+
+- only connected semantic versions form a lineage,
+- ordinary edited files without `supersedes` are not presented as semantic versions,
+- default comparison uses the oldest/latest version in the selected lineage,
+- Base/Compare selectors work,
+- word/relationship/asset/status deltas render,
+- added/removed/unchanged Markdown lines are distinguishable,
+- large documents cap the diff preview rather than exhausting the browser,
+- the comparison never restores or mutates research files.
+
+### Note/project navigation
+
+- each note displays its research-project identity,
+- clicking the project identity opens Insights scoped to that project,
+- existing note canonical URLs remain unchanged.
+
+Report multi-research/timeline/version verification separately from generic Graph/Health PASS results.

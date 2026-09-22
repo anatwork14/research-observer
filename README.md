@@ -321,3 +321,70 @@ CONSENSUS_API_KEY=...
 ```
 
 For local verification only, `CONSENSUS_API_BASE_URL` may point at a mock server. Production ignores that override and always calls `https://api.consensus.app`.
+
+
+## Research Intelligence: statistics, timelines, versions, and multiple projects
+
+The **Insights** workspace provides a portfolio-level visual layer over the canonical Markdown research model.
+
+It supports:
+
+- linked project filters that can select one or several research projects at once,
+- research-object type and status distributions,
+- research pipeline charts,
+- typed-relationship distributions,
+- activity-over-time charts with explicit missing periods,
+- per-project composition comparison,
+- factual health heatmaps,
+- cross-project relationship matrices,
+- a multi-lane research timeline,
+- semantic version lineages and Markdown diffs.
+
+### Multiple research projects
+
+Declare projects in `research-observer.config.json`:
+
+```json
+"researchProjects": [
+  {
+    "id": "default",
+    "label": "Main research",
+    "description": "Research objects without an explicit project."
+  },
+  {
+    "id": "retrieval",
+    "label": "Retrieval study"
+  },
+  {
+    "id": "evaluation",
+    "label": "Evaluation study"
+  }
+]
+```
+
+Assign a Markdown research object with:
+
+```yaml
+research: retrieval
+```
+
+Existing notes remain backward-compatible: if `research` is omitted, the compiler assigns `default`.
+
+Advanced Collections queries also support:
+
+```text
+research:retrieval
+project:evaluation type:result
+```
+
+### Semantic research versions
+
+Technical edits remain available through Git history. Research Observer uses the typed `supersedes` relationship for meaningful intellectual versions that should be visible side-by-side:
+
+```yaml
+relationships:
+  - type: supersedes
+    target: hypothesis-v1
+```
+
+The **Insights → Timeline** view draws these version lineages across project lanes, and **Insights → Versions** compares two semantic versions with metadata deltas and a Markdown diff.

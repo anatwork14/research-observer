@@ -5,9 +5,8 @@ import { notFound, redirect } from "next/navigation";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { ResearchNav } from "@/components/ResearchNav";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
-import { CodexPanel } from "@/components/CodexPanel";
-import { ConsensusCitationPanel } from "@/components/ConsensusCitationPanel";
-import { getProgressEntries, getProgressEntry } from "@/lib/progress";
+import { ResearchAssistPanel } from "@/components/ResearchAssistPanel";
+import { getProgressEntries, getProgressEntry, getResearchWorkspace } from "@/lib/progress";
 
 export async function generateStaticParams() {
   const entries = await getProgressEntries();
@@ -51,11 +50,13 @@ function extractHeadings(content: string) {
 
 export default async function ProgressPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const entries = await getProgressEntries();
+  const workspace = await getResearchWorkspace();
+  const entries = workspace.entries;
   const entry = entries.find((item) => item.slug === slug || item.aliases.includes(slug)) ?? null;
   if (!entry) notFound();
   if (slug !== entry.slug) redirect(`/progress/${entry.slug}`);
 
+  const project = workspace.projects.find((item) => item.id === entry.research);
   const index = entries.findIndex((item) => item.slug === entry.slug);
   const previous = index > 0 ? entries[index - 1] : null;
   const next = index < entries.length - 1 ? entries[index + 1] : null;
@@ -97,6 +98,7 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
         </div>
         <div className="note-meta">
           {entry.date && <span>{entry.date}</span>}
+          <Link href={`/insights?research=${encodeURIComponent(entry.research)}`} className="research-project-chip">{project?.label ?? entry.research}</Link>
           {entry.type && <span>{entry.type}</span>}
           <span>{entry.words.toLocaleString()} words</span>
           <span>{entry.readingMinutes} min read</span>
@@ -184,13 +186,10 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
             </div>
           </section>
 
-          <section className="side-card panel consensus-side-card">
-            <ConsensusCitationPanel defaultQuery={[entry.title, entry.summary].filter(Boolean).join(". ")} />
-          </section>
-
-          <section className="side-card panel codex-side-card">
-            <CodexPanel context={{ note: { slug: entry.slug, title: entry.title, filename: entry.filename } }} />
-          </section>
+          <ResearchAssistPanel
+            defaultConsensusQuery={[entry.title, entry.summary].filter(Boolean).join(". ")}
+            codexContext={{ note: { slug: entry.slug, title: entry.title, filename: entry.filename, research: entry.research } }}
+          />
 
           <section className="side-card panel syntax-card">
             <span className="kicker">Media support</span>

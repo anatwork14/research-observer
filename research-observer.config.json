@@ -100,5 +100,12 @@
       "description": "Objects connected through contradiction relationships.",
       "query": "relationship:contradicts"
     }
+  ],
+  "researchProjects": [
+    {
+      "id": "default",
+      "label": "Main research",
+      "description": "Research objects without an explicit research project."
+    }
   ]
 }
