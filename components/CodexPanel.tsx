@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export type CodexResearchContext = {
   note?: {
@@ -42,6 +43,7 @@ const modeLabels: Record<Mode, string> = {
 };
 
 export function CodexPanel({ context }: { context: CodexResearchContext }) {
+  const router = useRouter();
   const [status, setStatus] = useState<Status | null>(null);
   const [mode, setMode] = useState<Mode>("ask");
   const [prompt, setPrompt] = useState("");
@@ -130,6 +132,7 @@ export function CodexPanel({ context }: { context: CodexResearchContext }) {
       if (!response.ok) throw new Error(payload.error || "Could not apply Codex proposal.");
       setAppliedMessage(`Applied ${payload.files?.length ?? 0} research file${payload.files?.length === 1 ? "" : "s"}; doctor passed.`);
       setProposal(null);
+      router.refresh();
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Could not apply Codex proposal.");
     } finally {
