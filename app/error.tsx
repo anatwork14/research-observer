@@ -10,7 +10,7 @@ export default function ErrorPage({
   return (
     <main className="empty-home">
       <div>
-        <p className="eyebrow">Research Observer / recovery</p>
+        <p className="eyebrow">Observaire / recovery</p>
         <h1>This research view could not be rendered.</h1>
         <p className="hero-copy">{error.message || "An unexpected rendering error occurred."}</p>
         <button className="search-trigger" onClick={reset}>Try again</button>
