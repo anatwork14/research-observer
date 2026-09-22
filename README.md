@@ -199,7 +199,7 @@ In local development, Research Observer exposes an optional Codex **Ask** inspec
 - Set `RESEARCH_OBSERVER_CODEX=0` to disable the local bridge.
 - Optionally set `RESEARCH_OBSERVER_CODEX_MODEL` to select a locally available Codex model.
 
-Authenticate the local Codex CLI/SDK before using the panel. If Codex is unavailable, Overview, Notes, Papers, Evidence, and PDF reading continue to work normally.
+Research Observer installs matching `@openai/codex-sdk` and `@openai/codex` versions so the SDK can resolve its platform CLI binary. Authenticate Codex locally before using the panel. The UI status check also verifies that the SDK can resolve the installed Codex runtime before reporting it ready. If Codex is unavailable, Overview, Notes, Papers, Evidence, and PDF reading continue to work normally.
 
 Repository-scoped Codex instructions live in root/nested `AGENTS.md` files and reusable workflows live under `.agents/skills/`.
 

@@ -21,9 +21,19 @@ function availability() {
   if (process.env.RESEARCH_OBSERVER_CODEX === "0") {
     return { enabled: false, reason: "Codex was disabled with RESEARCH_OBSERVER_CODEX=0." };
   }
+  try {
+    new Codex();
+  } catch (error) {
+    return {
+      enabled: false,
+      reason: error instanceof Error
+        ? "Codex runtime is unavailable: " + error.message
+        : "Codex runtime is unavailable.",
+    };
+  }
   return {
     enabled: true,
-    reason: "Uses the local Codex SDK/CLI authentication in a read-only sandbox.",
+    reason: "Uses the locally installed Codex CLI through the SDK in a read-only sandbox.",
   };
 }
 
