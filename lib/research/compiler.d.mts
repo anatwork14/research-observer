@@ -10,6 +10,18 @@ export type ResearchHeading = {
   title: string;
 };
 
+export type ResearchRelationship = {
+  type: string;
+  target: string;
+  note?: string;
+};
+
+export type IncomingResearchRelationship = {
+  type: string;
+  source: string;
+  note?: string;
+};
+
 export type ResearchEntry = {
   filename: string;
   fileSlug: string;
@@ -27,6 +39,9 @@ export type ResearchEntry = {
   year?: number;
   doi?: string;
   pdf?: string;
+  source?: { pdf: string; page?: number };
+  relationships: ResearchRelationship[];
+  incomingRelationships: IncomingResearchRelationship[];
   content: string;
   text: string;
   words: number;
@@ -47,16 +62,32 @@ export type ResearchWorkspace = {
     allowedTypes: string[];
     allowedStatuses: string[];
     allowedMediaExtensions: string[];
+    allowedRelationshipTypes: string[];
     maxAssetBytes: number;
     [key: string]: unknown;
   };
   signature: string;
   entries: ResearchEntry[];
   assets: Array<{ path: string; extension: string; size: number }>;
+  graph: {
+    nodes: Array<{ slug: string; title: string; type?: string; status?: string; order: number }>;
+    edges: Array<{ source: string; target: string; type: string; explicit: boolean }>;
+  };
+  health: {
+    unansweredQuestions: string[];
+    experimentsWithoutResults: string[];
+    resultsWithoutExperiment: string[];
+    decisionsWithoutBasis: string[];
+    literatureMissingPdf: string[];
+    literatureMissingDoi: string[];
+    evidenceMissingSource: string[];
+    missingStableIds: string[];
+  };
   diagnostics: ResearchDiagnostic[];
   stats: {
     notes: number;
     links: number;
+    relationships: number;
     assets: number;
     errors: number;
     warnings: number;

@@ -229,3 +229,106 @@ test("Codex proposal storage hashes the reviewed patch", async (t) => {
   assert.equal(loaded.metadata.patchSha256, stored.patchSha256);
   await deleteProposal(root, stored.id);
 });
+
+
+test("compiler resolves typed relationships and derives research health", async (t) => {
+  const root = await fixture(t);
+  const configPath = path.join(root, "research-observer.config.json");
+  const config = JSON.parse(await fs.readFile(configPath, "utf8"));
+  config.allowedTypes.push("decision", "evidence", "literature");
+  config.allowedRelationshipTypes = ["answers", "produces", "based_on", "supports"];
+  config.allowedMediaExtensions.push(".pdf");
+  await fs.writeFile(configPath, JSON.stringify(config));
+  await fs.mkdir(path.join(root, "progress", "papers"), { recursive: true });
+
+  const question = [
+    "---",
+    "id: q-main",
+    "type: question",
+    "status: investigating",
+    "---",
+    "",
+    "# Main question",
+    ""
+  ].join("\n");
+  const experiment = [
+    "---",
+    "id: exp-main",
+    "type: experiment",
+    "status: validating",
+    "relationships:",
+    "  - type: produces",
+    "    target: result-main",
+    "---",
+    "",
+    "# Experiment",
+    ""
+  ].join("\n");
+  const result = [
+    "---",
+    "id: result-main",
+    "type: result",
+    "status: complete",
+    "relationships:",
+    "  - type: answers",
+    "    target: q-main",
+    "---",
+    "",
+    "# Result",
+    ""
+  ].join("\n");
+  const decision = [
+    "---",
+    "id: decision-main",
+    "type: decision",
+    "status: complete",
+    "relationships:",
+    "  - type: based_on",
+    "    target: result-main",
+    "---",
+    "",
+    "# Decision",
+    ""
+  ].join("\n");
+  const evidence = [
+    "---",
+    "id: evidence-paper-p2",
+    "type: evidence",
+    "status: complete",
+    "source:",
+    "  pdf: papers/source.pdf",
+    "  page: 2",
+    "relationships:",
+    "  - type: supports",
+    "    target: result-main",
+    "---",
+    "",
+    "# Evidence",
+    "",
+    "> Verified excerpt.",
+    ""
+  ].join("\n");
+
+  await Promise.all([
+    fs.writeFile(path.join(root, "progress", "00_question.md"), question),
+    fs.writeFile(path.join(root, "progress", "01_experiment.md"), experiment),
+    fs.writeFile(path.join(root, "progress", "02_result.md"), result),
+    fs.writeFile(path.join(root, "progress", "03_decision.md"), decision),
+    fs.writeFile(path.join(root, "progress", "04_evidence.md"), evidence),
+    fs.writeFile(path.join(root, "progress", "papers", "source.pdf"), "%PDF-1.4\n")
+  ]);
+
+  const workspace = await compileResearchWorkspace({ rootDir: root, fresh: true });
+  assert.equal(workspace.stats.errors, 0);
+  assert.equal(workspace.stats.relationships, 4);
+  assert.deepEqual(workspace.health.unansweredQuestions, []);
+  assert.deepEqual(workspace.health.experimentsWithoutResults, []);
+  assert.deepEqual(workspace.health.resultsWithoutExperiment, []);
+  assert.deepEqual(workspace.health.decisionsWithoutBasis, []);
+  assert.equal(workspace.entries.find((entry) => entry.slug === "evidence-paper-p2")?.source?.page, 2);
+  assert.ok(workspace.entries.find((entry) => entry.slug === "result-main")?.incomingRelationships.some((r) => r.type === "supports"));
+
+  await writeResearchArtifacts({ rootDir: root, fresh: true });
+  const graph = JSON.parse(await fs.readFile(path.join(root, "public", "_research", "graph.json"), "utf8"));
+  assert.equal(graph.edges.filter((edge) => edge.explicit).length, 4);
+});

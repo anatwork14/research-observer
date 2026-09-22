@@ -12,7 +12,8 @@
     "experiment",
     "result",
     "decision",
-    "milestone"
+    "milestone",
+    "evidence"
   ],
   "allowedStatuses": [
     "idea",
@@ -47,5 +48,19 @@
     ".txt"
   ],
   "maxAssetBytes": 262144000,
-  "strictVocabulary": false
+  "strictVocabulary": false,
+  "allowedRelationshipTypes": [
+    "supports",
+    "contradicts",
+    "answers",
+    "investigates",
+    "builds_on",
+    "produces",
+    "uses",
+    "based_on",
+    "derived_from",
+    "reproduces",
+    "supersedes",
+    "references"
+  ]
 }

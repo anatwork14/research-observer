@@ -74,6 +74,8 @@ aliases:
 - `authors`: optional YAML list of verified author names for a literature note.
 - `year`: optional four-digit publication year.
 - `doi`: optional verified DOI. Never infer or fabricate one.
+- `relationships`: optional typed links to existing research objects. Every item requires `type` and `target`; `target` should be a stable note ID/slug or existing filename slug.
+- `source`: for `type: evidence`, identifies the local PDF and optional positive page number that the evidence came from.
 
 For a literature note with a local paper, prefer:
 
@@ -85,6 +87,29 @@ authors:
   - Wei Chen
 year: 2026
 doi: 10.xxxx/verified-doi
+```
+
+Typed relationships use the vocabulary in `research-observer.config.json`. Example:
+
+```yaml
+relationships:
+  - type: answers
+    target: retrieval-question-main
+  - type: supports
+    target: decision-use-cross-encoder
+    note: Reproduced under the same latency budget.
+```
+
+Durable PDF evidence should use `type: evidence`:
+
+```yaml
+type: evidence
+source:
+  pdf: papers/smith-2026.pdf
+  page: 12
+relationships:
+  - type: supports
+    target: reranking-result
 ```
 
 Do not add arbitrary frontmatter keys unless the repository rules are intentionally being extended.
