@@ -4,6 +4,8 @@ import { PdfReader } from "@/components/PdfReader";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
 import { getResearchWorkspace } from "@/lib/progress";
 
+export const dynamic = "force-dynamic";
+
 function assetUrl(path: string) {
   return "/_research/media/" + path.split("/").map(encodeURIComponent).join("/");
 }

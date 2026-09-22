@@ -27,24 +27,6 @@ function authorLine(paper: Paper) {
     : paper.authors.join(", ");
 }
 
-function reference(paper: Paper) {
-  const authors = paper.authors.length
-    ? paper.authors.length <= 3 ? paper.authors.join(", ") : paper.authors.slice(0, 3).join(", ") + " et al."
-    : "Unknown authors";
-  const year = paper.year ?? "n.d.";
-  const url = paper.doi ? `https://doi.org/${paper.doi.replace(/^https?:\/\/(?:dx\.)?doi\.org\//i, "")}` : paper.url;
-  return [`${authors} (${year}). ${paper.title}.`, paper.journal ? `${paper.journal}.` : "", url].filter(Boolean).join(" ");
-}
-
-function markdownCitation(paper: Paper) {
-  const authors = paper.authors.length
-    ? paper.authors.length <= 2 ? paper.authors.join(" & ") : paper.authors[0] + " et al."
-    : "Unknown authors";
-  const year = paper.year ?? "n.d.";
-  const url = paper.doi ? `https://doi.org/${paper.doi.replace(/^https?:\/\/(?:dx\.)?doi\.org\//i, "")}` : paper.url;
-  return `[${paper.title}](${url}) — ${authors} (${year}).`;
-}
-
 export function ConsensusCitationPanel({
   defaultQuery,
 }: {
