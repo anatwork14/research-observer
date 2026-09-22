@@ -1,12 +1,24 @@
 {
   "name": "research-observer",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
+  "packageManager": "npm@10.9.2",
+  "engines": {
+    "node": ">=22 <25"
+  },
   "scripts": {
+    "predev": "npm run research:compile",
     "dev": "next dev",
+    "prebuild": "npm run research:compile",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "research:compile": "node scripts/compile-research.mjs",
+    "doctor": "node scripts/research-doctor.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "check": "npm run doctor && npm run test && npm run typecheck && npm run lint",
+    "check:full": "npm run check && npm run build"
   },
   "dependencies": {
     "github-slugger": "^2.0.0",

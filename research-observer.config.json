@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "progressDir": "progress",
+  "warnOnMissingId": true,
+  "allowedTypes": [
+    "note",
+    "question",
+    "hypothesis",
+    "literature",
+    "method",
+    "dataset",
+    "experiment",
+    "result",
+    "decision",
+    "milestone"
+  ],
+  "allowedStatuses": [
+    "idea",
+    "investigating",
+    "experimenting",
+    "validating",
+    "complete",
+    "blocked",
+    "archived"
+  ],
+  "allowedMediaExtensions": [
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".webp",
+    ".avif",
+    ".svg",
+    ".bmp",
+    ".pdf",
+    ".mp4",
+    ".webm",
+    ".ogv",
+    ".ogg",
+    ".mp3",
+    ".wav",
+    ".m4a",
+    ".aac",
+    ".flac",
+    ".csv",
+    ".json",
+    ".txt"
+  ],
+  "maxAssetBytes": 262144000
+}
