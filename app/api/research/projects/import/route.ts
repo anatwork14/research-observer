@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 function noStore(body: unknown, init?: ResponseInit) {
   return NextResponse.json(body, {
     ...init,
-    headers: { "Cache-Control": "no-store", ...(init?.headers ?? {}) },
+    headers: { "Cache-Control": "no-store" },
   });
 }
 
