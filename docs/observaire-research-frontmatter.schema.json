@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://observaire.local/schema/research-frontmatter-v1.json",
+  "title": "Observaire AI-authored research frontmatter",
+  "description": "Machine-readable core shape for new durable Observaire research objects. research-observer.config.json remains authoritative for evolving vocabularies such as type, status, relationship type, and project IDs.",
+  "type": "object",
+  "required": ["id", "title", "summary", "type"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "title": { "type": "string", "minLength": 1 },
+    "summary": { "type": "string", "minLength": 1 },
+    "type": { "type": "string", "minLength": 1, "description": "Must be allowed by research-observer.config.json." },
+    "status": { "type": "string", "minLength": 1, "description": "Must be allowed by research-observer.config.json." },
+    "research": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "description": "Must name a configured research project; omit for default." },
+    "date": { "type": "string", "format": "date" },
+    "tags": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "aliases": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "authors": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "year": { "type": "integer", "minimum": 1000, "maximum": 9999 },
+    "doi": { "type": "string", "minLength": 1 },
+    "pdf": { "type": "string", "minLength": 1 },
+    "relationships": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/relationship" }
+    },
+    "source": { "$ref": "#/$defs/source" }
+  },
+  "$defs": {
+    "relationship": {
+      "type": "object",
+      "required": ["type", "target"],
+      "properties": {
+        "type": { "type": "string", "minLength": 1, "description": "Must be allowed by research-observer.config.json." },
+        "target": { "type": "string", "minLength": 1, "description": "Prefer an existing target stable ID." },
+        "note": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "source": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "pdf", "page"],
+          "properties": {
+            "kind": { "const": "pdf" },
+            "pdf": { "type": "string", "minLength": 1 },
+            "page": { "type": "integer", "minimum": 1 }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind"],
+          "properties": {
+            "kind": { "const": "consensus" },
+            "url": { "type": "string", "pattern": "^https://" },
+            "doi": { "type": "string", "minLength": 1 },
+            "paper_id": { "type": "string", "minLength": 1 },
+            "query": { "type": "string" }
+          },
+          "anyOf": [
+            { "required": ["url"] },
+            { "required": ["doi"] },
+            { "required": ["paper_id"] }
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "additionalProperties": false
+}
