@@ -41,12 +41,45 @@ Rules:
 - `pdf` must point to an existing local PDF under `progress/`; normally use `papers/`.
 - Do not invent author names, publication years, or DOIs from filenames.
 - When quoting or paraphrasing a PDF, record the page number when known.
-- A durable evidence excerpt should identify the source PDF and page.
+- A durable local-PDF evidence excerpt should identify the source PDF and page.
 - Prefer Observaire deep links such as `/papers/...?...page=12` only in generated UI/context. In source Markdown, keep local relative PDF paths portable.
 
 ## Evidence objects and typed relationships
 
-When a PDF passage becomes durable research evidence, prefer a dedicated ordered Markdown note with `type: evidence`. Record the local PDF path and page under `source`. Put the exact excerpt in a Markdown blockquote and keep interpretation outside the quote.
+Evidence can use one of two explicit provenance shapes.
+
+For a local PDF passage, use `kind: pdf`, an existing local PDF path, and the positive page number:
+
+```yaml
+type: evidence
+source:
+  kind: pdf
+  pdf: papers/smith-reranking-2026.pdf
+  page: 12
+```
+
+Put the exact selected excerpt in a Markdown blockquote and keep interpretation outside the quote.
+
+For a paper reviewed through Consensus, Observaire may create an external evidence object with `kind: consensus`:
+
+```yaml
+type: evidence
+source:
+  kind: consensus
+  url: https://example.org/paper
+  doi: 10.xxxx/verified-doi
+  paper_id: returned-consensus-id
+  query: retrieval evaluation systematic review
+```
+
+Rules for external evidence:
+
+- Preserve only metadata actually returned by the scholarly provider or verified from the paper.
+- At least one of `url`, `doi`, or `paper_id` must identify the external source.
+- Remote source URLs must use HTTPS.
+- A Consensus takeaway or abstract is discovery context, not a verified quotation from the full paper.
+- Only text explicitly returned as eligible full-text content may be saved under an evidence-excerpt heading, and it must still be checked against the original source before supporting a strong claim.
+- Saving a paper does not automatically create `supports`, `contradicts`, or other semantic relationships.
 
 Use `relationships` when the research meaning is stronger than an ordinary hyperlink. Supported relationship types are configured in `research-observer.config.json`. Common meanings:
 
@@ -58,6 +91,17 @@ Use `relationships` when the research meaning is stronger than an ordinary hyper
 - `builds_on`, `derived_from`, `uses`, `reproduces`, `supersedes`: research lineage.
 
 Relationship targets must already exist. Never create a relationship to a planned/nonexistent object.
+
+## Direct Edit from the website
+
+Observaire's Direct Edit mode is allowed to update an existing ordered Markdown note, but it must preserve the same content rules as hand editing:
+
+- Editing begins as a browser-local draft; previewing must not change the source file.
+- A save must be preceded by a visible text diff and research-doctor validation.
+- The reviewed patch must be rejected if the live note changed after the editor opened or after review.
+- If post-save validation fails, the patch must be rolled back.
+- Direct Edit does not stage or commit the user's live Git index. Git history remains under the researcher's control.
+- Changing a stable `id` is a semantic identity change and should be intentional; routine edits should preserve it.
 
 ## Linking
 
@@ -81,7 +125,6 @@ npm run check
 ```
 
 Do not assume GitHub Actions exist; validation is local-first.
-
 
 ## Research project and version identity
 
