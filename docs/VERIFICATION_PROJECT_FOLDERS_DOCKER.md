@@ -10,6 +10,7 @@ node --test tests/project-folders.test.mjs
 node --test tests/evidence-write.test.mjs
 node --test tests/consensus-evidence.test.mjs
 node --test tests/data-contract.test.mjs
+node --test tests/worktree.test.mjs
 npm run doctor
 npm run typecheck
 npm run lint
@@ -96,9 +97,10 @@ docker compose up
 6. Confirm the project is still present and re-indexed. This is the primary proof that research source lives in the host bind mount rather than container-only storage.
 7. Rebuild/recreate the service and repeat the check.
 8. Copy a new project folder directly into host `./progress/` while the container runs. Confirm the project is detected without restarting; the Compose polling fallback should notice it within roughly the configured poll interval.
-9. Set `OBSERVAIRE_RESEARCH_DIR` to another writable host directory, start Compose, import a project, and confirm it is written to that alternate host directory.
+9. Set `OBSERVAIRE_RESEARCH_DIR` to another writable host directory **while keeping `progressDir: "progress"`**, start Compose, import a project, and confirm it is written to that alternate host directory but still appears at `/app/progress` in the container.
 10. With an alternate research directory that does not contain `progress/AGENTS.md`, open **Instruction** and confirm the page falls back to the repository-level contract instead of failing.
-11. Verify `.research-observer` state uses the `observaire-state` named volume and is not confused with durable `progress/**` research source.
+11. Verify `.research-observer` state uses the `observaire-state` named volume and is not confused with durable research source.
+12. If testing a non-default `progressDir` such as `research-data`, change the Compose bind-mount **target** to `/app/research-data` as well; confirm the compiler and host mount still point to the same directory.
 
 ## Docker integration and Codex persistence
 
@@ -111,19 +113,25 @@ docker compose up
 
 ## Docker Git-backed review features
 
-The Compose setup mounts host `.git` metadata so existing Direct Edit/Codex review workflows can continue using Git when the default repository-backed `progress/` directory is mounted.
+The Compose setup mounts repository `.git` metadata to provide isolated worktree/patch mechanics. Act and Direct Edit use the **current mounted research filesystem** as their review baseline; the research files themselves do not need to be committed first.
 
 1. Confirm `git status` works inside the running container.
 2. Confirm Direct Edit can prepare an isolated review diff for a note in a nested project folder.
-3. Confirm Save updates the host-mounted Markdown file and does not stage or commit it.
+3. Confirm Save updates the host-mounted Markdown file and does not stage or commit the live repository index.
 4. Confirm the Codex Act review worktree can be created/removed without modifying unrelated host files.
-5. If `OBSERVAIRE_RESEARCH_DIR` points outside the Git worktree, do not assume Git-backed Act represents that external folder's history; verify indexing/import separately from Git review behavior.
+5. Import a project and intentionally leave it untracked/dirty in Git. Request an Act change to that project and confirm Act does not reject it merely for being uncommitted.
+6. Inspect the Act patch and confirm it contains only the Codex change relative to the imported live project baseline—not the entire imported project as a `HEAD → filesystem` diff.
+7. Apply the reviewed proposal and confirm the host-mounted file changes while the live Git index remains unstaged.
+8. Before applying another proposal, edit the same touched host file manually and confirm Apply rejects the post-review drift instead of overwriting it.
+9. Repeat steps 5–8 with `OBSERVAIRE_RESEARCH_DIR` pointing to a host directory outside the repository. Because it is still mounted at `/app/progress`, filesystem-first Act/Apply should behave the same way.
+
+For the deeper Act/Apply matrix, also run `docs/VERIFICATION_CODEX_FILESYSTEM_REVIEW.md`.
 
 ## Failure boundaries
 
 Do not call this feature fully verified until all of these have been observed on the exact candidate commit:
 
-- automated project-folder/evidence/contract regression tests pass;
+- automated project-folder/evidence/contract/worktree regression tests pass;
 - `npm run check` passes;
 - `npm run build` passes;
 - browser import succeeds;
@@ -131,6 +139,7 @@ Do not call this feature fully verified until all of these have been observed on
 - container recreation preserves/re-indexes it;
 - Codex/integration state survives normal recreation;
 - direct host folder copy is detected;
+- external host storage remains usable through filesystem-first Act/Apply;
 - two projects can reuse the same order numbers safely;
 - project-ID collisions are rejected;
 - folder-generated evidence remains physically inside the project;
