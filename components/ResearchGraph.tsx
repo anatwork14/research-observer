@@ -543,7 +543,18 @@ export function ResearchGraph({
           <>
             <div className={styles.inspectorHeader}>
               <div><span className="kicker">Selected node</span><h3 className={styles.inspectorTitle}>{selectedNode.title}</h3></div>
-              <span>{degree.get(selectedNode.slug) ?? 0} links</span>
+              <div className={styles.inspectorActions}>
+                <span>{degree.get(selectedNode.slug) ?? 0} links</span>
+                <button
+                  type="button"
+                  className={styles.clearSelection}
+                  aria-label="Close node inspector"
+                  title="Close node inspector"
+                  onClick={() => setSelected("")}
+                >
+                  ×
+                </button>
+              </div>
             </div>
             <div className={styles.inspectorMeta}>
               <span>{selectedNode.type ?? "note"}</span>

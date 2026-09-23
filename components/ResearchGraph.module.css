@@ -231,6 +231,20 @@
 }
 
 .inspectorHeader { align-items: flex-start; }
+.inspectorActions { display: flex; align-items: center; gap: 8px; }
+.clearSelection {
+  display: inline-grid;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--muted);
+  background: var(--canvas);
+  font-size: 17px;
+  line-height: 1;
+}
 .inspectorTitle { margin: 8px 0 0; font: 600 17px/1.2 var(--serif); }
 .inspectorMeta { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
 .inspectorMeta span {
@@ -313,5 +327,8 @@
   .buttonRow button,
   .toggleGrid button,
   .openButton,
+  .clearSelection,
   .search { min-height: 44px; }
+
+  .clearSelection { min-width: 44px; }
 }
