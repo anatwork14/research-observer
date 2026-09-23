@@ -73,7 +73,7 @@ function parseJson(text: string) {
   return JSON.parse(withoutFence);
 }
 
-function paperPacket(paper: Paper, index: number) {
+function paperPacket(paper: Paper) {
   const chunks = Array.isArray(paper.fullTextChunks)
     ? paper.fullTextChunks.slice(0, 3).map((chunk) => ({
         section: clean(chunk.section, 120),
@@ -82,8 +82,10 @@ function paperPacket(paper: Paper, index: number) {
     : [];
   const doi = normalizeDoi(paper.doi);
   const url = secureUrl(paper.url);
+  const providerId = clean(paper.id, 160);
+  const sourceId = providerId || (doi ? `doi:${doi}` : url ? `url:${url}` : "");
   return {
-    source_id: clean(paper.id, 160) || (doi ? `doi:${doi}` : url ? `url:${url}` : `source-${index + 1}`),
+    source_id: sourceId,
     title: clean(paper.title, 500),
     authors: Array.isArray(paper.authors) ? paper.authors.filter((item): item is string => typeof item === "string").slice(0, 20) : [],
     year: Number.isFinite(Number(paper.year)) ? Math.trunc(Number(paper.year)) : undefined,
@@ -118,9 +120,22 @@ export async function POST(request: Request) {
 
   const topic = clean(body.topic, 1400);
   const objective = clean(body.objective, 3000);
-  const papers = Array.isArray(body.papers) ? body.papers.slice(0, 20).map(paperPacket).filter((paper) => paper.title) : [];
+  const packetCandidates = Array.isArray(body.papers)
+    ? body.papers.slice(0, 20).map(paperPacket).filter((paper) => paper.title && paper.source_id)
+    : [];
+  const seenSourceIds = new Set<string>();
+  const papers = packetCandidates.filter((paper) => {
+    if (seenSourceIds.has(paper.source_id)) return false;
+    seenSourceIds.add(paper.source_id);
+    return true;
+  });
+
   if (!topic) return NextResponse.json({ error: "A research topic or question is required." }, { status: 400 });
-  if (papers.length < 2) return NextResponse.json({ error: "Select at least two Consensus papers before research planning." }, { status: 400 });
+  if (papers.length < 2) {
+    return NextResponse.json({
+      error: "Select at least two Consensus papers with a provider ID, DOI, or HTTPS source before research planning.",
+    }, { status: 400 });
+  }
 
   const schemaDescription = {
     overview: "short synthesis of what the selected literature says",
