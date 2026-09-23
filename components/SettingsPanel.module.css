@@ -1,0 +1,234 @@
+.shell {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.card {
+  padding: 24px;
+  border-radius: 14px;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.cardHeader h2 {
+  margin: 4px 0 6px;
+  font: 600 25px/1.1 var(--serif);
+  letter-spacing: -.025em;
+}
+
+.cardHeader p,
+.note,
+.securityNote {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 4px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font: 9px var(--mono);
+  white-space: nowrap;
+}
+
+.badgeReady {
+  color: var(--accent-deep);
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  background: color-mix(in srgb, var(--accent-wash) 62%, transparent);
+}
+
+.fields {
+  display: grid;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+}
+
+.field > span,
+.fieldset legend {
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.field small,
+.fieldset small {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 400;
+}
+
+.input {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  outline: none;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--surface-strong) 92%, transparent);
+}
+
+.input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.button,
+.buttonPrimary,
+.buttonDanger,
+.linkButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  background: var(--surface-strong);
+  text-decoration: none;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.button:hover,
+.linkButton:hover { border-color: var(--accent); }
+.button:disabled,
+.buttonPrimary:disabled,
+.buttonDanger:disabled { opacity: .45; cursor: not-allowed; }
+
+.buttonPrimary {
+  color: var(--canvas);
+  border-color: var(--accent-deep);
+  background: var(--accent-deep);
+}
+
+.buttonDanger {
+  color: var(--warm);
+  border-color: color-mix(in srgb, var(--warm) 42%, var(--line));
+  background: color-mix(in srgb, var(--warm) 7%, var(--surface-strong));
+}
+
+.integrationStack {
+  display: grid;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.integration {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-strong) 72%, transparent);
+}
+
+.integrationTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.integrationTop strong {
+  display: block;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.integrationTop span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font: 9px var(--mono);
+}
+
+.status {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--ink-soft);
+  background: color-mix(in srgb, var(--accent-wash) 35%, transparent);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.error {
+  color: var(--warm);
+  background: color-mix(in srgb, var(--warm) 10%, transparent);
+}
+
+.success {
+  color: var(--accent-deep);
+}
+
+.device {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
+  border-radius: 10px;
+  background: var(--accent-wash);
+}
+
+.deviceCode {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  align-items: center;
+}
+
+.deviceCode code {
+  padding: 7px 10px;
+  border-radius: 7px;
+  color: var(--ink);
+  background: var(--surface-strong);
+  font-size: 16px;
+  letter-spacing: .08em;
+}
+
+.securityNote {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+@media (max-width: 900px) {
+  .shell { grid-template-columns: 1fr; }
+}
+
+@media (pointer: coarse) {
+  .button,
+  .buttonPrimary,
+  .buttonDanger,
+  .linkButton,
+  .input { min-height: 44px; }
+}
