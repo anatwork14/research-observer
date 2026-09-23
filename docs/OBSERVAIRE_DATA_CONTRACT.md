@@ -1,22 +1,67 @@
 # Observaire research data contract
 
-Contract version: **1**
+Contract version: **2**
 
-This document defines the stable data shape that humans, ChatGPT, Codex, and other agents should produce when creating or editing Observaire research content. It exists so search, graph, Insights, evidence, relationships, version lineage, and future indexing all read the same semantics from Markdown instead of inferring meaning from prose.
+This document defines the stable data shape that humans, ChatGPT, Codex, and other agents should produce when creating or editing Observaire research content. It exists so search, graph, Insights, evidence, relationships, version lineage, project auto-indexing, and future indexing all read the same semantics from Markdown instead of inferring meaning from prose.
 
 ## 1. Source-of-truth rule
 
-Research content lives in ordered Markdown files directly under `progress/`.
+Research content lives under `progress/`. The preferred multi-project layout is one top-level folder per research project, containing ordered Markdown notes and any local assets that belong with them:
+
+```text
+progress/
+├── Protein Folding/
+│   ├── 00_question.md
+│   ├── 01_literature.md
+│   ├── 02_experiment.md
+│   ├── papers/
+│   │   └── smith-2026.pdf
+│   └── figures/
+│       └── result.svg
+└── Evaluation Study/
+    ├── 00_question.md
+    └── 01_method.md
+```
+
+A top-level folder is auto-registered as a research project when it contains at least one Markdown file whose basename matches the ordered-note convention (`00_*.md`, `01_*.md`, and so on). Asset-only folders do not become projects.
+
+Legacy root-level ordered notes remain supported:
 
 ```text
 progress/00_start_here.md
 progress/01_research_question.md
-progress/02_hypothesis.md
 ```
 
-The numeric filename prefix controls display order only. It is **not identity**.
+The numeric filename prefix controls display order **inside one project** only. It is **not identity**, and the same number may appear in different project folders.
 
 A stable frontmatter `id` is the canonical research-object identity. Keep it unchanged through ordinary edits, filename changes, and reordering.
+
+### Folder-local project identity
+
+By default, Observaire derives a lowercase kebab-case project ID from the project folder name. For example:
+
+```text
+progress/My Retrieval Study/
+```
+
+becomes project ID:
+
+```text
+my-retrieval-study
+```
+
+For a stable ID/label that should survive a folder rename, place `.observaire-project.json` inside the project folder:
+
+```json
+{
+  "schemaVersion": 1,
+  "id": "retrieval-study",
+  "label": "Retrieval Study",
+  "description": "Retrieval experiments and supporting evidence."
+}
+```
+
+This manifest is project metadata, not a research object or asset.
 
 ## 2. Canonical frontmatter
 
@@ -29,7 +74,6 @@ title: Retrieval augmentation reduces unsupported claims
 summary: Tests whether retrieval augmentation reduces unsupported claims under a fixed evaluation protocol.
 type: hypothesis
 status: investigating
-research: retrieval-study
 date: 2026-09-23
 tags:
   - retrieval
@@ -43,6 +87,14 @@ relationships:
 ---
 ```
 
+Inside an auto-indexed project folder, `research` normally SHOULD be omitted because folder membership is the project source of truth. If `research` is present and disagrees with the folder project, Observaire uses the folder project and emits a diagnostic.
+
+Root-level legacy notes may still use an explicit `research` value:
+
+```yaml
+research: retrieval-study
+```
+
 ### Stable/indexable fields
 
 | Field | Shape | Meaning |
@@ -52,7 +104,7 @@ relationships:
 | `summary` | string | One factual sentence describing purpose/finding. |
 | `type` | configured vocabulary | Research-object kind. |
 | `status` | configured vocabulary | Workflow state, not quality score. |
-| `research` | configured project ID | Project scope. Omit for `default`. |
+| `research` | project ID | Project scope for root-level/legacy notes. Folder membership takes precedence for folder-backed projects. |
 | `date` | `YYYY-MM-DD` | Date known for the object/event. Omit if unknown. |
 | `tags` | list of strings | Cross-cutting labels. |
 | `aliases` | list of strings | Previous stable IDs/slugs that should still resolve. |
@@ -71,7 +123,7 @@ Current `status` vocabulary is:
 
 `idea`, `investigating`, `experimenting`, `validating`, `complete`, `blocked`, `archived`.
 
-Agents MUST inspect `research-observer.config.json` rather than assuming this list is permanent.
+Agents MUST inspect `research-observer.config.json` rather than assuming these vocabularies are permanent.
 
 ## 3. Identity, filename, and aliases
 
@@ -79,8 +131,10 @@ Identity precedence:
 
 1. `id` — canonical stable identity.
 2. `aliases` — old identities that should continue resolving.
-3. filename slug — compatibility/routing identity.
+3. filename-derived slug — compatibility/routing identity.
 4. numeric filename prefix — sequence only.
+
+For a nested project note without `id`, Observaire scopes its filename fallback by project to reduce collisions, but durable notes should still define a stable `id`.
 
 Do not create a new semantic version merely because wording changed. Preserve the same `id` for normal edits.
 
@@ -92,10 +146,17 @@ Observaire deliberately separates **readable document links** from **semantic gr
 
 ### Body Markdown links = readable references
 
-Use a relative Markdown filename when mentioning another note in prose:
+Use relative Markdown filenames when mentioning another note in prose:
 
 ```md
 See the [baseline experiment](04_baseline_experiment.md).
+```
+
+Inside project folders, nested relative paths are supported:
+
+```md
+See the [source paper](papers/smith-2026.pdf).
+See the [other project note](../Evaluation Study/01_method.md).
 ```
 
 Section links are allowed:
@@ -154,17 +215,33 @@ Examples:
 
 ## 5. Project contract
 
-`research` scopes a research object to one declared project:
+Observaire supports two compatible project mechanisms.
+
+### Preferred: folder-backed projects
+
+Any top-level folder under `progress/` containing at least one ordered Markdown note is automatically a project. Its folder name derives the project ID unless `.observaire-project.json` supplies a stable ID and label.
+
+Within a folder-backed project:
+
+- folder membership defines `research` scope;
+- note order starts independently at `00`/`01` for that project;
+- assets may live beside the notes or in nested asset folders;
+- `research:` frontmatter is optional and normally omitted;
+- if `research:` disagrees with folder identity, folder identity wins and a diagnostic is emitted.
+
+### Compatibility/advanced: configured projects
+
+`researchProjects` in `research-observer.config.json` remains supported for root-level notes, legacy workspaces, predeclared empty projects, and explicit metadata. A root-level object may use:
 
 ```yaml
 research: retrieval-study
 ```
 
-The project ID must exist in `researchProjects` inside `research-observer.config.json` unless the user explicitly asked to extend project configuration.
-
-Omitting `research` means `default`.
+If a root-level note omits `research`, it belongs to `default`.
 
 Do not duplicate the same evidence or note into multiple projects. Keep one canonical object and use typed relationships when cross-project meaning exists.
+
+Project folders should not be used merely as generic asset buckets. A folder becomes a project only when it contains an ordered Markdown note.
 
 ## 6. Evidence provenance
 
@@ -190,6 +267,8 @@ relationships:
 ```
 
 The exact excerpt should be a Markdown blockquote. Interpretation belongs outside the quotation.
+
+For a note inside a project folder, local PDF paths remain relative to that note's location.
 
 ### Consensus/external paper evidence
 
@@ -312,11 +391,13 @@ If a value is unknown, write the uncertainty in prose or omit the metadata field
 
 ## 9. Indexing semantics
 
-Observaire's compiler derives searchable/indexable data from frontmatter and Markdown.
+Observaire's compiler derives searchable/indexable data from folder structure, frontmatter, and Markdown.
 
 Agents should assume these are intended index dimensions:
 
-- canonical identity (`id` / aliases / slug),
+- project folder identity / optional `.observaire-project.json`,
+- canonical object identity (`id` / aliases / slug),
+- numeric sequence within each project,
 - title and summary,
 - object type and status,
 - project (`research`),
@@ -330,7 +411,7 @@ Agents should assume these are intended index dimensions:
 - body Markdown links/backlinks,
 - referenced local assets.
 
-Do not hide critical identity, source, project, or relationship information only in prose if there is a canonical field for it.
+Do not hide critical identity, source, project, or relationship information only in prose if there is a canonical field or folder convention for it.
 
 Do not create arbitrary frontmatter fields and expect them to be indexed. Extend the compiler/config/contract intentionally when a new structured concept is needed.
 
@@ -342,16 +423,35 @@ When possible, provide an agent with:
 2. root `AGENTS.md`,
 3. `progress/AGENTS.md`,
 4. `research-observer.config.json`,
-5. the existing note index: filename + stable `id` + title + type + research project,
-6. the specific notes/evidence relevant to the task.
+5. the project-folder index including `.observaire-project.json` metadata when present,
+6. the existing note index: filename + stable `id` + title + type + resolved research project,
+7. the specific notes/evidence relevant to the task.
 
 This is enough for an agent to avoid duplicate identities, broken relationship targets, wrong project IDs, and filename/order collisions.
 
 If an external ChatGPT session cannot inspect the repository, it must not invent relationships to unknown existing targets. It may create relationships among files that it creates in the same output bundle because those identities are known.
 
-## 11. Minimum quality gate
+## 11. Storage and import semantics
 
-Before considering repository changes complete:
+The source files under `progress/` are the durable record. Generated indexes under `public/_research/` are rebuildable and are not the source of truth.
+
+When running Observaire with the repository `compose.yaml`, the host research directory is bind-mounted to `/app/progress`. Browser project imports therefore write through to the host directory rather than container-only storage.
+
+The default host source directory is `./progress`. It can be changed with `OBSERVAIRE_RESEARCH_DIR` when starting Docker Compose.
+
+A browser folder import is transactional:
+
+1. files are staged under a temporary ignored directory;
+2. path/type/size rules are checked;
+3. the folder is promoted into `progress/` only as one project directory;
+4. the compiler validates/indexes it;
+5. compiler errors roll the imported folder back rather than leaving a half-registered project.
+
+Existing project folders are never silently overwritten by browser import.
+
+## 12. Minimum quality gate
+
+Before considering research-content changes complete:
 
 ```bash
 npm run doctor
