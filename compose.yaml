@@ -20,7 +20,9 @@ services:
       - "./research-observer.config.json:/app/research-observer.config.json:ro"
       - "./.git:/app/.git"
       - observaire-state:/app/.research-observer
+      - observaire-codex:/home/node/.codex
     restart: unless-stopped
 
 volumes:
   observaire-state:
+  observaire-codex:
