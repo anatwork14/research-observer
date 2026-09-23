@@ -14,6 +14,10 @@ function displayTitle(path: string) {
   return (path.split("/").pop() ?? path).replace(/\.pdf$/i, "").replace(/[-_]+/g, " ");
 }
 
+function researchPathFromParams(path: string[]) {
+  return path.map((segment) => decodeURIComponent(segment)).join("/");
+}
+
 export async function generateStaticParams() {
   const workspace = await getResearchWorkspace();
   return workspace.assets
@@ -23,7 +27,7 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<{ path: string[] }> }): Promise<Metadata> {
   const { path } = await params;
-  const researchPath = path.join("/");
+  const researchPath = researchPathFromParams(path);
   return { title: `${displayTitle(researchPath)} · Papers · Observaire` };
 }
 
@@ -35,7 +39,7 @@ export default async function PaperPage({
   searchParams: Promise<{ page?: string }>;
 }) {
   const [{ path }, query, workspace] = await Promise.all([params, searchParams, getResearchWorkspace()]);
-  const researchPath = path.join("/");
+  const researchPath = researchPathFromParams(path);
   const asset = workspace.assets.find((item) => item.path === researchPath && item.extension === ".pdf");
   if (!asset) notFound();
 
