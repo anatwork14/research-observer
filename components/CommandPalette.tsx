@@ -45,6 +45,14 @@ function excerptAround(text: string, needle: string) {
   return (start ? "…" : "") + text.slice(start, end) + (end < text.length ? "…" : "");
 }
 
+function initialResults(entries: NavEntry[]): Result[] {
+  return entries.slice(0, 8).map((entry) => ({
+    ...entry,
+    excerpt: "Research note",
+    matchedBy: "note",
+  }));
+}
+
 function runSearch(entries: SearchEntry[], query: string): Result[] {
   const { filters, text } = parseQuery(query);
 
@@ -122,6 +130,12 @@ function runFallbackSearch(entries: NavEntry[], query: string): Result[] {
     }));
 }
 
+function currentResults(entries: NavEntry[], index: SearchEntry[] | null, indexUnavailable: boolean, query: string) {
+  if (indexUnavailable) return runFallbackSearch(entries, query);
+  if (!index) return initialResults(entries);
+  return runSearch(index, query);
+}
+
 export function CommandPalette({ entries }: { entries: NavEntry[] }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -149,7 +163,7 @@ export function CommandPalette({ entries }: { entries: NavEntry[] }) {
         return;
       }
       if (!open) return;
-      const results = indexUnavailable ? runFallbackSearch(entries, query) : index ? runSearch(index, query) : [];
+      const results = currentResults(entries, index, indexUnavailable, query);
       if (event.key === "Escape") {
         event.preventDefault();
         setOpen(false);
@@ -197,17 +211,10 @@ export function CommandPalette({ entries }: { entries: NavEntry[] }) {
     return () => controller.abort();
   }, [open]);
 
-  const results = useMemo(() => {
-    if (indexUnavailable) return runFallbackSearch(entries, query);
-    if (!index) {
-      return entries.slice(0, 8).map((entry) => ({
-        ...entry,
-        excerpt: "Research note",
-        matchedBy: "note",
-      }));
-    }
-    return runSearch(index, query);
-  }, [entries, index, indexUnavailable, query]);
+  const results = useMemo(
+    () => currentResults(entries, index, indexUnavailable, query),
+    [entries, index, indexUnavailable, query],
+  );
 
   function openResult(result: Result) {
     router.push("/progress/" + result.slug);
