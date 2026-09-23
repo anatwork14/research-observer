@@ -110,7 +110,8 @@
 .dropzone small { margin-top: 5px; color: var(--muted); font-size: 8px; line-height: 1.55; }
 
 .dropzone button,
-.selection button {
+.selection button,
+.successActions button {
   min-height: 38px;
   padding: 0 13px;
   border: 1px solid var(--accent);
@@ -122,7 +123,8 @@
 }
 
 .dropzone button:disabled,
-.selection button:disabled { opacity: .45; cursor: not-allowed; }
+.selection button:disabled,
+.successActions button:disabled { opacity: .45; cursor: not-allowed; }
 
 .selection {
   display: flex;
@@ -167,15 +169,30 @@
 .success span { color: var(--ink-soft); font-size: 9px; }
 .success small { color: var(--muted); font-size: 8px; line-height: 1.45; }
 
+.successActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 7px;
+}
+
+.successActions button:last-child {
+  color: var(--accent-deep);
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+}
+
 @media (max-width: 680px) {
   .panel { padding: 17px; }
   .heading { flex-direction: column; gap: 10px; }
   .dropzone { min-height: 210px; padding-inline: 16px; }
   .selection { align-items: stretch; flex-direction: column; }
   .selection button { width: 100%; }
+  .successActions { flex-direction: column; }
+  .successActions button { width: 100%; }
 }
 
 @media (pointer: coarse) {
   .dropzone button,
-  .selection button { min-height: 44px; }
+  .selection button,
+  .successActions button { min-height: 44px; }
 }
