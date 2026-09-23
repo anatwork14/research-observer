@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import {
   compileResearchWorkspace,
@@ -21,5 +22,17 @@ export async function getProgressEntry(slug: string): Promise<ProgressEntry | nu
 }
 
 export function progressDir() {
-  return path.join(process.cwd(), "progress");
+  const root = process.cwd();
+  let configured = "progress";
+  try {
+    const raw = fs.readFileSync(path.join(root, "research-observer.config.json"), "utf8");
+    const parsed = JSON.parse(raw) as { progressDir?: unknown };
+    if (typeof parsed.progressDir === "string" && parsed.progressDir.trim()) configured = parsed.progressDir.trim();
+  } catch {
+    // Keep the compiler's default when the optional config cannot be read here.
+  }
+
+  const resolved = path.resolve(root, configured);
+  if (resolved === root || !resolved.startsWith(root + path.sep)) return path.join(root, "progress");
+  return resolved;
 }
