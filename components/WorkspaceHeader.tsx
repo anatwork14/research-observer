@@ -5,7 +5,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { WorkspaceControls } from "@/components/WorkspaceControls";
 
 type NavEntry = { slug: string; order: number; title: string; status?: string };
-type Section = "overview" | "insights" | "new-research" | "notes" | "papers" | "evidence" | "graph" | "collections" | "health" | "instruction";
+type Section = "overview" | "insights" | "new-research" | "notes" | "papers" | "evidence" | "graph" | "collections" | "health" | "instruction" | "settings";
 
 const sections: Array<{ key: Section; href: string; label: string }> = [
   { key: "overview", href: "/", label: "Overview" },
@@ -18,6 +18,7 @@ const sections: Array<{ key: Section; href: string; label: string }> = [
   { key: "collections", href: "/collections", label: "Collections" },
   { key: "health", href: "/health", label: "Health" },
   { key: "instruction", href: "/instruction", label: "Instruction" },
+  { key: "settings", href: "/settings", label: "Settings" },
 ];
 
 export function WorkspaceHeader({
