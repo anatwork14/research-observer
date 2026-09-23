@@ -1,6 +1,6 @@
 # Project folders, auto-indexing, and Docker persistence
 
-Observaire treats the filesystem as the durable research database. For ordinary multi-project work, **one top-level folder under `progress/` is one research project**.
+Observaire treats the filesystem as the durable research database. For ordinary multi-project work, **one top-level folder under the configured research root is one research project**. The default research root is `progress/`.
 
 You do not need to add the project to `research-observer.config.json` first.
 
@@ -39,7 +39,7 @@ Observaire will:
 3. reject path traversal, unsupported file types, unsafe folder names, oversized browser imports, and project-ID collisions with populated projects;
 4. stage the folder transactionally;
 5. create `.observaire-project.json` if the folder does not already provide one;
-6. move the validated folder into the workspace `progress/` directory;
+6. move the validated folder into the configured research root (`progress/` by default);
 7. compile and index the project immediately;
 8. roll the imported folder back if it introduces compiler errors.
 
@@ -70,7 +70,7 @@ Generated indexes remain rebuildable output. They are not the durable research d
 
 ## You can also copy folders directly on the host
 
-The web importer is optional. You can copy or create a folder directly under the host `progress/` directory:
+The web importer is optional. With the default Compose configuration, you can copy or create a folder directly under the host directory mounted at `/app/progress` (normally `./progress`):
 
 ```text
 progress/
@@ -92,7 +92,7 @@ so bind-mounted changes are detected even on Docker Desktop/filesystems where re
 
 A folder containing ordered notes is automatically registered.
 
-For example:
+For example, with the default research root:
 
 ```text
 progress/My Retrieval Study/
@@ -216,7 +216,7 @@ Evidence generated from a folder-backed project stays in that project folder. Fo
 My Research Project/02_evidence_....md
 ```
 
-rather than a root-level `progress/` file. Local PDF provenance is written relative to the evidence note, so `papers/paper.pdf` remains portable if the project folder moves.
+rather than a root-level research file. Local PDF provenance is written relative to the evidence note, so `papers/paper.pdf` remains portable if the project folder moves.
 
 Configured/root-level projects keep the existing root-level evidence behavior for backwards compatibility.
 
@@ -238,17 +238,32 @@ That generated bundle does not need a manual `researchProjects` config entry and
 
 ## Change the host research directory
 
-You can keep research somewhere other than the repository's `progress/` folder:
+The supplied Compose file intentionally keeps the **container research path** at `/app/progress`. To store the files somewhere else on the host, keep `progressDir: "progress"` and change only the host side of the bind mount:
 
 ```bash
 OBSERVAIRE_RESEARCH_DIR=/absolute/path/to/research docker compose up --build
 ```
 
-Observaire still sees it at `/app/progress` inside the container, while the files remain at the path you chose on the host.
+Observaire still sees the source at `/app/progress` inside the container, while the files remain at the path you chose on the host.
+
+This distinction matters:
+
+- `OBSERVAIRE_RESEARCH_DIR` chooses **where the durable source lives on the host** for the supplied Compose setup.
+- `progressDir` chooses **which repository-relative directory Observaire reads inside its runtime/worktree**.
+
+For the supplied `compose.yaml`, the easiest and recommended Docker configuration is therefore to leave `progressDir` as `progress` and relocate host storage with `OBSERVAIRE_RESEARCH_DIR`.
+
+If you intentionally change `progressDir` to another in-repository directory such as `research-data`, also change the Compose bind-mount target to the matching container path (for example `/app/research-data`). Otherwise the host bind mount and the compiler will point at different directories.
 
 When an external research mount does not include the repository's `progress/AGENTS.md`, the **Instruction** page remains available and falls back to the repository-level contract, data contract, JSON Schema, and live workspace config.
 
-Git-backed Direct Edit/Codex review works most naturally with the default repository `progress/` bind mount because the mounted `.git` metadata describes that worktree. External research directories remain valid for indexing, browsing, import, and normal filesystem-backed edits, but should not be assumed to share the repository's Git history.
+### Git-backed review with external host storage
+
+Direct Edit and Codex Act/Apply do **not** require the research source to be committed to Git before review. They create isolated review worktrees and overlay/snapshot the current live research filesystem as the review baseline.
+
+That means an arbitrary host directory mounted at `/app/progress` remains compatible with Git-backed review even when those host files are untracked relative to the repository's current `HEAD`. The mounted repository `.git` metadata supplies the review mechanism; the live filesystem supplies the research baseline.
+
+Apply still protects human edits: touched files are compared with their reviewed baseline state and a file changed after review is rejected rather than overwritten.
 
 Change the browser port if needed:
 
@@ -311,5 +326,10 @@ For a release candidate:
 ```bash
 npm run check:full
 ```
+
+Additional focused matrices:
+
+- `docs/VERIFICATION_PROJECT_FOLDERS_DOCKER.md`
+- `docs/VERIFICATION_CODEX_FILESYSTEM_REVIEW.md`
 
 The canonical content rules are in `docs/OBSERVAIRE_DATA_CONTRACT.md`.
