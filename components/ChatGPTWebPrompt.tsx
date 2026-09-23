@@ -5,9 +5,23 @@ import styles from "./ChatGPTWebPrompt.module.css";
 
 const PLACEHOLDER = "{{TOPIC_OR_IDEA_OR_HYPOTHESIS}}";
 
+function fallbackCopy(value: string) {
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  textarea.remove();
+  if (!copied) throw new Error("Clipboard access is unavailable.");
+}
+
 export function ChatGPTWebPrompt({ template }: { template: string }) {
   const [topic, setTopic] = useState("");
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState("");
 
   const prompt = useMemo(() => {
     const replacement = topic.trim() || PLACEHOLDER;
@@ -15,12 +29,15 @@ export function ChatGPTWebPrompt({ template }: { template: string }) {
   }, [template, topic]);
 
   async function copyPrompt() {
+    setCopyError("");
     try {
-      await navigator.clipboard.writeText(prompt);
+      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(prompt);
+      else fallbackCopy(prompt);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1600);
     } catch {
       setCopied(false);
+      setCopyError("Could not access the clipboard. Open the preview and copy the prompt manually.");
     }
   }
 
@@ -56,6 +73,8 @@ export function ChatGPTWebPrompt({ template }: { template: string }) {
           Open ChatGPT ↗
         </a>
       </div>
+
+      {copyError && <p className={styles.error} role="alert">{copyError}</p>}
 
       <details className={styles.preview}>
         <summary>Preview generated prompt</summary>
