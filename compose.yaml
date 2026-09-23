@@ -1,0 +1,25 @@
+name: observaire
+
+services:
+  observaire:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    init: true
+    user: "${OBSERVAIRE_UID:-1000}:${OBSERVAIRE_GID:-1000}"
+    environment:
+      NEXT_TELEMETRY_DISABLED: "1"
+      RESEARCH_OBSERVER_WRITES: "1"
+      OBSERVAIRE_SETTINGS_WRITES: "1"
+      OBSERVAIRE_CODEX_AUTH_UI: "1"
+      OBSERVAIRE_WATCH_POLL_MS: "1000"
+    ports:
+      - "${OBSERVAIRE_PORT:-3000}:3000"
+    volumes:
+      - "${OBSERVAIRE_RESEARCH_DIR:-./progress}:/app/progress"
+      - "./research-observer.config.json:/app/research-observer.config.json:ro"
+      - observaire-state:/app/.research-observer
+    restart: unless-stopped
+
+volumes:
+  observaire-state:
