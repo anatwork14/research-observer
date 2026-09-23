@@ -69,6 +69,7 @@ export function SettingsPanel() {
       const stored = window.localStorage.getItem("observaire-profile");
       if (stored) {
         const parsed = JSON.parse(stored) as Partial<Profile>;
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- restore the optional browser-local profile after hydration
         setProfile({
           name: typeof parsed.name === "string" ? parsed.name : "",
           role: typeof parsed.role === "string" ? parsed.role : "",

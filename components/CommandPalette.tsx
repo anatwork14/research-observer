@@ -147,6 +147,7 @@ export function CommandPalette({ entries }: { entries: NavEntry[] }) {
 
   function openPalette() {
     setSelected(0);
+    setIndexUnavailable(false);
     setOpen(true);
   }
 
@@ -187,7 +188,6 @@ export function CommandPalette({ entries }: { entries: NavEntry[] }) {
     if (!open) return;
     requestAnimationFrame(() => inputRef.current?.focus());
 
-    setIndexUnavailable(false);
     const controller = new AbortController();
     fetch("/_research/search.json?ts=" + Date.now(), {
       cache: "no-store",

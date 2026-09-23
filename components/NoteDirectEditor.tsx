@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 
@@ -105,7 +105,9 @@ export function NoteDirectEditor({
 
   const dirty = Boolean(note && content !== note.content);
   const preview = useMemo(() => markdownBody(content), [content]);
-  draftSnapshotRef.current = { note, content, dirty, editing };
+  useLayoutEffect(() => {
+    draftSnapshotRef.current = { note, content, dirty, editing };
+  }, [content, dirty, editing, note]);
 
   useEffect(() => {
     function warn(event: BeforeUnloadEvent) {

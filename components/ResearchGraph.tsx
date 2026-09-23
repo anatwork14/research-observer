@@ -137,6 +137,7 @@ export function ResearchGraph({
 
   useEffect(() => {
     const seeded = initialGraphPositions(nodes);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- replace stale node positions when the graph data changes
     setPositions((current) => {
       const next = { ...seeded };
       for (const node of nodes) if (current[node.slug]) next[node.slug] = current[node.slug];
@@ -151,6 +152,7 @@ export function ResearchGraph({
       const parsed = JSON.parse(raw) as { positions?: Record<string, Point>; pinned?: string[] };
       const allowed = new Set(nodes.map((node) => node.slug));
       const nextPinned = new Set((parsed.pinned ?? []).filter((slug) => allowed.has(slug)));
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- restore optional persisted graph controls after hydration
       setPinned(nextPinned);
       setPositions((current) => {
         const next = { ...current };
@@ -167,6 +169,7 @@ export function ResearchGraph({
 
   useEffect(() => {
     const fitted = fitGraphViewport(positions, visibleSlugs, WORLD_WIDTH, WORLD_HEIGHT);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- recalculate the initial viewport after graph scope changes
     setZoom(fitted.zoom);
     setPan({ x: fitted.panX, y: fitted.panY });
     // Fit only when the graph scope changes; positions intentionally stay user-controlled.
@@ -476,7 +479,6 @@ export function ResearchGraph({
                   if (event.key === " ") { event.preventDefault(); setSelected(node.slug); }
                 }}
               >
-                <title>{node.title} · {node.type ?? "note"} · {node.research}</title>
                 <circle r={radius} />
                 <text y={3} textAnchor="middle" className={styles.order}>{String(node.order).padStart(2, "0")}</text>
                 {labelVisible && (

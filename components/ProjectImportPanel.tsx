@@ -16,20 +16,6 @@ type ImportResult = {
   error?: string;
 };
 
-type FileSystemEntryLike = {
-  name: string;
-  isFile: boolean;
-  isDirectory: boolean;
-  file?: (success: (file: File) => void, error?: (error: DOMException) => void) => void;
-  createReader?: () => {
-    readEntries: (success: (entries: FileSystemEntryLike[]) => void, error?: (error: DOMException) => void) => void;
-  };
-};
-
-type DataTransferItemWithEntry = DataTransferItem & {
-  webkitGetAsEntry?: () => FileSystemEntryLike | null;
-};
-
 function formatBytes(value: number) {
   if (value < 1024) return `${value} B`;
   if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
@@ -56,27 +42,26 @@ function selectionFromFiles(files: SelectedFile[]): Selection {
   };
 }
 
-function readFileEntry(entry: FileSystemEntryLike) {
+function readFileEntry(entry: FileSystemFileEntry) {
   return new Promise<File>((resolve, reject) => {
-    if (!entry.file) return reject(new Error("Dropped file entry is not readable."));
     entry.file(resolve, reject);
   });
 }
 
-async function readDirectory(reader: NonNullable<ReturnType<NonNullable<FileSystemEntryLike["createReader"]>>>) {
-  const all: FileSystemEntryLike[] = [];
+async function readDirectory(reader: FileSystemDirectoryReader) {
+  const all: FileSystemEntry[] = [];
   while (true) {
-    const batch = await new Promise<FileSystemEntryLike[]>((resolve, reject) => reader.readEntries(resolve, reject));
+    const batch = await new Promise<FileSystemEntry[]>((resolve, reject) => reader.readEntries(resolve, reject));
     if (!batch.length) return all;
     all.push(...batch);
   }
 }
 
-async function collectEntry(entry: FileSystemEntryLike, prefix = ""): Promise<SelectedFile[]> {
+async function collectEntry(entry: FileSystemEntry, prefix = ""): Promise<SelectedFile[]> {
   const currentPath = `${prefix}${entry.name}`;
-  if (entry.isFile) return [{ file: await readFileEntry(entry), path: currentPath }];
-  if (!entry.isDirectory || !entry.createReader) return [];
-  const children = await readDirectory(entry.createReader());
+  if (entry.isFile) return [{ file: await readFileEntry(entry as FileSystemFileEntry), path: currentPath }];
+  if (!entry.isDirectory) return [];
+  const children = await readDirectory((entry as FileSystemDirectoryEntry).createReader());
   const nested = await Promise.all(children.map((child) => collectEntry(child, `${currentPath}/`)));
   return nested.flat();
 }
@@ -121,8 +106,8 @@ export function ProjectImportPanel({ enabled, reason, storageDirectory }: { enab
     setDragging(false);
     setError("");
     const entries = Array.from(event.dataTransfer.items)
-      .map((item) => (item as DataTransferItemWithEntry).webkitGetAsEntry?.())
-      .filter((entry): entry is FileSystemEntryLike => Boolean(entry));
+      .map((item) => item.webkitGetAsEntry?.())
+      .filter((entry): entry is FileSystemEntry => entry !== null);
     if (entries.length !== 1 || !entries[0].isDirectory) {
       setError("Drop one project folder at a time. Folder drag-and-drop works in Chromium browsers; the folder picker works everywhere it is supported.");
       return;
