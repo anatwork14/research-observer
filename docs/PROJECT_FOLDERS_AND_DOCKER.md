@@ -36,12 +36,14 @@ Observaire will:
 
 1. inspect the folder before writing it;
 2. require at least one numbered Markdown note;
-3. reject path traversal, unsupported file types, unsafe folder names, and browser imports that exceed the configured import limits;
+3. reject path traversal, unsupported file types, unsafe folder names, oversized browser imports, and project-ID collisions with populated projects;
 4. stage the folder transactionally;
 5. create `.observaire-project.json` if the folder does not already provide one;
 6. move the validated folder into the workspace `progress/` directory;
 7. compile and index the project immediately;
 8. roll the imported folder back if it introduces compiler errors.
+
+After success, the importer exposes direct **Open project notes** and **Open insights** actions.
 
 The project appears in **Projects**, **Notes**, **Insights**, **Graph**, **Collections**, and search as soon as the workspace recompiles.
 
@@ -132,6 +134,8 @@ A valid project manifest contains:
 }
 ```
 
+The browser importer refuses an incoming ID that is already used by a populated project. Rename the folder or give the incoming manifest a different stable ID rather than silently merging two research histories.
+
 ## Ordering is per project
 
 Each project owns its own sequence.
@@ -174,7 +178,7 @@ research: configured-project-id
 
 and `researchProjects` in `research-observer.config.json` remains supported for legacy/root-level notes, advanced metadata, and intentionally predeclared projects.
 
-## Assets and relative links
+## Assets, evidence, and relative links
 
 Assets can live inside the project tree:
 
@@ -204,7 +208,33 @@ An intentional cross-project file link may use a relative path such as:
 See [Evaluation method](../Evaluation Study/01_method.md).
 ```
 
-For semantic relationships, prefer stable object IDs in frontmatter `relationships` rather than file paths.
+For semantic relationships, prefer stable object IDs in frontmatter `relationships` rather than file paths. If the same filename exists in more than one project, evidence creation rejects that filename as an ambiguous semantic target and asks for the stable ID.
+
+Evidence generated from a folder-backed project stays in that project folder. For example, if a folder has `00_question.md` and `01_literature.md`, the next captured evidence may become:
+
+```text
+My Research Project/02_evidence_....md
+```
+
+rather than a root-level `progress/` file. Local PDF provenance is written relative to the evidence note, so `papers/paper.pdf` remains portable if the project folder moves.
+
+Configured/root-level projects keep the existing root-level evidence behavior for backwards compatibility.
+
+## ChatGPT Web → Projects import
+
+The prompt generator in **Instruction** now asks ChatGPT Web to produce the same folder contract the Projects importer accepts:
+
+```text
+<Project Folder>/
+├── .observaire-project.json
+├── 00_primary_question.md
+├── 01_main_hypothesis.md
+├── 02_research_method.md
+├── 03_first_experiment.md
+└── 04_research_map.md
+```
+
+That generated bundle does not need a manual `researchProjects` config entry and normally omits `research:` from each note.
 
 ## Change the host research directory
 
@@ -215,6 +245,10 @@ OBSERVAIRE_RESEARCH_DIR=/absolute/path/to/research docker compose up --build
 ```
 
 Observaire still sees it at `/app/progress` inside the container, while the files remain at the path you chose on the host.
+
+When an external research mount does not include the repository's `progress/AGENTS.md`, the **Instruction** page remains available and falls back to the repository-level contract, data contract, JSON Schema, and live workspace config.
+
+Git-backed Direct Edit/Codex review works most naturally with the default repository `progress/` bind mount because the mounted `.git` metadata describes that worktree. External research directories remain valid for indexing, browsing, import, and normal filesystem-backed edits, but should not be assumed to share the repository's Git history.
 
 Change the browser port if needed:
 
@@ -230,23 +264,31 @@ On Linux, if your host UID/GID are not 1000, you can preserve host ownership wit
 OBSERVAIRE_UID=$(id -u) OBSERVAIRE_GID=$(id -g) docker compose up --build
 ```
 
+The persistent Observaire state mount is writable by the runtime user, and Codex creates its own home under that state mount.
+
 ## What Docker stores separately
 
 The research source directory is a host bind mount.
 
-Local integration/Codex transient state is kept separately in the Docker named volume:
+Observaire keeps runtime state in the Docker named volume:
 
 ```text
 observaire-state
 ```
 
-That state is not a substitute for research source files.
+This includes local integration settings and `CODEX_HOME` (`/app/.research-observer/codex`), so an in-app Codex sign-in can survive normal container stop/rebuild/recreation.
+
+`docker compose down` preserves named volumes. `docker compose down -v` intentionally deletes this local runtime/auth state, but still does **not** delete bind-mounted research source files.
+
+Runtime state is not a substitute for research source files.
 
 ## Browser import safety
 
 The current browser importer intentionally does **not** merge into or overwrite an existing project directory. If the folder already exists, edit/copy files directly in the host project folder or rename the incoming folder.
 
-This conservative rule avoids accidentally replacing research history through a browser upload.
+It also rejects a project ID already used by an existing populated project. This prevents a differently named folder/manifest from silently joining another research history.
+
+This conservative rule avoids accidentally replacing or merging research history through a browser upload.
 
 For very large project trees, copy them directly into the host research directory instead of sending them through the browser. Direct host copies are still automatically indexed.
 
