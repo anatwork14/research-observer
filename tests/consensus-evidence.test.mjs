@@ -84,3 +84,48 @@ test("Consensus paper results can be saved as validated external evidence", asyn
   assert.equal(entry?.source?.paperId, "paper-123");
   assert.ok(!workspace.health.evidenceMissingSource.includes(created.slug));
 });
+
+test("Consensus evidence requested for an auto-indexed project stays in that project folder", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "observaire-consensus-folder-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const projectRoot = path.join(root, "progress", "Agent Memory Study");
+  await fs.mkdir(projectRoot, { recursive: true });
+  await fs.writeFile(
+    path.join(projectRoot, "00_question.md"),
+    [
+      "---",
+      "id: memory-question",
+      "title: Agent memory question",
+      "summary: Tests a folder-backed research flow.",
+      "type: question",
+      "status: investigating",
+      "---",
+      "",
+      "# Agent memory question",
+      ""
+    ].join("\n")
+  );
+
+  const created = await createConsensusEvidenceNote({
+    rootDir: root,
+    query: "agent memory evaluation",
+    research: "agent-memory-study",
+    paper: {
+      id: "memory-paper",
+      title: "Evaluating memory in software agents",
+      doi: "10.1000/memory",
+      takeaway: "A discovery-context summary.",
+    },
+  });
+
+  assert.equal(created.research, "agent-memory-study");
+  assert.match(created.filename, /^Agent Memory Study\/01_evidence_consensus_evaluating-memory-in-software-agents_[a-f0-9]{8}\.md$/);
+  const content = await fs.readFile(path.join(root, "progress", ...created.filename.split("/")), "utf8");
+  assert.doesNotMatch(content, /^research:/m);
+  assert.match(content, /kind: consensus/);
+
+  const workspace = await compileResearchWorkspace({ rootDir: root, fresh: true });
+  const project = workspace.projects.find((item) => item.id === "agent-memory-study");
+  assert.equal(project?.notes, 2);
+  assert.equal(workspace.entries.find((item) => item.slug === created.slug)?.research, "agent-memory-study");
+});
