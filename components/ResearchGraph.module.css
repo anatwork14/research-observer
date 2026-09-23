@@ -128,6 +128,7 @@
   width: min(300px, calc(50% - 20px));
   max-height: calc(100% - 24px);
   overflow: auto;
+  overscroll-behavior: contain;
   border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
   border-radius: 12px;
   background: color-mix(in srgb, var(--surface) 92%, transparent);
@@ -285,13 +286,16 @@
 @media (max-width: 900px) {
   .shell,
   .canvas { min-height: 640px; height: 72vh; }
-  .controls { width: min(270px, calc(100% - 24px)); }
+  .controls {
+    width: min(270px, calc(100% - 24px));
+    max-height: 44%;
+  }
   .inspector {
     top: auto;
     right: 12px;
     bottom: 48px;
     width: min(360px, calc(100% - 24px));
-    max-height: 42%;
+    max-height: 40%;
   }
 }
 
@@ -299,6 +303,6 @@
   .shell,
   .canvas { min-height: 680px; height: 78vh; }
   .controls { max-height: 42%; }
-  .inspector { max-height: 36%; }
+  .inspector { max-height: 34%; }
   .statusBar { max-width: calc(100% - 24px); overflow: hidden; text-overflow: ellipsis; }
 }
