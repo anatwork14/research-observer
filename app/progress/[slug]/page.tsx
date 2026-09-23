@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import GithubSlugger from "github-slugger";
 import { notFound, redirect } from "next/navigation";
-import { MarkdownRenderer } from "@/components/MarkdownRenderer";
+import { NoteDirectEditor } from "@/components/NoteDirectEditor";
 import { ResearchNav } from "@/components/ResearchNav";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
 import { ResearchAssistPanel } from "@/components/ResearchAssistPanel";
@@ -17,7 +17,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const entry = await getProgressEntry(slug);
-  return entry ? { title: `${entry.title} · Research Observer`, description: entry.summary } : {};
+  return entry ? { title: `${entry.title} · Observaire`, description: entry.summary } : {};
 }
 
 function normalizeHeading(value: string) {
@@ -110,11 +110,12 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
         <ResearchNav entries={entries.map(({ slug, order, title, status }) => ({ slug, order, title, status }))} activeSlug={entry.slug} />
 
         <section className="reader panel">
-          <div className="reader-toolbar">
-            <div><span className="file-chip">MD</span><code>{entry.filename}</code></div>
-            <span className="readonly">source of truth</span>
-          </div>
-          <article><MarkdownRenderer content={bodyContent} linkMap={linkMap} /></article>
+          <NoteDirectEditor
+            slug={entry.slug}
+            filename={entry.filename}
+            displayContent={bodyContent}
+            linkMap={linkMap}
+          />
           <footer className="reader-footer">
             <span>{entry.words.toLocaleString()} words</span><span>·</span><span>{entry.readingMinutes} min</span>
             <div className="page-arrows">
@@ -199,7 +200,7 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
         </aside>
       </main>
 
-      <footer className="site-footer"><span>RESEARCH OBSERVER</span><span>Markdown + GFM + KaTeX · ordered by filename</span></footer>
+      <footer className="site-footer"><span>OBSERVAIRE</span><span>Markdown + GFM + KaTeX · ordered by filename</span></footer>
     </div>
   );
 }
