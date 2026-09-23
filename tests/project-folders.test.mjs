@@ -136,3 +136,39 @@ test("project import rejects files from a different selected root", async (t) =>
   );
   await assert.rejects(fs.stat(path.join(root, "progress", "Expected Project")), { code: "ENOENT" });
 });
+
+test("project import rejects an identity already used by an existing populated project", async (t) => {
+  const root = await workspaceFixture();
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  await fs.writeFile(
+    path.join(root, "research-observer.config.json"),
+    JSON.stringify({
+      researchProjects: [
+        { id: "default", label: "Main research" },
+        { id: "existing-study", label: "Existing configured study" },
+      ],
+    }),
+  );
+  await write(root, "00_existing.md", note({ id: "existing-note", title: "Existing note", research: "existing-study" }));
+
+  await assert.rejects(
+    importResearchProject({
+      rootDir: root,
+      projectName: "Different Folder Name",
+      files: [
+        {
+          name: PROJECT_MANIFEST,
+          relativePath: `Different Folder Name/${PROJECT_MANIFEST}`,
+          data: Buffer.from(JSON.stringify({ schemaVersion: 1, id: "existing-study", label: "Collision" })),
+        },
+        {
+          name: "00_question.md",
+          relativePath: "Different Folder Name/00_question.md",
+          data: Buffer.from(note({ id: "collision-question", title: "Collision question" })),
+        },
+      ],
+    }),
+    (error) => error?.code === "PROJECT_IMPORT_ID_CONFLICT",
+  );
+  await assert.rejects(fs.stat(path.join(root, "progress", "Different Folder Name")), { code: "ENOENT" });
+});
