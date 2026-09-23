@@ -14,9 +14,10 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
-RUN mkdir -p /app/progress /app/.research-observer /app/.next /app/public/_research \
-  && chown -R node:node /app \
-  && chmod 0777 /app/.research-observer /app/.next /app/public/_research
+RUN mkdir -p /app/progress /app/.research-observer /app/.next /app/public/_research /home/node/.codex \
+  && chown -R node:node /app /home/node/.codex \
+  && chmod 0777 /app/.research-observer /app/.next /app/public/_research \
+  && chmod 0700 /home/node/.codex
 
 USER node
 
