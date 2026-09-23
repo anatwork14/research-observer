@@ -1,4 +1,4 @@
-# Observaire integrations and Direct Edit
+# Observaire integrations, Codex review, and Direct Edit
 
 ## Settings
 
@@ -34,9 +34,13 @@ Settings uses the installed Codex CLI rather than handling ChatGPT tokens itself
 
 The in-app authorization UI is local-development first. Production requires explicit `OBSERVAIRE_CODEX_AUTH_UI=1` opt-in and should only be exposed behind an appropriate authenticated deployment boundary.
 
+When using the supplied Docker Compose setup, `CODEX_HOME` lives under the persistent `observaire-state` volume so normal container recreation does not discard the Codex authorization state.
+
 ## Saved Consensus evidence
 
-A reviewed Consensus result can be saved from Research Assist with **Save evidence**. This creates a normal ordered `type: evidence` Markdown object under `progress/`.
+A reviewed Consensus result can be saved from Research Assist with **Save evidence**. This creates a normal ordered `type: evidence` Markdown object in the research source tree.
+
+For a folder-backed project, the evidence note is written **inside that project folder** at the next project-local order number. A configured/root-level legacy project continues to use the root research directory. Local PDF evidence follows the same placement rule and stores a portable source path relative to the project note where possible.
 
 External scholarly provenance uses:
 
@@ -52,6 +56,41 @@ source:
 The Evidence workspace links both to the saved Observaire evidence object and to the original external paper/DOI. When Consensus returned eligible full-text chunks, those passages may be preserved as evidence excerpts. A takeaway or abstract is labeled discovery context and is not represented as a verified full-paper quotation.
 
 Saving a paper never automatically creates a `supports`, `contradicts`, or other semantic relationship.
+
+## Codex Act preview
+
+**Act** is a human-reviewed filesystem edit workflow. The durable research source is the current filesystem, not Git HEAD, so Act intentionally does **not** require the research tree to be clean or committed first.
+
+The review flow is:
+
+1. Observaire compiles the current workspace and resolves the configured repository-relative research root.
+2. It creates an isolated detached Git worktree.
+3. The **current live research directory** and current workspace config are copied into that worktree.
+4. That copy is staged only inside the isolated worktree and frozen as a review baseline tree.
+5. Codex runs with network access disabled, `approvalPolicy: never`, and write permission limited by the prompt boundary to the configured research directory.
+6. After Codex returns, Observaire restores the frozen baseline index even if Codex happened to stage files itself.
+7. The proposal diff is calculated from the frozen live-filesystem baseline to the final Codex working tree, not from Git HEAD.
+8. The research doctor runs against the proposed worktree.
+9. For every touched file, Observaire stores the baseline Git blob hash (or `null` when the file did not exist at review time).
+10. The user reviews the patch before a separate **Apply** action can modify the live source.
+
+This model matters for browser-imported projects: a new project may still be untracked in Git, yet it is already valid durable research content. Act can review changes to that project without asking the user to commit it first.
+
+### Apply conflict rule
+
+Apply does not ask whether a touched file is dirty relative to Git HEAD. Instead, for new proposals it asks whether each touched file is still byte-for-byte the same as the file state that Codex reviewed.
+
+- Pre-existing uncommitted/imported content is allowed when unchanged since review.
+- A file edited after the Act preview is rejected as a conflict.
+- A file that did not exist at review time conflicts if another process creates it before Apply.
+- Replacing a reviewed file with a symlink/non-file object conflicts.
+- The patch must still pass `git apply --check`.
+- The research doctor runs after application.
+- If validation fails, Observaire reverses the patch; a rollback failure is surfaced explicitly instead of being reported as successful rollback.
+
+Older stored proposals that predate per-file baseline metadata retain the previous dirty-overlap safety check.
+
+The configured research root must remain inside the repository for Git-backed Act/Apply review. Docker may bind-mount any host directory at that in-repository path (the default is `/app/progress`), so host storage can still live outside the repository directory on the host.
 
 ## Direct Edit
 
