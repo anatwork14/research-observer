@@ -1,0 +1,181 @@
+.panel {
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--accent-wash) 28%, transparent), transparent 55%),
+    var(--surface);
+}
+
+.heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.heading > div { min-width: 0; }
+
+.heading h2 {
+  margin: 5px 0 0;
+  font: 600 clamp(22px, 2.4vw, 30px)/1.1 var(--serif);
+  letter-spacing: -.025em;
+}
+
+.heading p {
+  max-width: 760px;
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.heading code,
+.dropzone code,
+.success code {
+  font: .9em var(--mono);
+}
+
+.status {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font: 7px var(--mono);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.ready {
+  color: var(--accent-deep);
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--line));
+  background: var(--accent-wash);
+}
+
+.readonly {
+  color: var(--muted);
+  background: var(--canvas);
+}
+
+.dropzone {
+  position: relative;
+  min-height: 230px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 18px;
+  padding: 26px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 55%, var(--line-strong));
+  border-radius: 12px;
+  text-align: center;
+  background: color-mix(in srgb, var(--canvas) 68%, transparent);
+  transition: border-color .16s ease, background .16s ease, transform .16s ease;
+}
+
+.dragging {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent-wash) 58%, var(--surface));
+  transform: translateY(-1px);
+}
+
+.disabled { opacity: .62; }
+
+.input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.dropIcon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 3px;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--line));
+  border-radius: 13px;
+  color: var(--accent-deep);
+  background: color-mix(in srgb, var(--accent-wash) 72%, var(--surface-strong));
+  font-size: 22px;
+}
+
+.dropzone strong { font-size: 13px; }
+.dropzone > span { color: var(--muted); font-size: 9px; }
+.dropzone small { margin-top: 5px; color: var(--muted); font-size: 8px; line-height: 1.55; }
+
+.dropzone button,
+.selection button {
+  min-height: 38px;
+  padding: 0 13px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  color: white;
+  background: var(--accent-deep);
+  font-size: 9px;
+  font-weight: 780;
+}
+
+.dropzone button:disabled,
+.selection button:disabled { opacity: .45; cursor: not-allowed; }
+
+.selection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 12px;
+  padding: 13px 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent-wash) 38%, var(--surface-strong));
+}
+
+.selection > div { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.selection span { color: var(--muted); font: 7px var(--mono); text-transform: uppercase; letter-spacing: .06em; }
+.selection strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.selection small { color: var(--muted); font-size: 8px; }
+
+.reason,
+.error {
+  margin: 11px 2px 0;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.reason { color: var(--muted); }
+.error { color: #a03d3d; }
+
+.success {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 13px 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  border-radius: 10px;
+  color: var(--accent-deep);
+  background: var(--accent-wash);
+}
+
+.success strong { font-size: 11px; }
+.success span { color: var(--ink-soft); font-size: 9px; }
+.success small { color: var(--muted); font-size: 8px; line-height: 1.45; }
+
+@media (max-width: 680px) {
+  .panel { padding: 17px; }
+  .heading { flex-direction: column; gap: 10px; }
+  .dropzone { min-height: 210px; padding-inline: 16px; }
+  .selection { align-items: stretch; flex-direction: column; }
+  .selection button { width: 100%; }
+}
+
+@media (pointer: coarse) {
+  .dropzone button,
+  .selection button { min-height: 44px; }
+}
