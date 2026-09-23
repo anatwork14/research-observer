@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createEvidenceNote } from "@/lib/research/evidence-write.mjs";
+import { createConsensusEvidenceNote, createEvidenceNote } from "@/lib/research/evidence-write.mjs";
 import { isSameOrigin } from "@/lib/http/same-origin";
 
 export const runtime = "nodejs";
@@ -10,11 +10,21 @@ function writable() {
   return process.env.NODE_ENV !== "production";
 }
 
+function relationshipValue(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const relationship = value as { type?: unknown; target?: unknown };
+  if (typeof relationship.target !== "string" || !relationship.target.trim()) return undefined;
+  return {
+    type: typeof relationship.type === "string" ? relationship.type : "",
+    target: relationship.target,
+  };
+}
+
 export async function GET() {
   return NextResponse.json({
     enabled: writable(),
     reason: writable()
-      ? "Local evidence capture is enabled."
+      ? "Durable local and reviewed Consensus evidence capture is enabled."
       : "Evidence capture is read-only in production unless RESEARCH_OBSERVER_WRITES=1 is explicitly configured.",
   }, { headers: { "Cache-Control": "no-store" } });
 }
@@ -28,11 +38,15 @@ export async function POST(request: Request) {
   }
 
   let body: {
+    kind?: unknown;
     paperPath?: unknown;
     page?: unknown;
     quote?: unknown;
+    paper?: unknown;
+    query?: unknown;
+    research?: unknown;
     comment?: unknown;
-    relationship?: { type?: unknown; target?: unknown };
+    relationship?: unknown;
   };
   try {
     body = await request.json();
@@ -41,18 +55,22 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await createEvidenceNote({
-      paperPath: typeof body.paperPath === "string" ? body.paperPath : "",
-      page: Number(body.page),
-      quote: typeof body.quote === "string" ? body.quote : "",
-      comment: typeof body.comment === "string" ? body.comment : "",
-      relationship: body.relationship?.target
-        ? {
-            type: typeof body.relationship.type === "string" ? body.relationship.type : "",
-            target: typeof body.relationship.target === "string" ? body.relationship.target : "",
-          }
-        : undefined,
-    });
+    const result = body.kind === "consensus"
+      ? await createConsensusEvidenceNote({
+          paper: body.paper && typeof body.paper === "object" ? body.paper : undefined,
+          query: typeof body.query === "string" ? body.query : "",
+          research: typeof body.research === "string" ? body.research : "",
+          comment: typeof body.comment === "string" ? body.comment : "",
+          relationship: relationshipValue(body.relationship),
+        })
+      : await createEvidenceNote({
+          paperPath: typeof body.paperPath === "string" ? body.paperPath : "",
+          page: Number(body.page),
+          quote: typeof body.quote === "string" ? body.quote : "",
+          comment: typeof body.comment === "string" ? body.comment : "",
+          relationship: relationshipValue(body.relationship),
+        });
+
     return NextResponse.json(result, { status: 201, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return NextResponse.json(
