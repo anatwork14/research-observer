@@ -99,6 +99,16 @@
   background: var(--surface-strong);
 }
 
+.error {
+  margin: -6px 0 0;
+  padding: 9px 10px;
+  border-radius: 8px;
+  color: var(--warm);
+  background: color-mix(in srgb, var(--warm) 10%, transparent);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
 .preview {
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -139,4 +149,13 @@
   .heading { flex-direction: column; }
   .heading h2 { font-size: 20px; }
   .actions { display: grid; grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 460px) {
+  .actions { grid-template-columns: 1fr; }
+}
+
+@media (pointer: coarse) {
+  .primary,
+  .secondary { min-height: 44px; }
 }
