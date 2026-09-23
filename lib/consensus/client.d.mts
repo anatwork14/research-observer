@@ -28,6 +28,13 @@ export type ConsensusSearchInput = {
   includeFullText?: boolean;
 };
 
+export type ConsensusClientOptions = {
+  apiKey?: string;
+  baseUrl?: string;
+  signal?: AbortSignal;
+  rootDir?: string;
+};
+
 export function normalizeConsensusPaper(raw?: Record<string, unknown>): ConsensusPaper;
 export function normalizeConsensusSearch(payload?: Record<string, unknown> | unknown[]): {
   query: string;
@@ -37,6 +44,11 @@ export function normalizeConsensusSearch(payload?: Record<string, unknown> | unk
 export function buildConsensusSearchParams(input?: ConsensusSearchInput): URLSearchParams;
 export function searchConsensus(
   input?: ConsensusSearchInput,
-  options?: { apiKey?: string; baseUrl?: string; signal?: AbortSignal },
+  options?: ConsensusClientOptions,
 ): Promise<{ query: string; totalResults: number; papers: ConsensusPaper[] }>;
-export function consensusConfigured(): boolean;
+export function consensusConfigured(options?: { rootDir?: string }): Promise<boolean>;
+export function consensusConfiguration(options?: { rootDir?: string }): Promise<{
+  enabled: boolean;
+  source: string;
+  writable: boolean;
+}>;
