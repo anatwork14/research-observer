@@ -24,7 +24,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ path: string[] }> }): Promise<Metadata> {
   const { path } = await params;
   const researchPath = path.join("/");
-  return { title: `${displayTitle(researchPath)} · Papers · Research Observer` };
+  return { title: `${displayTitle(researchPath)} · Papers · Observaire` };
 }
 
 export default async function PaperPage({
