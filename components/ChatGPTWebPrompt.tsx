@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import styles from "./ChatGPTWebPrompt.module.css";
 
-const PLACEHOLDER = "{{TOPIC_OR_IDEA_OR_HYPOTHESIS}}";
+const TOPIC_PLACEHOLDER = "{{TOPIC_OR_IDEA_OR_HYPOTHESIS}}";
+const CONFIG_PLACEHOLDER = "{{WORKSPACE_CONFIG}}";
 
 function fallbackCopy(value: string) {
   const textarea = document.createElement("textarea");
@@ -18,15 +19,18 @@ function fallbackCopy(value: string) {
   if (!copied) throw new Error("Clipboard access is unavailable.");
 }
 
-export function ChatGPTWebPrompt({ template }: { template: string }) {
+export function ChatGPTWebPrompt({ template, workspaceConfig }: { template: string; workspaceConfig: string }) {
   const [topic, setTopic] = useState("");
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState("");
 
   const prompt = useMemo(() => {
-    const replacement = topic.trim() || PLACEHOLDER;
-    return template.replaceAll(PLACEHOLDER, replacement);
-  }, [template, topic]);
+    const topicReplacement = topic.trim() || TOPIC_PLACEHOLDER;
+    const configReplacement = workspaceConfig.trim() || "{}";
+    return template
+      .replaceAll(TOPIC_PLACEHOLDER, topicReplacement)
+      .replaceAll(CONFIG_PLACEHOLDER, configReplacement);
+  }, [template, topic, workspaceConfig]);
 
   async function copyPrompt() {
     setCopyError("");
@@ -48,8 +52,8 @@ export function ChatGPTWebPrompt({ template }: { template: string }) {
           <span className="kicker">ChatGPT Web</span>
           <h2 id="chatgpt-web-prompt-title">One input → an Observaire-ready research starter pack</h2>
           <p>
-            Enter only your topic, idea, or hypothesis. The generated prompt carries the stable-ID, linking,
-            provenance, falsifiability, and output-format rules needed for reliable Observaire indexing.
+            Enter only your topic, idea, or hypothesis. Observaire automatically injects the current project IDs and
+            vocabularies together with the stable-ID, linking, provenance, falsifiability, and output-format rules.
           </p>
         </div>
         <span className={styles.badge}>not Codex</span>
@@ -82,8 +86,8 @@ export function ChatGPTWebPrompt({ template }: { template: string }) {
       </details>
 
       <p className={styles.note}>
-        The web prompt deliberately uses a temporary high filename range because ChatGPT cannot see your existing repository.
-        Stable IDs remain canonical, so filenames can be safely renumbered before import without changing research identity.
+        The web prompt uses the current workspace config plus a temporary high filename range. Stable IDs remain canonical,
+        so filenames can be safely renumbered before import without changing research identity.
       </p>
     </section>
   );
