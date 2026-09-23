@@ -6,14 +6,17 @@ These instructions apply to files under `progress/` and refine the repository-ro
 
 Before creating, restructuring, or semantically linking research notes, read `docs/OBSERVAIRE_DATA_CONTRACT.md`.
 
-That contract is authoritative for indexing semantics: stable identity, supported metadata, project scope, evidence provenance, body links, typed relationships, edge direction, and the distinction between filename order and canonical IDs.
+That contract is authoritative for indexing semantics: stable identity, folder-based project scope, supported metadata, evidence provenance, body links, typed relationships, edge direction, and the distinction between filename order and canonical IDs.
 
 When instructions conflict, follow the stricter research-integrity rule and do not invent missing facts or targets.
 
 For reliable indexing:
 
-- put canonical identity in `id`, not in prose;
-- put project scope in `research` when non-default;
+- put canonical object identity in `id`, not in prose;
+- use a top-level project folder as the preferred project boundary;
+- use `.observaire-project.json` only when stable folder-local project metadata is needed;
+- use `research` on root-level/legacy notes when a configured non-default project scope is required;
+- do not put a conflicting `research` value inside a folder-backed project;
 - put evidence provenance in `source`;
 - put strong semantic graph meaning in `relationships`;
 - use body Markdown links for readable references;
@@ -29,11 +32,34 @@ For reliable indexing:
 - Preserve an existing note's stable `id` when renaming, reordering, or editing it.
 - Do not silently rewrite historical results to match a later conclusion. Add a correction, superseding note, or explicit revision instead.
 
-## Note creation
+## Project folders and note creation
 
-- Research notes live directly in `progress/` and use `XX_descriptive_name.md`.
-- Inspect existing numeric prefixes before choosing a new order.
+Preferred layout:
+
+```text
+progress/
+├── Project Alpha/
+│   ├── 00_question.md
+│   ├── 01_literature.md
+│   ├── 02_experiment.md
+│   └── figures/
+│       └── result.svg
+└── Project Beta/
+    ├── 00_question.md
+    └── 01_method.md
+```
+
+Rules:
+
+- A top-level folder containing at least one `XX_descriptive_name.md` file is auto-indexed as a research project.
+- Numbering is independent per project. Separate projects may each start at `00_`.
+- The folder name derives the project ID unless `.observaire-project.json` supplies a stable valid `id` and label.
+- Asset-only folders are not projects.
+- Legacy ordered notes directly in `progress/` remain supported.
+- Inspect existing prefixes **inside the target project** before choosing a new order.
 - AI-generated notes should include a stable lowercase kebab-case `id`.
+- Inside a folder-backed project, normally omit `research`; folder identity is authoritative.
+- For a root-level legacy note, `research` may name a project declared in `research-observer.config.json`; omission means `default`.
 - Use only metadata supported by `docs/OBSERVAIRE_DATA_CONTRACT.md`, the root `AGENTS.md`, and `research-observer.config.json`.
 - Keep metadata optional when a fact is genuinely unknown.
 
@@ -57,7 +83,7 @@ doi: 10.xxxx/verified-doi
 
 Rules:
 
-- `pdf` must point to an existing local PDF under `progress/`; normally use `papers/`.
+- `pdf` must point to an existing local PDF under `progress/`; inside a folder project it is normally relative to the note, such as `papers/...`.
 - Do not invent author names, publication years, or DOIs from filenames.
 - When quoting or paraphrasing a PDF, record the page number when known.
 - A durable local-PDF evidence excerpt should identify the source PDF and page.
@@ -113,7 +139,7 @@ Relationship targets must already exist. Prefer their stable `id`. Never create 
 
 ## Direct Edit from the website
 
-Observaire's Direct Edit mode is allowed to update an existing ordered Markdown note, but it must preserve the same content rules as hand editing:
+Observaire's Direct Edit mode is allowed to update an existing ordered Markdown note, including a note inside a project folder, but it must preserve the same content rules as hand editing:
 
 - Editing begins as a browser-local draft; previewing must not change the source file.
 - A save must be preceded by a visible text diff and research-doctor validation.
@@ -127,12 +153,21 @@ Observaire's Direct Edit mode is allowed to update an existing ordered Markdown 
 Use two complementary mechanisms rather than treating them as interchangeable:
 
 - Use relative Markdown filename links for readable prose references and section navigation.
+- Relative links resolve from the current nested project directory, so `01_method.md`, `papers/source.pdf`, and intentional `../Other Project/00_question.md` links remain portable.
 - Use frontmatter `relationships` for semantic connections that should appear as typed graph edges and feed Insights.
 - A Markdown reference does not automatically mean `supports`, `contradicts`, or any other strong research relation.
 - Prefer stable IDs for `relationships.target`; use filenames only for body Markdown links.
 - Never create a broken Markdown link for planned future work.
 - Keep figures/data/PDF references relative to the note and inside `progress/`.
 - Use HTTPS for remote sources.
+
+## Browser import and durable storage
+
+The **Projects** page may import one research folder through the browser. The server stages and validates the selected folder before promoting it into `progress/`; an invalid import must be rolled back rather than partially registered.
+
+Browser import must never silently overwrite an existing project folder.
+
+When Observaire is run with the repository `compose.yaml`, `progress/` is a bind-mounted host directory. A project imported through the website therefore becomes a real host folder and survives container recreation. Do not treat container-only temporary state as the durable research source.
 
 ## Before finishing research edits
 
@@ -152,8 +187,11 @@ Do not assume GitHub Actions exist; validation is local-first.
 
 ## Research project and version identity
 
-- Notes may declare `research: <project-id>` to participate in a named portfolio project from `research-observer.config.json`.
-- If `research` is omitted, the note belongs to `default`.
+- Folder-backed projects are the preferred ordinary project mechanism.
+- `.observaire-project.json` may stabilize a folder project's `id`, `label`, and optional description independently of its directory name.
+- Root-level notes may declare `research: <project-id>` to participate in a configured portfolio project from `research-observer.config.json`.
+- Root-level notes without `research` belong to `default`.
+- Inside a folder-backed project, folder identity takes precedence over a conflicting `research` field and the compiler emits a diagnostic.
 - Preserve one canonical note rather than copying the same evidence into multiple projects.
 - Cross-project relationships are permitted when they express a real dependency or evidence relationship.
 - Use `relationships: [{ type: supersedes, target: ... }]` only for meaningful research/idea versions that should remain independently reviewable.
