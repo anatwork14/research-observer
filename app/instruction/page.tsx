@@ -61,7 +61,7 @@ export default async function InstructionPage() {
           <div><strong>4</strong><span>Evidence keeps provenance</span></div>
         </section>
 
-        <ChatGPTWebPrompt template={promptBody(webPrompt)} />
+        <ChatGPTWebPrompt template={promptBody(webPrompt)} workspaceConfig={workspaceConfig} />
         <InstructionViewer sources={sources} />
       </main>
     </div>
