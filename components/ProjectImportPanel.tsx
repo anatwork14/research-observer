@@ -202,6 +202,12 @@ export function ProjectImportPanel({ enabled, reason, storageDirectory }: { enab
           <strong>{result.project?.label || result.directory} is indexed.</strong>
           <span>{result.project?.notes ?? 0} notes · {result.files ?? 0} files saved to <code>{result.storagePath}</code>.</span>
           <small>When Docker uses the supplied bind mount, this path is your real host folder—not container-only storage.</small>
+          {result.project?.id && (
+            <div className={styles.successActions}>
+              <button type="button" onClick={() => router.push(`/progress?research=${encodeURIComponent(result.project!.id)}`)}>Open project notes</button>
+              <button type="button" onClick={() => router.push(`/insights?research=${encodeURIComponent(result.project!.id)}`)}>Open insights</button>
+            </div>
+          )}
         </div>
       )}
     </section>
