@@ -18,12 +18,13 @@ function promptBody(document: string) {
 export default async function InstructionPage() {
   const entries = await getProgressEntries();
   const navEntries = entries.map(({ slug, order, title, status }) => ({ slug, order, title, status }));
-  const [rootAgents, progressAgents, noteSkill, dataContract, schema, webPrompt] = await Promise.all([
+  const [rootAgents, progressAgents, noteSkill, dataContract, schema, workspaceConfig, webPrompt] = await Promise.all([
     readInstruction("AGENTS.md"),
     readInstruction("progress/AGENTS.md"),
     readInstruction(".agents/skills/create-research-note/SKILL.md"),
     readInstruction("docs/OBSERVAIRE_DATA_CONTRACT.md"),
     readInstruction("docs/observaire-research-frontmatter.schema.json"),
+    readInstruction("research-observer.config.json"),
     readInstruction("docs/CHATGPT_WEB_RESEARCH_PROMPT.md"),
   ]);
 
@@ -31,6 +32,7 @@ export default async function InstructionPage() {
     { key: "root", label: "Authoring contract", path: "AGENTS.md", content: rootAgents },
     { key: "data", label: "Data + indexing contract", path: "docs/OBSERVAIRE_DATA_CONTRACT.md", content: dataContract },
     { key: "schema", label: "Frontmatter JSON Schema", path: "docs/observaire-research-frontmatter.schema.json", content: schema },
+    { key: "config", label: "Workspace vocabulary + projects", path: "research-observer.config.json", content: workspaceConfig },
     { key: "progress", label: "Research content rules", path: "progress/AGENTS.md", content: progressAgents },
     { key: "skill", label: "Create research note", path: ".agents/skills/create-research-note/SKILL.md", content: noteSkill },
     { key: "web", label: "ChatGPT Web starter prompt", path: "docs/CHATGPT_WEB_RESEARCH_PROMPT.md", content: webPrompt, includeInPack: false },
@@ -45,7 +47,7 @@ export default async function InstructionPage() {
             <p className="eyebrow">Instruction</p>
             <h1>Give every AI the same research contract.</h1>
             <p>
-              Stable IDs, indexable metadata, evidence provenance, typed relationships, and linking rules now share one canonical contract plus a machine-readable schema.
+              Stable IDs, indexable metadata, evidence provenance, typed relationships, current workspace vocabularies, and project IDs now travel together.
               Use the ChatGPT Web generator when the model cannot read this repository directly.
             </p>
           </div>
