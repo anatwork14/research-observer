@@ -18,20 +18,22 @@ function promptBody(document: string) {
 export default async function InstructionPage() {
   const entries = await getProgressEntries();
   const navEntries = entries.map(({ slug, order, title, status }) => ({ slug, order, title, status }));
-  const [rootAgents, progressAgents, noteSkill, dataContract, webPrompt] = await Promise.all([
+  const [rootAgents, progressAgents, noteSkill, dataContract, schema, webPrompt] = await Promise.all([
     readInstruction("AGENTS.md"),
     readInstruction("progress/AGENTS.md"),
     readInstruction(".agents/skills/create-research-note/SKILL.md"),
     readInstruction("docs/OBSERVAIRE_DATA_CONTRACT.md"),
+    readInstruction("docs/observaire-research-frontmatter.schema.json"),
     readInstruction("docs/CHATGPT_WEB_RESEARCH_PROMPT.md"),
   ]);
 
   const sources = [
     { key: "root", label: "Authoring contract", path: "AGENTS.md", content: rootAgents },
     { key: "data", label: "Data + indexing contract", path: "docs/OBSERVAIRE_DATA_CONTRACT.md", content: dataContract },
+    { key: "schema", label: "Frontmatter JSON Schema", path: "docs/observaire-research-frontmatter.schema.json", content: schema },
     { key: "progress", label: "Research content rules", path: "progress/AGENTS.md", content: progressAgents },
     { key: "skill", label: "Create research note", path: ".agents/skills/create-research-note/SKILL.md", content: noteSkill },
-    { key: "web", label: "ChatGPT Web starter prompt", path: "docs/CHATGPT_WEB_RESEARCH_PROMPT.md", content: webPrompt },
+    { key: "web", label: "ChatGPT Web starter prompt", path: "docs/CHATGPT_WEB_RESEARCH_PROMPT.md", content: webPrompt, includeInPack: false },
   ];
 
   return (
@@ -43,11 +45,11 @@ export default async function InstructionPage() {
             <p className="eyebrow">Instruction</p>
             <h1>Give every AI the same research contract.</h1>
             <p>
-              Stable IDs, indexable metadata, evidence provenance, typed relationships, and linking rules now share one canonical contract.
+              Stable IDs, indexable metadata, evidence provenance, typed relationships, and linking rules now share one canonical contract plus a machine-readable schema.
               Use the ChatGPT Web generator when the model cannot read this repository directly.
             </p>
           </div>
-          <span className="collection-count">{sources.length} canonical sources</span>
+          <span className="collection-count">{sources.length} instruction sources</span>
         </header>
 
         <section className="instruction-principles panel">
