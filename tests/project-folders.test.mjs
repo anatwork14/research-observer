@@ -41,19 +41,24 @@ test("numbered Markdown folders auto-register as independent research projects",
   await write(root, "Alpha Study/00_question.md", note({ id: "alpha-question", title: "Alpha question", body: "See [method](01_method.md)." }));
   await write(root, "Alpha Study/01_method.md", note({ id: "alpha-method", title: "Alpha method" }));
   await write(root, "Beta Study/00_question.md", note({ id: "beta-question", title: "Beta question" }));
+  // Root-level legacy aliases remain globally routable, but an explicit Markdown
+  // filename inside a project must resolve to the project's relative sibling first.
+  await write(root, "01_method.md", note({ id: "root-method", title: "Root method" }));
   await write(root, "figures/chart.md", "# Not ordered\n");
 
   const workspace = await compileResearchWorkspace({ rootDir: root, fresh: true });
   const alpha = workspace.projects.find((project) => project.id === "alpha-study");
   const beta = workspace.projects.find((project) => project.id === "beta-study");
+  const alphaQuestion = workspace.entries.find((entry) => entry.slug === "alpha-question");
 
   assert.equal(alpha?.autoIndexed, true);
   assert.equal(alpha?.directory, "Alpha Study");
   assert.equal(alpha?.notes, 2);
   assert.equal(beta?.notes, 1);
   assert.equal(workspace.projects.some((project) => project.id === "figures"), false);
-  assert.equal(workspace.entries.find((entry) => entry.slug === "alpha-question")?.research, "alpha-study");
-  assert.deepEqual(workspace.entries.find((entry) => entry.slug === "alpha-question")?.linkedSlugs, ["alpha-method"]);
+  assert.equal(alphaQuestion?.research, "alpha-study");
+  assert.deepEqual(alphaQuestion?.linkedSlugs, ["alpha-method"]);
+  assert.equal(alphaQuestion?.linkedSlugs.includes("root-method"), false);
   assert.equal(workspace.diagnostics.some((item) => item.code === "order-duplicate"), false);
 });
 
