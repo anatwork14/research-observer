@@ -1,42 +1,158 @@
 # Observaire
 
-Observaire is a convention-driven Next.js workspace for research progress. Plain Markdown remains the source of truth; the application compiles those notes into validated navigation, relationships, diagnostics, and a static search index.
+Observaire is a Markdown-first research intelligence workspace. Plain files remain the source of truth; the application auto-indexes them into projects, navigation, search, evidence, graphs, diagnostics, timelines, versions, and analytics.
 
-Use it for literature exploration, experiments, model development, field notes, design research, lab work, historical research, or any other research process.
+Use it for literature exploration, experiments, model development, field notes, design research, lab work, historical research, or any other research process where the durable record should stay readable outside the application.
 
-## Quick start
+## Fastest start: Docker
 
-Use Node 22 (see `.nvmrc`), install dependencies, then start development:
+From the repository root:
 
 ```bash
-npm install
-npm run dev
+docker compose up --build
 ```
 
-`npm run dev` starts the research watcher, prepares the local PDF.js runtime, compiles search/media artifacts, and then starts Next.js.
+Open:
 
-## The note convention
+```text
+http://127.0.0.1:4173
+```
 
-Put research notes directly in `progress/` and prefix each Markdown filename with a numeric order:
+The supplied Compose setup bind-mounts the host research directory into Observaire:
+
+```text
+./progress  →  /app/progress
+```
+
+So research imported through the website is written to your **real host folder**, not only into the container. Rebuilding or recreating the container does not delete the Markdown research source.
+
+You can change the host research directory without changing Observaire:
+
+```bash
+OBSERVAIRE_RESEARCH_DIR=/absolute/path/to/research docker compose up --build
+```
+
+You can also change the browser port:
+
+```bash
+OBSERVAIRE_PORT=4180 docker compose up --build
+```
+
+On Linux, if needed, pass your host ownership IDs:
+
+```bash
+OBSERVAIRE_UID=$(id -u) OBSERVAIRE_GID=$(id -g) docker compose up --build
+```
+
+See `docs/PROJECT_FOLDERS_AND_DOCKER.md` for the complete storage/import behavior.
+
+## Create a project without editing config
+
+Open **Projects** in the web application, then choose or drop one folder:
+
+```text
+My Research Project/
+├── 00_question.md
+├── 01_literature.md
+├── 02_hypothesis.md
+├── 03_experiment.md
+├── papers/
+│   └── source.pdf
+└── figures/
+    └── result.svg
+```
+
+Observaire validates the folder, writes it under the mounted `progress/` directory, registers it as a project, recompiles the workspace, and refreshes the live index.
+
+With the default Compose mount, that example becomes a real host directory:
+
+```text
+<repository>/progress/My Research Project/
+```
+
+No `research-observer.config.json` project edit is required.
+
+The browser importer is transactional: invalid imports are rolled back instead of leaving a half-created project, and an existing project directory is never silently overwritten.
+
+### Direct host copy works too
+
+The web importer is optional. Copy a folder directly into the host `progress/` directory:
 
 ```text
 progress/
-├── 00_start_here.md
-├── 01_problem_and_questions.md
-├── 02_first_experiment.md
-├── 03_results.md
-├── figures/
-│   ├── accuracy.svg
-│   └── ablation.png
-└── media/
-    └── demo.mp4
+└── New Study/
+    ├── 00_scope.md
+    ├── 01_sources.md
+    └── 02_analysis.md
 ```
 
-Files matching a numeric prefix such as `00_*.md`, `10_*.md`, or `100_*.md` are discovered automatically. The filename number controls sequence only.
+Observaire watches the research tree and recompiles it. Docker Compose also enables a 1-second signature poll so host changes still appear on Docker Desktop/filesystems where recursive filesystem events are unreliable.
 
-## Stable research IDs
+## Project folder convention
 
-For long-lived work, add a stable `id` in frontmatter. The `id` becomes the canonical URL and should not change when a note is renamed or reordered.
+A top-level folder under `progress/` becomes a research project when it contains at least one ordered Markdown note matching the numeric-prefix convention:
+
+```text
+00_*.md
+01_*.md
+10_*.md
+100_*.md
+```
+
+Numbering is **per project**, not global:
+
+```text
+progress/
+├── Project A/
+│   ├── 00_question.md
+│   ├── 01_method.md
+│   └── 02_result.md
+└── Project B/
+    ├── 00_question.md
+    ├── 01_literature.md
+    └── 02_experiment.md
+```
+
+The filename number controls sequence only. It is not object identity.
+
+Asset-only folders such as `figures/`, `papers/`, `data/`, or `media/` do not become projects unless they themselves contain ordered Markdown research notes.
+
+Legacy root-level ordered notes such as `progress/00_start_here.md` remain supported.
+
+## Stable project identity
+
+If a project folder has no project manifest, Observaire derives a lowercase kebab-case ID from its folder name. For example:
+
+```text
+progress/My Retrieval Study/
+```
+
+becomes:
+
+```text
+my-retrieval-study
+```
+
+For project identity that should survive a directory rename, add `.observaire-project.json` inside the folder:
+
+```json
+{
+  "schemaVersion": 1,
+  "id": "retrieval-study",
+  "label": "Retrieval Study",
+  "description": "Retrieval experiments and supporting evidence."
+}
+```
+
+The website importer creates this file automatically when one is not supplied.
+
+Inside an auto-indexed folder project, you normally do **not** need a `research:` field in every note. Folder membership is the project source of truth. If a nested note contains a conflicting `research` value, the folder project wins and the compiler emits a diagnostic.
+
+`researchProjects` in `research-observer.config.json` remains supported for legacy/root-level notes, intentionally predeclared projects, and advanced portfolio configuration.
+
+## Stable research-object IDs
+
+For long-lived work, give each durable Markdown object a stable lowercase kebab-case `id`. The ID becomes the canonical route identity and should not change when the note is reordered or renamed.
 
 ```yaml
 ---
@@ -50,52 +166,54 @@ tags:
   - retrieval
   - reranking
 aliases:
-  - reranking-v2
+  - reranking-v1-name
 ---
 ```
 
-`id`, `type`, `status`, `date`, `tags`, and `aliases` are optional for hand-written notes, but stable IDs are strongly recommended. Allowed types/statuses live in `research-observer.config.json`.
+The canonical contract is `docs/OBSERVAIRE_DATA_CONTRACT.md`.
 
-Old filename slugs and declared aliases continue to resolve and redirect to the canonical ID.
+## Run without Docker
 
-## Instructions for AI-generated research notes
+Use Node 22.13 or newer, but earlier than 25:
 
-`AGENTS.md` is the authoritative authoring contract for AI agents. It defines:
+```bash
+node --version
+npm ci
+npm run dev
+```
 
-- filename/order rules
-- stable IDs and aliases
-- allowed metadata
-- Markdown structure
-- internal link syntax
-- figure/media paths
-- math support
-- citation/non-fabrication rules
-- forbidden raw HTML/executable content
-- local validation commands
+`npm run dev` starts the research watcher, prepares the local PDF.js runtime, compiles search/media artifacts, and starts Next.js.
 
-Any AI that creates or edits files in `progress/` should read `AGENTS.md` first.
+If port 3000 is busy:
 
-## Local integrity checks — no GitHub Actions required
+```bash
+npm run dev -- --port 4173
+```
 
-This project intentionally does not assume GitHub Actions. The quality gate lives in the repository and runs locally or in any deployment environment:
+## Local integrity checks
+
+The repository is local-first and does not require GitHub Actions for its quality gate:
 
 ```bash
 npm run doctor       # research content integrity
-npm test             # compiler regression tests
+npm test             # compiler/runtime regression tests
 npm run typecheck    # TypeScript
 npm run lint         # ESLint
 npm run check        # doctor + tests + typecheck + lint
 npm run check:full   # everything above + production build
 ```
 
-`npm run doctor` reports broken note links, missing assets, invalid IDs/dates/statuses/types, unsafe paths, symlinks, duplicate identities, orphan assets, and other workspace diagnostics. Errors produce a non-zero exit code.
+`npm run doctor` reports broken note links, missing assets, invalid IDs/dates/statuses/types, project-folder conflicts, unsafe paths, symlinks, duplicate identities, orphan assets, and other workspace diagnostics. Errors produce a non-zero exit code.
 
 ## Research compiler
 
-The app does not independently reinterpret the folder for every feature. `lib/research/compiler.mjs` is the canonical content compiler.
+`lib/research/compiler.mjs` is the canonical content compiler. UI surfaces do not maintain independent project registries.
 
 ```text
-progress/*.md + research assets
+progress/
+├── Project A/00_*.md + assets
+├── Project B/00_*.md + assets
+└── legacy root notes
             │
             ▼
     Research compiler
@@ -109,41 +227,51 @@ manifest  search    diagnostics
          Next.js
 ```
 
-`npm run research:compile` writes generated artifacts to `public/_research/`. That directory is ignored by Git because it is regenerated before development/build.
+`npm run research:compile` writes generated artifacts to `public/_research/`. That directory is ignored by Git because it is rebuildable output, not the research database.
 
-The compiler currently provides:
+The compiler provides:
 
-- ordered note discovery
-- stable IDs + aliases
-- normalized frontmatter
-- word/read-time metadata
-- internal references and backlinks
-- heading extraction
-- asset inventory
-- link/asset validation
-- symlink/path checks
-- workspace diagnostics
-- static search data
+- project-folder auto-discovery;
+- independent note ordering per project;
+- folder-local project manifests;
+- stable IDs + aliases;
+- normalized frontmatter;
+- nested relative references and backlinks;
+- typed semantic relationships;
+- word/read-time metadata;
+- heading extraction;
+- asset inventory;
+- link/asset validation;
+- symlink/path checks;
+- workspace health diagnostics;
+- search, graph, manifest, and health artifacts.
 
-## Search
+## Search and Collections
 
-`Cmd/Ctrl + K` (or `/`) opens research search. Search uses the precompiled static index rather than reparsing files on every keystroke.
+`Cmd/Ctrl + K` (or `/`) opens research search.
 
-Structured filters are supported:
+Structured filters include:
 
 ```text
+research:my-retrieval-study
 type:experiment
 status:validating
 tag:retrieval
 type:result tag:retrieval latency
 ```
 
+Collections use the same indexed dimensions and can combine filters.
+
 ## Markdown and math
 
 Research notes support GitHub-Flavored Markdown, tables, task lists, fenced code, note links, and KaTeX math.
 
+Inside one project folder:
+
 ```md
 See [the experiment](02_first_experiment.md).
+
+![Accuracy](figures/accuracy.svg)
 
 Inline math: $E = mc^2$
 
@@ -152,28 +280,38 @@ $$
 $$
 ```
 
-Use Markdown filenames when linking research notes. Observaire resolves those links to stable canonical IDs automatically.
+An intentional cross-project file reference may use a real relative path, for example:
+
+```md
+See [the evaluation method](../Evaluation Study/01_method.md).
+```
+
+Use stable IDs rather than filenames for semantic `relationships.target` values.
 
 ## Figures and research media
 
-Store assets under `progress/` and reference them with relative paths:
+Keep project-specific assets beside the project when practical:
 
-```md
-![Accuracy by epoch](figures/accuracy.svg)
-![PDF diagram](figures/system-diagram.pdf)
-![Experiment demo](media/demo.mp4)
-![Interview audio](media/interview.wav)
+```text
+My Project/
+├── 00_question.md
+├── figures/
+│   └── accuracy.svg
+├── papers/
+│   └── source.pdf
+└── media/
+    └── demo.mp4
 ```
 
 Supported media includes common browser-viewable image formats, PDF, MP4/WebM/OGV video, MP3/WAV/M4A/AAC/FLAC audio, plus CSV/JSON/TXT downloads.
 
-During research compilation, approved local assets are copied to `public/_research/media/` and served as static deployment assets. This avoids relying on the runtime server filesystem and lets the hosting layer/CDN handle caching and byte-range delivery.
+Approved local assets are compiled to `public/_research/media/` for the web runtime while the originals remain the durable source under `progress/`.
 
 ## PDF research reader
 
-Local PDFs under `progress/` appear in **Papers** and open in a first-class PDF.js/React-PDF reader with page navigation, lazy thumbnails, zoom/rotation, full-document text search, selectable text, extracted text view, related research notes, and page-deep-linked URLs.
+Local PDFs under `progress/` appear in **Papers** and open in a PDF.js/React-PDF research reader with page navigation, lazy thumbnails, zoom/rotation, full-document text search, mouse/touch text selection, extracted text view, related notes, Codex context, and page-deep-linked URLs.
 
-For literature notes, companion metadata can be declared with verified values:
+A literature note can use verified metadata:
 
 ```yaml
 type: literature
@@ -184,202 +322,70 @@ year: 2026
 doi: 10.xxxx/verified-doi
 ```
 
-The PDF worker, cMaps, standard fonts, and WASM assets are copied from the installed `pdfjs-dist` package into generated local assets; the reader does not require a public CDN.
+The PDF worker, cMaps, standard fonts, and WASM assets are copied from the installed `pdfjs-dist` package into local generated runtime assets; no public PDF.js CDN is required.
 
-## Codex Ask mode
+## Evidence
 
-In local development, Observaire exposes an optional Codex **Ask** inspector on research notes and PDFs. The integration uses `@openai/codex-sdk` server-side with a read-only sandbox, approvals disabled, network/web search disabled, and explicit visible research context.
+PDF selections can be stored as durable `type: evidence` objects with PDF/page provenance. Reviewed Consensus results can also be saved as external scholarly evidence with canonical provider ID/DOI/HTTPS source identity.
+
+Observaire keeps discovery context separate from verified source quotations and does not automatically create `supports`, `contradicts`, `answers`, or other strong semantic relationships from search results.
+
+Local development enables evidence writes by default. Production remains read-only unless `RESEARCH_OBSERVER_WRITES=1` is explicitly configured.
+
+## Consensus and New Research
+
+Observaire can use Consensus as an external peer-reviewed literature provider.
+
+Configure the API key server-side through **Settings** or an environment variable. Never expose the key in browser code or commit it to the repository.
+
+**New Research** is staged:
+
+1. enter a topic/question and optional objective;
+2. search Consensus;
+3. screen and select papers;
+4. send only the selected bounded literature packet to local Codex;
+5. Codex runs read-only/network-disabled and proposes synthesis, gaps, falsifiable hypotheses, experiments, next actions, and cautions;
+6. the proposal remains review-only unless an explicit later workflow applies a reviewed change.
+
+Consensus rank, semantic score, citation count, takeaways, and abstracts are discovery signals, not automatic evidence of a scientific claim.
+
+## Codex and Direct Edit
+
+Research-note and PDF contexts can use the local Codex integration.
 
 - **Ask** is read-only analysis.
-- **Draft** is also read-only and returns a proposed research change without writing files.
-- **Act** requires a clean `progress/**` working tree so its detached Git worktree cannot reason over stale evidence. It then runs Codex with workspace-write access there, rejects changes outside `progress/**` and any `AGENTS.md` policy-file edit, runs `npm run doctor` against the proposal, and presents the patch for explicit human review.
-- **Apply** is a separate user action. Oversized or binary patches are intentionally non-applicable because the UI cannot fully review them. For reviewable text patches, Apply refuses overlapping live edits, checks the patch with Git, applies it, reruns the doctor, and rolls the patch back if validation fails.
-- Selected PDF text is treated as untrusted evidence, not agent instructions.
-- Production embedded Codex is disabled until a separate authenticated agent service is configured.
-- Set `RESEARCH_OBSERVER_CODEX=0` to disable the local bridge.
-- Optionally set `RESEARCH_OBSERVER_CODEX_MODEL` to select a locally available Codex model.
+- **Draft** is read-only proposed research change.
+- **Act** writes only inside an isolated detached review worktree; changes outside allowed research paths are rejected.
+- **Apply** is an explicit separate action after patch/doctor review.
+- **Direct Edit** keeps browser-local drafts, shows a review diff, validates with the research doctor, rejects stale overwrites, and rolls back failed saves.
+- Codex and Direct Edit proposal types cannot be cross-applied.
 
-Observaire installs matching `@openai/codex-sdk` and `@openai/codex` versions so the SDK can resolve its platform CLI binary. Authenticate Codex locally before using the panel. The UI status check also verifies that the SDK can resolve the installed Codex runtime before reporting it ready. If Codex is unavailable, Overview, Notes, Papers, Evidence, and PDF reading continue to work normally.
+Codex authentication delegates to the installed Codex CLI. Observaire checks actual CLI login status and does not read or expose Codex access/refresh tokens.
 
-Repository-scoped Codex instructions live in root/nested `AGENTS.md` files and reusable workflows live under `.agents/skills/`.
+Set `RESEARCH_OBSERVER_CODEX=0` to disable the local bridge. Optionally use `RESEARCH_OBSERVER_CODEX_MODEL` to select a locally available model.
 
-## Configuration
+## Graph, Health, and Research Intelligence
 
-`research-observer.config.json` controls the workspace contract, including suggested research types/statuses, media extensions, asset-size warnings, and the progress directory. By default, unknown type/status values are warnings for backward compatibility; set `strictVocabulary: true` to make them doctor errors.
+The **Graph** distinguishes explicit typed relationships from ordinary Markdown reference edges.
 
-If you intentionally extend the research vocabulary, update the config and `AGENTS.md` together.
+The **Health** view reports factual compiler conditions such as unanswered questions, experiments without results, decisions without basis, incomplete literature metadata, evidence without provenance, and missing stable IDs.
 
-## Static-first rendering
+The **Insights** workspace supports:
 
-Research note routes are pre-generated from the committed workspace, while development still permits newly added notes without restarting. Search and approved local research media are generated into `public/_research/` before production builds.
-
-The app therefore follows a static-first deployment model without requiring request-time Markdown parsing or access to the source `progress/` filesystem.
-
-## Dependency reproducibility
-
-Direct dependency versions are pinned exactly. A `package-lock.json` is still required for fully deterministic transitive dependency resolution.
-
-When npm registry access is available, run:
-
-```bash
-npm install
-git add package-lock.json
-git commit -m "chore: lock npm dependencies"
-```
-
-After a lockfile is committed, prefer `npm ci` for clean/release installs.
-
-## Architecture
-
-See `docs/ARCHITECTURE.md` for invariants, trust boundaries, compiler flow, and extension guidance.
-
-## License
-
-MIT.
-
-
-## Typed research graph, evidence, collections, health, and instructions
-
-Observaire now supports explicit typed relationships in note frontmatter:
-
-```yaml
-relationships:
-  - type: produces
-    target: retrieval-result
-  - type: supports
-    target: decision-use-reranker
-```
-
-The Graph view visualizes these relationships while preserving ordinary Markdown links as weaker `references` edges.
-
-PDF selections can be captured as durable `type: evidence` Markdown notes with source PDF/page provenance. Local development enables evidence writes by default; production remains read-only unless `RESEARCH_OBSERVER_WRITES=1` is explicitly configured.
-
-Collections provide deterministic saved views and an advanced query language such as:
-
-```text
-type:experiment status:validating
-type:evidence has:source relationship:contradicts
-tag:retrieval -status:archived
-```
-
-The Health view reports factual gaps such as unanswered questions, experiments without results, decisions without basis, incomplete literature metadata, evidence without source provenance, and missing stable IDs.
-
-The **Instruction** tab displays the repository's actual LLM authoring sources (`AGENTS.md`, `progress/AGENTS.md`, and the create-note skill) and provides a copyable combined prompt.
-
-
-## New Research with Consensus
-
-Observaire can use the Consensus API as an external peer-reviewed literature provider.
-
-Configure it **server-side only**:
-
-```bash
-cp .env.example .env.local
-# then set CONSENSUS_API_KEY in .env.local
-```
-
-Create/manage the key from the Consensus API & MCP dashboard. Never expose the key in browser code or commit it to the repository.
-
-### New Research
-
-Open **New Research** in the workspace navigation.
-
-The workflow is intentionally staged:
-
-1. Enter a topic/question and optional objective.
-2. Observaire calls Consensus search and shows the returned papers, metadata, takeaways, and eligible full-text passages.
-3. You screen/select the papers.
-4. Only the selected literature packet is sent to local Codex.
-5. Codex runs read-only, without network/web access, and proposes:
-   - a literature synthesis,
-   - research gaps,
-   - falsifiable hypotheses,
-   - experiment designs,
-   - next actions and cautions.
-6. The proposal remains review-only. It does not create or edit research Markdown automatically.
-
-The public Consensus API currently exposes search, metadata, filters, relevance signals, and optional eligible full-text chunks. Observaire therefore labels stage 2 a **Consensus-backed evidence overview** rather than pretending the public API exposes Consensus Deep/Research Agent prose synthesis. Codex performs the explicit synthesis/planning step from the selected packet.
-
-### Consensus citations in existing research
-
-Every research note includes a **Consensus** card in the right context rail.
-
-Searching is manual so simply opening notes does not consume Consensus calls. From returned papers you can:
-
-- inspect the Consensus source,
-- review takeaways/abstract context,
-- see DOI/study/citation metadata when available,
-- copy a readable reference,
-- copy a portable Markdown citation.
-
-Consensus search rank, semantic score, and citation count are discovery signals. They are not treated as scientific evidence or as automatic `supports`/`contradicts` relationships.
-
-### Environment variables
-
-```text
-CONSENSUS_API_KEY=...
-```
-
-For local verification only, `CONSENSUS_API_BASE_URL` may point at a mock server. Production ignores that override and always calls `https://api.consensus.app`.
-
-
-## Research Intelligence: statistics, timelines, versions, and multiple projects
-
-The **Insights** workspace provides a portfolio-level visual layer over the canonical Markdown research model.
-
-It supports:
-
-- linked project filters that can select one or several research projects at once,
-- research-object type and status distributions,
-- research pipeline charts,
-- typed-relationship distributions,
-- activity-over-time charts with explicit missing periods,
-- per-project composition comparison,
-- factual health heatmaps,
-- cross-project relationship matrices,
-- a multi-lane research timeline,
+- one or multiple project scopes;
+- research-object type/status distributions;
+- research pipeline charts;
+- typed-relationship distributions;
+- activity-over-time charts;
+- project composition comparison;
+- health heatmaps;
+- cross-project relationship matrices;
+- multi-lane research timelines;
 - semantic version lineages and Markdown diffs.
-
-### Multiple research projects
-
-Declare projects in `research-observer.config.json`:
-
-```json
-"researchProjects": [
-  {
-    "id": "default",
-    "label": "Main research",
-    "description": "Research objects without an explicit project."
-  },
-  {
-    "id": "retrieval",
-    "label": "Retrieval study"
-  },
-  {
-    "id": "evaluation",
-    "label": "Evaluation study"
-  }
-]
-```
-
-Assign a Markdown research object with:
-
-```yaml
-research: retrieval
-```
-
-Existing notes remain backward-compatible: if `research` is omitted, the compiler assigns `default`.
-
-Advanced Collections queries also support:
-
-```text
-research:retrieval
-project:evaluation type:result
-```
 
 ### Semantic research versions
 
-Technical edits remain available through Git history. Observaire uses the typed `supersedes` relationship for meaningful intellectual versions that should be visible side-by-side:
+Technical edits remain available through Git history. Use the typed `supersedes` relationship only for meaningful intellectual versions that should remain independently reviewable:
 
 ```yaml
 relationships:
@@ -387,4 +393,76 @@ relationships:
     target: hypothesis-v1
 ```
 
-The **Insights → Timeline** view draws these version lineages across project lanes, and **Insights → Versions** compares two semantic versions with metadata deltas and a Markdown diff.
+**Insights → Timeline** draws these lineages across project lanes; **Insights → Versions** compares semantic versions.
+
+## AI authoring instructions
+
+`AGENTS.md` is the repository-level AI authoring contract. `progress/AGENTS.md`, `docs/OBSERVAIRE_DATA_CONTRACT.md`, the JSON Schema, and `.agents/skills/create-research-note/SKILL.md` refine the same model.
+
+AI-created research must preserve:
+
+- folder/project identity;
+- stable object IDs;
+- filename ordering per project;
+- verified provenance;
+- readable body links versus semantic relationships;
+- non-fabrication rules;
+- existing valid project and vocabulary constraints.
+
+The **Instruction** tab exposes the repository's actual prompt/contract sources for external AI handoff.
+
+## Configuration
+
+`research-observer.config.json` still controls global workspace behavior such as:
+
+- allowed object types;
+- statuses;
+- relationship vocabulary;
+- allowed media extensions;
+- asset-size thresholds;
+- saved Collections;
+- legacy/predeclared `researchProjects`;
+- progress directory location.
+
+For ordinary new research projects, you no longer need to edit `researchProjects`; create/import a project folder instead.
+
+If you intentionally extend a global vocabulary, update the config and authoring contracts together.
+
+## Storage model
+
+Durable research source:
+
+```text
+progress/**
+```
+
+Folder-local project metadata:
+
+```text
+progress/<project>/.observaire-project.json
+```
+
+Rebuildable generated index/media:
+
+```text
+public/_research/**
+```
+
+Local integration/Codex transient state:
+
+```text
+.research-observer/**
+```
+
+Under Docker Compose, `progress/**` is a host bind mount. `.research-observer/**` uses a separate named volume. Do not confuse transient app state with durable research source.
+
+## Architecture and detailed guides
+
+- `docs/ARCHITECTURE.md` — architecture and trust boundaries.
+- `docs/OBSERVAIRE_DATA_CONTRACT.md` — canonical research content contract.
+- `docs/PROJECT_FOLDERS_AND_DOCKER.md` — folder auto-indexing, browser import, and Docker persistence.
+- `docs/VERIFICATION_EVIDENCE_SETTINGS_EDIT.md` — release/browser verification matrix for the current feature branch.
+
+## License
+
+MIT.
