@@ -32,7 +32,7 @@ test("human contract documents every current configured vocabulary value", async
   for (const value of config.allowedRelationshipTypes) assert.ok(contract.includes(`\`${value}\``), `contract missing relationship ${value}`);
 });
 
-test("ChatGPT Web prompt mirrors current vocabularies and avoids repository-specific guesses", async () => {
+test("ChatGPT Web prompt mirrors current vocabularies and accepts live workspace config injection", async () => {
   const [prompt, configRaw] = await Promise.all([
     read("docs/CHATGPT_WEB_RESEARCH_PROMPT.md"),
     read("research-observer.config.json"),
@@ -40,6 +40,8 @@ test("ChatGPT Web prompt mirrors current vocabularies and avoids repository-spec
   const config = JSON.parse(configRaw);
 
   assert.ok(prompt.includes("{{TOPIC_OR_IDEA_OR_HYPOTHESIS}}"));
+  assert.ok(prompt.includes("{{WORKSPACE_CONFIG}}"));
+  assert.ok(prompt.includes("researchProjects[].id"));
   assert.ok(prompt.includes("900_primary_question.md"));
   assert.ok(!prompt.includes("research: default"));
   assert.ok(prompt.includes("Do **not** create a `type: result` file unless"));
@@ -49,13 +51,17 @@ test("ChatGPT Web prompt mirrors current vocabularies and avoids repository-spec
   for (const value of config.allowedRelationshipTypes) assert.ok(prompt.includes(`\`${value}\``), `prompt missing relationship ${value}`);
 });
 
-test("agent-facing research instructions require the canonical contract and schema", async () => {
-  const [progressAgents, skill] = await Promise.all([
+test("agent-facing instructions require one canonical contract, schema, and live config", async () => {
+  const [rootAgents, progressAgents, skill] = await Promise.all([
+    read("AGENTS.md"),
     read("progress/AGENTS.md"),
     read(".agents/skills/create-research-note/SKILL.md"),
   ]);
-  assert.ok(progressAgents.includes("docs/OBSERVAIRE_DATA_CONTRACT.md"));
-  assert.ok(skill.includes("docs/OBSERVAIRE_DATA_CONTRACT.md"));
+  for (const content of [rootAgents, progressAgents, skill]) {
+    assert.ok(content.includes("docs/OBSERVAIRE_DATA_CONTRACT.md"));
+  }
+  assert.ok(rootAgents.includes("docs/observaire-research-frontmatter.schema.json"));
+  assert.ok(rootAgents.includes("research-observer.config.json"));
   assert.ok(skill.includes("docs/observaire-research-frontmatter.schema.json"));
   assert.ok(skill.includes("research-observer.config.json"));
 });
