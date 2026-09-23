@@ -35,7 +35,7 @@ export function createEvidenceNote(options: {
 
 export function createConsensusEvidenceNote(options: {
   rootDir?: string;
-  paper: ConsensusEvidencePaper;
+  paper?: unknown;
   query?: string;
   research?: string;
   comment?: string;
