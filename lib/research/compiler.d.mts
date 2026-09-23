@@ -63,6 +63,30 @@ export type ResearchEntry = {
   assets: string[];
 };
 
+export type ResearchProjectSummary = {
+  id: string;
+  label: string;
+  description?: string;
+  directory?: string;
+  autoIndexed?: boolean;
+  notes: number;
+  active: number;
+  questions: number;
+  hypotheses: number;
+  literature: number;
+  experiments: number;
+  results: number;
+  evidence: number;
+  decisions: number;
+  words: number;
+  relationships: number;
+  crossProjectRelationships: number;
+  errors: number;
+  warnings: number;
+  firstDate?: string;
+  latestDate?: string;
+};
+
 export type ResearchWorkspace = {
   schemaVersion: number;
   rootDir: string;
@@ -82,27 +106,7 @@ export type ResearchWorkspace = {
   signature: string;
   entries: ResearchEntry[];
   assets: Array<{ path: string; extension: string; size: number }>;
-  projects: Array<{
-    id: string;
-    label: string;
-    description?: string;
-    notes: number;
-    active: number;
-    questions: number;
-    hypotheses: number;
-    literature: number;
-    experiments: number;
-    results: number;
-    evidence: number;
-    decisions: number;
-    words: number;
-    relationships: number;
-    crossProjectRelationships: number;
-    errors: number;
-    warnings: number;
-    firstDate?: string;
-    latestDate?: string;
-  }>;
+  projects: ResearchProjectSummary[];
   graph: {
     nodes: Array<{ slug: string; title: string; type?: string; status?: string; research: string; order: number }>;
     edges: Array<{ source: string; target: string; type: string; explicit: boolean }>;
