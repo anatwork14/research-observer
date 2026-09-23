@@ -118,6 +118,7 @@ export function ResearchAssistPanel({
       >
         <ConsensusCitationPanel
           defaultQuery={defaultConsensusQuery}
+          researchId={codexContext.note?.research}
           embedded
           onStatusChange={setConsensusStatus}
         />
