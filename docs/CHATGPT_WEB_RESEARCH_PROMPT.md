@@ -49,34 +49,24 @@ title: Human readable title
 summary: One factual sentence.
 type: question
 status: investigating
-research: default
 date: YYYY-MM-DD
 tags:
   - short-tag
-aliases: []
-authors: []
-year: 2026
-doi: verified-doi-only
-pdf: papers/local-file.pdf
 relationships:
   - type: investigates
     target: another-stable-id
     note: Optional short explanation.
-source:
-  kind: pdf
-  pdf: papers/local-file.pdf
-  page: 12
 ---
 ```
 
-Omit optional fields when unknown. Do not output empty placeholder metadata merely to fill the schema.
+Optional fields include `research`, `aliases`, `authors`, `year`, `doi`, `pdf`, and `source`. Omit them when they are unknown or do not apply. Do not output empty placeholder arrays/values merely to fill the schema. Omit `research` for the default project because an external ChatGPT session cannot know my configured non-default project IDs unless I provide them.
 
 ### Identity
 
 - `id` is canonical identity and should survive filename/order changes.
 - filenames are ordered presentation only.
-- use descriptive filenames such as `01_primary_question.md`.
-- because you cannot inspect my existing repository, choose a self-contained temporary sequence beginning at `80_` for this generated bundle. I can renumber filenames later without changing IDs.
+- use descriptive filenames such as `900_primary_question.md`.
+- because you cannot inspect my existing repository, choose a self-contained temporary sequence beginning at `900_` for this generated bundle. I can renumber filenames later without changing IDs.
 
 ### Linking
 
@@ -85,7 +75,7 @@ There are two kinds of links:
 **Readable Markdown references** use relative filenames:
 
 ```md
-See the [primary question](80_primary_question.md).
+See the [primary question](900_primary_question.md).
 ```
 
 **Semantic graph relationships** use frontmatter:
@@ -121,7 +111,9 @@ source:
   page: 12
 ```
 
-For an externally verified scholarly paper, use:
+Only use that shape when the exact local PDF path and page are actually known.
+
+For an externally verified scholarly paper discovered through Consensus/another scholarly provider, use:
 
 ```yaml
 source:
@@ -132,7 +124,7 @@ source:
   query: search query that found it
 ```
 
-Do not claim an abstract/takeaway is a full-text quotation.
+At least one source identifier must be verified. Do not claim an abstract/takeaway is a full-text quotation. If the exact provider identity is not known, create a `type: literature` note with verified bibliographic metadata instead of fabricating a provider-specific evidence object.
 
 ## What to produce
 
@@ -147,6 +139,8 @@ At minimum, produce:
 5. **Research map** — `type: note`, summarizing the structure and linking the generated files
 
 Add literature/evidence/dataset notes only when you actually have verified information for them.
+
+Do **not** create a `type: result` file unless you are reporting an experiment/result that actually happened and the outcome data was supplied or verified. Planned outcomes belong inside an experiment note as interpretation criteria, not as fabricated results.
 
 For each hypothesis include:
 
@@ -179,7 +173,7 @@ First provide a short **Research architecture** table:
 Then output every file separately in this exact form:
 
 ```text
-FILE: progress/80_example.md
+FILE: progress/900_example.md
 ```
 
 followed immediately by one fenced Markdown block containing the complete file contents.
@@ -192,6 +186,7 @@ After all files, provide:
 
 - list all generated stable IDs,
 - list all generated relationships as `source --type--> target`,
+- list every relative Markdown link as `source-file -> target-file`,
 - identify anything that still needs verification,
 - identify any filenames that may need renumbering after insertion into an existing Observaire repository,
 - state explicitly whether you used live web research.
@@ -204,6 +199,8 @@ Before finishing, internally check that:
 - no result is presented as if an experiment already happened,
 - no citation/source field was invented,
 - every hypothesis is falsifiable,
-- evidence and interpretation are clearly separated.
+- evidence and interpretation are clearly separated,
+- no non-default `research` project ID was invented,
+- no arbitrary frontmatter field was added outside the documented Observaire fields.
 
 Now build the Observaire starter research bundle for the topic / idea / hypothesis above.
