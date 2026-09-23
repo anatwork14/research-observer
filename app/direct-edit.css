@@ -16,6 +16,9 @@
 .direct-edit-alert.error { border-color: color-mix(in srgb, var(--warm) 34%, var(--line)); background: color-mix(in srgb, var(--warm) 9%, var(--surface-strong)); }
 .direct-edit-alert strong { font-size: 9px; }
 .direct-edit-alert p { margin: 3px 0 0; color: var(--muted); font-size: 8px; line-height: 1.45; }
+.direct-edit-inline-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
+.direct-edit-inline-actions button { min-height: 30px; padding: 0 9px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink-soft); background: var(--surface-strong); font-size: 8px; font-weight: 700; }
+.direct-edit-inline-actions button:hover { border-color: var(--accent); color: var(--accent-deep); }
 
 .direct-edit-shell { min-height: 620px; border-top: 1px solid var(--line); background: color-mix(in srgb, var(--surface-strong) 88%, var(--canvas)); }
 .direct-edit-head { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 13px 16px; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--canvas) 42%, transparent); }
@@ -61,9 +64,18 @@
   .direct-edit-toolbar { align-items: flex-start; flex-direction: column; }
   .direct-edit-controls { width: 100%; margin-left: 0; justify-content: space-between; }
   .direct-edit-state { display: none; }
+  .direct-edit-alert { margin-inline: 12px; }
+  .direct-edit-inline-actions button { flex: 1 1 150px; min-height: 42px; }
   .direct-edit-head { padding: 12px; }
   .direct-edit-textarea { min-height: 480px; padding: 16px; font-size: 11px; }
   .direct-edit-preview { min-height: 480px; padding: 20px 16px; }
   .direct-edit-review { padding: 10px; }
   .direct-edit-actions { padding: 10px; }
+}
+
+@media (pointer: coarse) {
+  .direct-edit-toggle,
+  .direct-edit-tabs button,
+  .direct-edit-actions button,
+  .direct-edit-inline-actions button { min-height: 44px; }
 }
