@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import path from "node:path";
 import {
   buildConsensusSearchParams,
   normalizeConsensusSearch,
@@ -81,6 +83,11 @@ test("Consensus query builder bounds result count and applies research filters",
   assert.equal(params.get("medical_mode"), "true");
   assert.equal(params.get("include_full_text_chunks"), "true");
   assert.deepEqual(params.getAll("study_types"), ["meta-analysis", "systematic review"]);
+});
+
+test("Research Assist does not require paid full-text access for its default literature search", async () => {
+  const panel = await fs.readFile(path.join(process.cwd(), "components/ConsensusCitationPanel.tsx"), "utf8");
+  assert.match(panel, /includeFullText:\s*false/);
 });
 
 test("Consensus normalizer accepts nested data result shapes", () => {

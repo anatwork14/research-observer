@@ -146,7 +146,8 @@ export function ConsensusCitationPanel({
           query: nextQuery,
           pageSize: 6,
           excludePreprints: true,
-          includeFullText: true,
+          // Full-text chunks are plan-gated by Consensus; metadata search must work on all plans.
+          includeFullText: false,
         }),
       });
       const payload = await response.json();
