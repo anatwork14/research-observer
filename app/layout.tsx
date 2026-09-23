@@ -5,6 +5,7 @@ import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "./globals.css";
 import "./direct-edit.css";
+import "./consistency.css";
 
 export const metadata: Metadata = {
   title: "Observaire",
