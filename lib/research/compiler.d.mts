@@ -22,6 +22,16 @@ export type IncomingResearchRelationship = {
   note?: string;
 };
 
+export type ResearchEvidenceSource = {
+  kind?: "pdf" | "consensus";
+  pdf?: string;
+  page?: number;
+  url?: string;
+  doi?: string;
+  paperId?: string;
+  query?: string;
+};
+
 export type ResearchEntry = {
   filename: string;
   fileSlug: string;
@@ -40,7 +50,7 @@ export type ResearchEntry = {
   year?: number;
   doi?: string;
   pdf?: string;
-  source?: { pdf: string; page?: number };
+  source?: ResearchEvidenceSource;
   relationships: ResearchRelationship[];
   incomingRelationships: IncomingResearchRelationship[];
   content: string;
