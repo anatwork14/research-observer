@@ -1,0 +1,10 @@
+.git
+.github
+.next
+node_modules
+public/_research
+.research-observer
+npm-debug.log*
+.DS_Store
+*.swp
+*.tsbuildinfo
