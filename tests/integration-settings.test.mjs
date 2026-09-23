@@ -38,3 +38,20 @@ test("Consensus API keys persist only in git-ignored workspace settings", async 
   const cleared = await readIntegrationSettings({ rootDir: root });
   assert.equal(cleared.consensusApiKey, undefined);
 });
+
+test("concurrent integration writes keep a valid atomic settings file", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "observaire-settings-concurrent-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+
+  await Promise.all([
+    saveConsensusApiKey("concurrent-key-111111", { rootDir: root }),
+    saveConsensusApiKey("concurrent-key-222222", { rootDir: root }),
+  ]);
+
+  const settings = await readIntegrationSettings({ rootDir: root });
+  assert.match(settings.consensusApiKey ?? "", /^concurrent-key-(111111|222222)$/);
+
+  const stateDirectory = path.join(root, ".research-observer");
+  const files = await fs.readdir(stateDirectory);
+  assert.deepEqual(files, ["integrations.json"], "temporary integration files should be cleaned up");
+});
