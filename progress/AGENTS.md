@@ -2,6 +2,25 @@
 
 These instructions apply to files under `progress/` and refine the repository-root `AGENTS.md`.
 
+## Canonical data contract
+
+Before creating, restructuring, or semantically linking research notes, read `docs/OBSERVAIRE_DATA_CONTRACT.md`.
+
+That contract is authoritative for indexing semantics: stable identity, supported metadata, project scope, evidence provenance, body links, typed relationships, edge direction, and the distinction between filename order and canonical IDs.
+
+When instructions conflict, follow the stricter research-integrity rule and do not invent missing facts or targets.
+
+For reliable indexing:
+
+- put canonical identity in `id`, not in prose;
+- put project scope in `research` when non-default;
+- put evidence provenance in `source`;
+- put strong semantic graph meaning in `relationships`;
+- use body Markdown links for readable references;
+- prefer stable IDs as relationship targets;
+- never hide a required relationship/source only in prose and expect Graph/Insights to infer it;
+- do not add arbitrary frontmatter fields and assume they will be indexed.
+
 ## Research integrity
 
 - Treat Markdown and local research assets as evidence-bearing source material, not disposable generated output.
@@ -15,7 +34,7 @@ These instructions apply to files under `progress/` and refine the repository-ro
 - Research notes live directly in `progress/` and use `XX_descriptive_name.md`.
 - Inspect existing numeric prefixes before choosing a new order.
 - AI-generated notes should include a stable lowercase kebab-case `id`.
-- Use only metadata supported by the root `AGENTS.md` and `research-observer.config.json`.
+- Use only metadata supported by `docs/OBSERVAIRE_DATA_CONTRACT.md`, the root `AGENTS.md`, and `research-observer.config.json`.
 - Keep metadata optional when a fact is genuinely unknown.
 
 ## Literature notes and PDFs
@@ -90,7 +109,7 @@ Use `relationships` when the research meaning is stronger than an ordinary hyper
 - `based_on`: a decision is grounded in evidence/results.
 - `builds_on`, `derived_from`, `uses`, `reproduces`, `supersedes`: research lineage.
 
-Relationship targets must already exist. Never create a relationship to a planned/nonexistent object.
+Relationship targets must already exist. Prefer their stable `id`. Never create a relationship to a planned/nonexistent object.
 
 ## Direct Edit from the website
 
@@ -105,7 +124,12 @@ Observaire's Direct Edit mode is allowed to update an existing ordered Markdown 
 
 ## Linking
 
-- Link research notes by relative Markdown filename.
+Use two complementary mechanisms rather than treating them as interchangeable:
+
+- Use relative Markdown filename links for readable prose references and section navigation.
+- Use frontmatter `relationships` for semantic connections that should appear as typed graph edges and feed Insights.
+- A Markdown reference does not automatically mean `supports`, `contradicts`, or any other strong research relation.
+- Prefer stable IDs for `relationships.target`; use filenames only for body Markdown links.
 - Never create a broken Markdown link for planned future work.
 - Keep figures/data/PDF references relative to the note and inside `progress/`.
 - Use HTTPS for remote sources.
