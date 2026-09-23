@@ -163,7 +163,7 @@
   font-size: 13px;
 }
 
-.integrationTop span {
+.integrationTop > div > span {
   display: block;
   margin-top: 4px;
   color: var(--muted);
@@ -219,10 +219,24 @@
   margin-top: 16px;
   padding-top: 14px;
   border-top: 1px solid var(--line);
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 900px) {
   .shell { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  .card { padding: 18px; }
+  .cardHeader,
+  .integrationTop {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .badge { align-self: flex-start; }
+  .actions > * { flex: 1 1 140px; }
+  .deviceCode code { max-width: 100%; overflow-wrap: anywhere; }
 }
 
 @media (pointer: coarse) {
