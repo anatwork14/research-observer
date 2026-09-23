@@ -33,6 +33,28 @@ test("Consensus search normalization preserves citation provenance", () => {
   assert.equal(normalized.papers[0].fullTextChunks[0].section, "Results");
 });
 
+test("Consensus keeps DOI-only scholarly results with durable provenance", () => {
+  const normalized = normalizeConsensusSearch({
+    papers: [{
+      title: "DOI-only result",
+      authors: ["Researcher"],
+      doi: "10.1234/doi-only",
+    }],
+  });
+
+  assert.equal(normalized.papers.length, 1);
+  assert.equal(normalized.papers[0].title, "DOI-only result");
+  assert.equal(normalized.papers[0].doi, "10.1234/doi-only");
+  assert.equal(normalized.papers[0].url, "");
+});
+
+test("Consensus drops results that have no durable scholarly identifier", () => {
+  const normalized = normalizeConsensusSearch({
+    papers: [{ title: "No source identity", authors: ["Researcher"] }],
+  });
+  assert.equal(normalized.papers.length, 0);
+});
+
 test("Consensus query builder bounds result count and applies research filters", () => {
   const params = buildConsensusSearchParams({
     query: "clinical retrieval",
@@ -59,7 +81,6 @@ test("Consensus query builder bounds result count and applies research filters",
   assert.equal(params.get("include_full_text_chunks"), "true");
   assert.deepEqual(params.getAll("study_types"), ["meta-analysis", "systematic review"]);
 });
-
 
 test("Consensus normalizer accepts nested data result shapes", () => {
   const normalized = normalizeConsensusSearch({
