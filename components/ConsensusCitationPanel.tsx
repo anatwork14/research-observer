@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { consensusMarkdownCitation, consensusReference } from "@/lib/consensus/citation.mjs";
 
@@ -19,12 +21,36 @@ type Paper = {
 };
 
 type Status = { enabled: boolean; reason?: string };
+type SavedEvidence = { slug: string; filename: string };
 
 function authorLine(paper: Paper) {
   if (!paper.authors.length) return "Authors unavailable";
   return paper.authors.length > 3
     ? paper.authors.slice(0, 3).join(", ") + " et al."
     : paper.authors.join(", ");
+}
+
+function normalizeDoi(value?: string) {
+  return (value ?? "")
+    .trim()
+    .replace(/^doi:\s*/i, "")
+    .replace(/^https?:\/\/(?:dx\.)?doi\.org\//i, "");
+}
+
+function sourceUrl(paper: Paper) {
+  const direct = paper.url.trim();
+  if (/^https:\/\//i.test(direct)) return direct;
+  const doi = normalizeDoi(paper.doi);
+  return doi ? `https://doi.org/${doi}` : "";
+}
+
+function durablePaperId(paper: Paper) {
+  return paper.id.trim() || normalizeDoi(paper.doi) || paper.url.trim();
+}
+
+function paperKey(paper: Paper, index?: number) {
+  return durablePaperId(paper)
+    || [paper.title.trim(), paper.year ?? "", paper.journal.trim(), paper.authors.join("|"), index ?? ""].join("::");
 }
 
 function fallbackCopy(value: string) {
@@ -42,13 +68,16 @@ function fallbackCopy(value: string) {
 
 export function ConsensusCitationPanel({
   defaultQuery,
+  researchId,
   embedded = false,
   onStatusChange,
 }: {
   defaultQuery: string;
+  researchId?: string;
   embedded?: boolean;
   onStatusChange?: (status: Status) => void;
 }) {
+  const router = useRouter();
   const [status, setStatus] = useState<Status | null>(null);
   const [query, setQuery] = useState(defaultQuery);
   const [papers, setPapers] = useState<Paper[]>([]);
@@ -57,6 +86,8 @@ export function ConsensusCitationPanel({
   const [lastQuery, setLastQuery] = useState("");
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
+  const [savingId, setSavingId] = useState("");
+  const [savedEvidence, setSavedEvidence] = useState<Record<string, SavedEvidence>>({});
   const searchController = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -104,6 +135,7 @@ export function ConsensusCitationPanel({
     setLastQuery(nextQuery);
     setError("");
     setPapers([]);
+    setSavedEvidence({});
 
     try {
       const response = await fetch("/api/consensus/search", {
@@ -114,6 +146,8 @@ export function ConsensusCitationPanel({
           query: nextQuery,
           pageSize: 6,
           excludePreprints: true,
+          // Full-text chunks are plan-gated by Consensus; metadata search must work on all plans.
+          includeFullText: false,
         }),
       });
       const payload = await response.json();
@@ -133,7 +167,7 @@ export function ConsensusCitationPanel({
 
   async function copy(kind: "reference" | "markdown", paper: Paper) {
     const value = kind === "reference" ? consensusReference(paper) : consensusMarkdownCitation(paper);
-    const key = `${kind}-${paper.id || paper.url}`;
+    const key = `${kind}-${paperKey(paper)}`;
     setError("");
     try {
       if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(value);
@@ -142,6 +176,36 @@ export function ConsensusCitationPanel({
       window.setTimeout(() => setCopied((current) => current === key ? "" : current), 1400);
     } catch (copyError) {
       setError(copyError instanceof Error ? copyError.message : "Could not copy the citation.");
+    }
+  }
+
+  async function saveEvidence(paper: Paper) {
+    const id = durablePaperId(paper);
+    if (!id || savingId || savedEvidence[id]) return;
+    setSavingId(id);
+    setError("");
+    try {
+      const response = await fetch("/api/evidence", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "consensus",
+          paper,
+          query: lastQuery,
+          research: researchId,
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Could not save Consensus evidence.");
+      setSavedEvidence((current) => ({
+        ...current,
+        [id]: { slug: payload.slug, filename: payload.filename },
+      }));
+      router.refresh();
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Could not save Consensus evidence.");
+    } finally {
+      setSavingId("");
     }
   }
 
@@ -202,14 +266,15 @@ export function ConsensusCitationPanel({
         <div className="assist-state-card muted">
           <strong>Consensus is unavailable</strong>
           <p>{status.reason}</p>
+          <Link href="/settings">Configure in Settings →</Link>
         </div>
       )}
 
       {error && (
         <div className="assist-state-card error" role="alert">
-          <strong>Search needs attention</strong>
+          <strong>Research Assist needs attention</strong>
           <p>{error}</p>
-          {lastQuery && status?.enabled && <button type="button" onClick={() => void runSearch(lastQuery)}>Retry</button>}
+          {lastQuery && status?.enabled && !savingId && <button type="button" onClick={() => void runSearch(lastQuery)}>Retry search</button>}
         </div>
       )}
 
@@ -239,20 +304,26 @@ export function ConsensusCitationPanel({
             <strong>“{lastQuery}”</strong>
           </div>
           {papers.map((paper, index) => {
-            const id = paper.id || paper.url;
+            const id = durablePaperId(paper);
+            const key = paperKey(paper, index);
+            const externalUrl = sourceUrl(paper);
             const summary = paper.takeaway || paper.abstract;
+            const saved = id ? savedEvidence[id] : undefined;
             return (
-              <article key={id} className="consensus-citation-result">
+              <article key={key} className="consensus-citation-result">
                 <div className="consensus-result-topline">
                   <span>{String(index + 1).padStart(2, "0")}</span>
                   <div className="consensus-citation-meta">
                     {paper.studyType && <span>{paper.studyType}</span>}
                     {paper.citationCount !== undefined && <span>{paper.citationCount.toLocaleString()} citations</span>}
                     {paper.doi && <span>DOI</span>}
+                    {paper.fullTextChunks.length > 0 && <span>full-text excerpt</span>}
                   </div>
                 </div>
 
-                <a href={paper.url} target="_blank" rel="noreferrer">{paper.title}</a>
+                {externalUrl
+                  ? <a href={externalUrl} target="_blank" rel="noreferrer">{paper.title}</a>
+                  : <strong>{paper.title}</strong>}
                 <small>{authorLine(paper)}{paper.year ? ` · ${paper.year}` : ""}{paper.journal ? ` · ${paper.journal}` : ""}</small>
 
                 {summary && (
@@ -263,12 +334,18 @@ export function ConsensusCitationPanel({
                 )}
 
                 <div className="consensus-citation-actions">
-                  <a href={paper.url} target="_blank" rel="noreferrer">Open source ↗</a>
+                  {externalUrl
+                    ? <a href={externalUrl} target="_blank" rel="noreferrer">Open source ↗</a>
+                    : <span>Source link unavailable</span>}
+                  <button type="button" onClick={() => void saveEvidence(paper)} disabled={!id || savingId === id || Boolean(saved)} title={!id ? "Consensus did not return a durable source identifier for this result." : undefined}>
+                    {savingId === id ? "Saving…" : saved ? "Saved ✓" : "Save evidence"}
+                  </button>
+                  {saved && <Link href={`/progress/${saved.slug}`}>Open saved →</Link>}
                   <button type="button" onClick={() => void copy("reference", paper)}>
-                    {copied === `reference-${id}` ? "Copied ✓" : "Copy reference"}
+                    {copied === `reference-${paperKey(paper)}` ? "Copied ✓" : "Copy reference"}
                   </button>
                   <button type="button" onClick={() => void copy("markdown", paper)}>
-                    {copied === `markdown-${id}` ? "Copied ✓" : "Copy Markdown"}
+                    {copied === `markdown-${paperKey(paper)}` ? "Copied ✓" : "Copy Markdown"}
                   </button>
                 </div>
               </article>
@@ -278,7 +355,7 @@ export function ConsensusCitationPanel({
       )}
 
       <p className="assist-integrity-note">
-        Search order, semantic relevance, and citation counts are discovery signals—not proof of a claim.
+        Search order, semantic relevance, and citation counts are discovery signals—not proof. Saving creates a reviewable evidence object; it does not assert support or contradiction automatically.
       </p>
     </section>
   );

@@ -45,6 +45,14 @@ function excerptAround(text: string, needle: string) {
   return (start ? "…" : "") + text.slice(start, end) + (end < text.length ? "…" : "");
 }
 
+function initialResults(entries: NavEntry[]): Result[] {
+  return entries.slice(0, 8).map((entry) => ({
+    ...entry,
+    excerpt: "Research note",
+    matchedBy: "note",
+  }));
+}
+
 function runSearch(entries: SearchEntry[], query: string): Result[] {
   const { filters, text } = parseQuery(query);
 
@@ -104,16 +112,42 @@ function runSearch(entries: SearchEntry[], query: string): Result[] {
     }));
 }
 
+function runFallbackSearch(entries: NavEntry[], query: string): Result[] {
+  const { filters, text } = parseQuery(query);
+  if (filters.type?.length || filters.tag?.length || filters.research?.length || filters.project?.length) return [];
+
+  return entries
+    .filter((entry) => {
+      if (filters.status?.length && !filters.status.includes((entry.status ?? "").toLowerCase())) return false;
+      if (!text) return true;
+      return entry.title.toLowerCase().includes(text) || (entry.status ?? "").toLowerCase().includes(text);
+    })
+    .slice(0, 12)
+    .map((entry) => ({
+      ...entry,
+      excerpt: entry.status ? `Status: ${entry.status}` : "Research note",
+      matchedBy: text ? "title/status" : filters.status?.length ? "status" : "note",
+    }));
+}
+
+function currentResults(entries: NavEntry[], index: SearchEntry[] | null, indexUnavailable: boolean, query: string) {
+  if (indexUnavailable) return runFallbackSearch(entries, query);
+  if (!index) return initialResults(entries);
+  return runSearch(index, query);
+}
+
 export function CommandPalette({ entries }: { entries: NavEntry[] }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [index, setIndex] = useState<SearchEntry[] | null>(null);
+  const [indexUnavailable, setIndexUnavailable] = useState(false);
   const [selected, setSelected] = useState(0);
 
   function openPalette() {
     setSelected(0);
+    setIndexUnavailable(false);
     setOpen(true);
   }
 
@@ -130,7 +164,7 @@ export function CommandPalette({ entries }: { entries: NavEntry[] }) {
         return;
       }
       if (!open) return;
-      const results = index ? runSearch(index, query) : [];
+      const results = currentResults(entries, index, indexUnavailable, query);
       if (event.key === "Escape") {
         event.preventDefault();
         setOpen(false);
@@ -148,7 +182,7 @@ export function CommandPalette({ entries }: { entries: NavEntry[] }) {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [index, open, query, router, selected]);
+  }, [entries, index, indexUnavailable, open, query, router, selected]);
 
   useEffect(() => {
     if (!open) return;
@@ -163,24 +197,24 @@ export function CommandPalette({ entries }: { entries: NavEntry[] }) {
         if (!response.ok) throw new Error("Search index unavailable");
         return response.json();
       })
-      .then((payload) => setIndex(Array.isArray(payload.entries) ? payload.entries : []))
+      .then((payload) => {
+        setIndex(Array.isArray(payload.entries) ? payload.entries : []);
+        setIndexUnavailable(false);
+      })
       .catch((error) => {
-        if ((error as Error).name !== "AbortError") setIndex([]);
+        if ((error as Error).name !== "AbortError") {
+          setIndex(null);
+          setIndexUnavailable(true);
+        }
       });
 
     return () => controller.abort();
   }, [open]);
 
-  const results = useMemo(() => {
-    if (!index) {
-      return entries.slice(0, 8).map((entry) => ({
-        ...entry,
-        excerpt: "Research note",
-        matchedBy: "note",
-      }));
-    }
-    return runSearch(index, query);
-  }, [entries, index, query]);
+  const results = useMemo(
+    () => currentResults(entries, index, indexUnavailable, query),
+    [entries, index, indexUnavailable, query],
+  );
 
   function openResult(result: Result) {
     router.push("/progress/" + result.slug);
@@ -202,13 +236,13 @@ export function CommandPalette({ entries }: { entries: NavEntry[] }) {
                 ref={inputRef}
                 value={query}
                 onChange={(event) => { setQuery(event.target.value); setSelected(0); }}
-                placeholder="Search or filter: research:retrieval type:experiment…"
+                placeholder={indexUnavailable ? "Search note title/status…" : "Search or filter: research:retrieval type:experiment…"}
                 aria-label="Search research"
               />
               <kbd>ESC</kbd>
             </div>
             <div className="palette-results" role="listbox">
-              {index === null && (
+              {index === null && !indexUnavailable && (
                 <div className="palette-skeleton" aria-label="Loading research index" aria-busy="true">
                   {Array.from({ length: 5 }, (_, row) => (
                     <div className="palette-skeleton-row" key={row}>
@@ -220,6 +254,9 @@ export function CommandPalette({ entries }: { entries: NavEntry[] }) {
                     </div>
                   ))}
                 </div>
+              )}
+              {indexUnavailable && (
+                <p className="palette-state" role="status">Full research index unavailable. Falling back to note title/status search.</p>
               )}
               {results.map((result, resultIndex) => (
                 <button
@@ -238,10 +275,11 @@ export function CommandPalette({ entries }: { entries: NavEntry[] }) {
                   <span className="palette-kind">{result.matchedBy}</span>
                 </button>
               ))}
-              {index !== null && !results.length && <p className="palette-state">No matching research found.</p>}
+              {index !== null && !indexUnavailable && !results.length && <p className="palette-state">No matching research found.</p>}
+              {indexUnavailable && !results.length && <p className="palette-state">No note title/status matches this fallback search.</p>}
             </div>
             <div className="palette-hint">
-              <span>↑↓ navigate</span><span>↵ open</span><span>research: · type: · status: · tag:</span>
+              <span>↑↓ navigate</span><span>↵ open</span><span>{indexUnavailable ? "fallback: title + status" : "research: · type: · status: · tag:"}</span>
             </div>
           </div>
         </div>

@@ -56,6 +56,24 @@ type Plan = {
 
 type ServiceState = { enabled: boolean; reason?: string };
 
+function normalizeDoi(value?: string) {
+  return (value ?? "")
+    .trim()
+    .replace(/^doi:\s*/i, "")
+    .replace(/^https?:\/\/(?:dx\.)?doi\.org\//i, "");
+}
+
+function paperKey(paper: Pick<Paper, "id" | "doi" | "url">) {
+  const doi = normalizeDoi(paper.doi);
+  return paper.id || (doi ? `doi:${doi}` : "") || paper.url;
+}
+
+function paperHref(paper: Pick<Paper, "doi" | "url"> | Pick<PlanSource, "doi" | "url">) {
+  if (paper.url && /^https:\/\//i.test(paper.url)) return paper.url;
+  const doi = normalizeDoi(paper.doi);
+  return doi ? `https://doi.org/${doi}` : "";
+}
+
 function authors(paper: Paper) {
   if (!paper.authors.length) return "Authors unavailable";
   const visible = paper.authors.slice(0, 3).join(", ");
@@ -102,7 +120,7 @@ export function NewResearchWorkbench() {
   }, []);
 
   const selectedPapers = useMemo(
-    () => papers.filter((paper) => selected.has(paper.id || paper.url)),
+    () => papers.filter((paper) => selected.has(paperKey(paper))),
     [papers, selected],
   );
 
@@ -146,7 +164,7 @@ export function NewResearchWorkbench() {
       const nextPapers = Array.isArray(payload.papers) ? payload.papers : [];
       setPapers(nextPapers);
       setTotalResults(Number(payload.totalResults) || nextPapers.length);
-      setSelected(new Set(nextPapers.map((paper: Paper) => paper.id || paper.url)));
+      setSelected(new Set(nextPapers.map((paper: Paper) => paperKey(paper)).filter(Boolean)));
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Consensus search failed.");
     } finally {
@@ -182,7 +200,8 @@ export function NewResearchWorkbench() {
   }
 
   function togglePaper(paper: Paper) {
-    const key = paper.id || paper.url;
+    const key = paperKey(paper);
+    if (!key) return;
     setSelected((current) => {
       const next = new Set(current);
       if (next.has(key)) next.delete(key);
@@ -241,7 +260,7 @@ export function NewResearchWorkbench() {
             <div className="consensus-takeaways">
               <span className="kicker">Consensus-provided takeaways</span>
               {evidenceOverview.takeaways.map((paper) => (
-                <blockquote key={paper.id || paper.url}>
+                <blockquote key={paperKey(paper)}>
                   <p>{paper.takeaway}</p>
                   <cite>{paper.title} · {paper.year ?? "year unavailable"}</cite>
                 </blockquote>
@@ -253,19 +272,20 @@ export function NewResearchWorkbench() {
 
           <div className="consensus-paper-list">
             {papers.map((paper) => {
-              const key = paper.id || paper.url;
+              const key = paperKey(paper);
+              const href = paperHref(paper);
               const checked = selected.has(key);
               return (
                 <article className={`consensus-paper-row ${checked ? "selected" : ""}`} key={key}>
                   <label><input type="checkbox" checked={checked} onChange={() => togglePaper(paper)} /><span className="sr-only">Include {paper.title}</span></label>
                   <div className="consensus-paper-copy">
-                    <a href={paper.url} target="_blank" rel="noreferrer"><strong>{paper.title}</strong></a>
+                    {href ? <a href={href} target="_blank" rel="noreferrer"><strong>{paper.title}</strong></a> : <strong>{paper.title}</strong>}
                     <small>{sourceLabel(paper)}</small>
                     {(paper.takeaway || paper.abstract) && <p>{paper.takeaway || paper.abstract?.slice(0, 280)}</p>}
                     <div className="consensus-paper-meta">
                       {paper.studyType && <span>{paper.studyType}</span>}
                       {paper.citationCount !== undefined && <span>{paper.citationCount.toLocaleString()} citations</span>}
-                      {paper.doi && <span>DOI {paper.doi}</span>}
+                      {paper.doi && <span>DOI {normalizeDoi(paper.doi)}</span>}
                       {paper.fullTextChunks.length > 0 && <span>{paper.fullTextChunks.length} passages</span>}
                     </div>
                   </div>
@@ -331,12 +351,20 @@ export function NewResearchWorkbench() {
             <div className="research-plan-sources">
               <span className="kicker">Selected literature trace</span>
               <div>
-                {plan.sources?.map((source) => (
-                  <a key={source.sourceId} href={source.url} target="_blank" rel="noreferrer">
-                    <strong>{source.title}</strong>
-                    <small>{[source.authors?.[0], source.year, source.journal].filter(Boolean).join(" · ")}</small>
-                  </a>
-                ))}
+                {plan.sources?.map((source) => {
+                  const href = paperHref(source);
+                  return href ? (
+                    <a key={source.sourceId} href={href} target="_blank" rel="noreferrer">
+                      <strong>{source.title}</strong>
+                      <small>{[source.authors?.[0], source.year, source.journal].filter(Boolean).join(" · ")}</small>
+                    </a>
+                  ) : (
+                    <div key={source.sourceId} className="research-plan-source-static">
+                      <strong>{source.title}</strong>
+                      <small>{[source.authors?.[0], source.year, source.journal].filter(Boolean).join(" · ")}</small>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

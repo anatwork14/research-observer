@@ -1,0 +1,123 @@
+/* Late-loading cross-feature consistency rules.
+   Keep this file small: it reconciles interaction surfaces introduced by newer modules
+   without increasing specificity throughout the legacy global stylesheet. */
+
+.evidence-source-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 11px;
+  align-items: center;
+  margin-top: auto;
+}
+
+.evidence-source-actions .evidence-source-link {
+  margin-top: 0;
+}
+
+.evidence-source-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 9px;
+}
+
+.evidence-source-meta span {
+  max-width: 100%;
+  padding: 3px 6px;
+  overflow-wrap: anywhere;
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--canvas);
+  font: 7px/1.4 var(--mono);
+}
+
+.consensus-citation-actions > span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.research-plan-source-static {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--ink);
+  background: var(--canvas);
+}
+
+@media (max-width: 1180px) {
+  .workbench-topbar {
+    flex-wrap: wrap;
+    gap: 10px 12px;
+    padding-block: 10px;
+  }
+
+  .workspace-tabs {
+    order: 5;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .workspace-tabs::-webkit-scrollbar { display: none; }
+
+  .workspace-tabs a {
+    flex: 0 0 auto;
+    min-height: 38px;
+    padding-inline: 12px;
+    scroll-snap-align: start;
+  }
+
+  .workbench-topbar .search-trigger { margin-left: auto; }
+}
+
+@media (max-width: 680px) {
+  .site-shell { padding-inline: 16px; }
+
+  .collection-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .collection-count {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .evidence-source-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .evidence-source-actions .evidence-source-link {
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .evidence-source-meta span {
+    width: 100%;
+    border-radius: 7px;
+  }
+}
+
+@media (pointer: coarse) {
+  .evidence-source-actions .evidence-source-link,
+  .consensus-citation-actions > span,
+  .pdf-selection-bar button,
+  .pdf-inspector-tabs button {
+    min-height: 44px;
+  }
+}

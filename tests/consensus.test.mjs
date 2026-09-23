@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import path from "node:path";
 import {
   buildConsensusSearchParams,
   normalizeConsensusSearch,
@@ -33,6 +35,29 @@ test("Consensus search normalization preserves citation provenance", () => {
   assert.equal(normalized.papers[0].fullTextChunks[0].section, "Results");
 });
 
+test("Consensus keeps DOI-only scholarly results and normalizes unsafe optional source fields", () => {
+  const normalized = normalizeConsensusSearch({
+    papers: [{
+      title: "DOI-only result",
+      authors: ["Researcher"],
+      doi: "https://doi.org/10.1234/doi-only",
+      url: "http://legacy.example/paper",
+    }],
+  });
+
+  assert.equal(normalized.papers.length, 1);
+  assert.equal(normalized.papers[0].title, "DOI-only result");
+  assert.equal(normalized.papers[0].doi, "10.1234/doi-only");
+  assert.equal(normalized.papers[0].url, "");
+});
+
+test("Consensus drops results that have no durable scholarly identifier", () => {
+  const normalized = normalizeConsensusSearch({
+    papers: [{ title: "No source identity", authors: ["Researcher"] }],
+  });
+  assert.equal(normalized.papers.length, 0);
+});
+
 test("Consensus query builder bounds result count and applies research filters", () => {
   const params = buildConsensusSearchParams({
     query: "clinical retrieval",
@@ -60,6 +85,10 @@ test("Consensus query builder bounds result count and applies research filters",
   assert.deepEqual(params.getAll("study_types"), ["meta-analysis", "systematic review"]);
 });
 
+test("Research Assist does not require paid full-text access for its default literature search", async () => {
+  const panel = await fs.readFile(path.join(process.cwd(), "components/ConsensusCitationPanel.tsx"), "utf8");
+  assert.match(panel, /includeFullText:\s*false/);
+});
 
 test("Consensus normalizer accepts nested data result shapes", () => {
   const normalized = normalizeConsensusSearch({

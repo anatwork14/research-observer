@@ -7,6 +7,7 @@ type InstructionSource = {
   label: string;
   path: string;
   content: string;
+  includeInPack?: boolean;
 };
 
 export function InstructionViewer({ sources }: { sources: InstructionSource[] }) {
@@ -22,7 +23,10 @@ export function InstructionViewer({ sources }: { sources: InstructionSource[] })
       "Treat them as authoritative. Do not invent facts, citations, measurements, relationships, source metadata, or target files.",
       "",
     ].join("\n");
-    return preface + sources.map((source) => `## Source: ${source.path}\n\n${source.content.trim()}\n`).join("\n");
+    return preface + sources
+      .filter((source) => source.includeInPack !== false)
+      .map((source) => `## Source: ${source.path}\n\n${source.content.trim()}\n`)
+      .join("\n");
   }, [sources]);
 
   async function copy(kind: "active" | "all") {
@@ -56,14 +60,14 @@ export function InstructionViewer({ sources }: { sources: InstructionSource[] })
           <button onClick={() => void copy("all")}>
             {copied === "all" ? "Copied complete pack ✓" : "Copy complete LLM prompt"}
           </button>
-          <p>Includes every displayed source with an instruction-pack preface.</p>
+          <p>Copies the canonical authoring + indexing sources. Helper templates remain individually copyable without being nested into the pack.</p>
         </div>
       </aside>
 
       <section className="instruction-reader panel">
         <header>
           <div>
-            <span className="file-chip">MD</span>
+            <span className="file-chip">{selected.path.endsWith(".json") ? "JSON" : "MD"}</span>
             <code>{selected.path}</code>
           </div>
           <button onClick={() => void copy("active")}>

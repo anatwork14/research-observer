@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import GithubSlugger from "github-slugger";
 import { notFound, redirect } from "next/navigation";
-import { MarkdownRenderer } from "@/components/MarkdownRenderer";
+import { NoteDirectEditor } from "@/components/NoteDirectEditor";
 import { ResearchNav } from "@/components/ResearchNav";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
 import { ResearchAssistPanel } from "@/components/ResearchAssistPanel";
 import { getProgressEntries, getProgressEntry, getResearchWorkspace } from "@/lib/progress";
+
+export const dynamic = "force-dynamic";
 
 export async function generateStaticParams() {
   const entries = await getProgressEntries();
@@ -17,7 +19,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const entry = await getProgressEntry(slug);
-  return entry ? { title: `${entry.title} · Research Observer`, description: entry.summary } : {};
+  return entry ? { title: `${entry.title} · Observaire`, description: entry.summary } : {};
 }
 
 function normalizeHeading(value: string) {
@@ -57,9 +59,10 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
   if (slug !== entry.slug) redirect(`/progress/${entry.slug}`);
 
   const project = workspace.projects.find((item) => item.id === entry.research);
-  const index = entries.findIndex((item) => item.slug === entry.slug);
-  const previous = index > 0 ? entries[index - 1] : null;
-  const next = index < entries.length - 1 ? entries[index + 1] : null;
+  const projectEntries = entries.filter((item) => item.research === entry.research);
+  const index = projectEntries.findIndex((item) => item.slug === entry.slug);
+  const previous = index > 0 ? projectEntries[index - 1] : null;
+  const next = index < projectEntries.length - 1 ? projectEntries[index + 1] : null;
   const references = entries.filter((item) => entry.linkedSlugs.includes(item.slug));
   const backlinks = entries.filter((item) => entry.backlinks.includes(item.slug));
   const outgoingTyped = entry.relationships
@@ -69,20 +72,20 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
     .map((relation) => ({ relation, source: entries.find((item) => item.slug === relation.source) }))
     .filter((item) => item.source);
   const neighbors = [previous, next].filter(Boolean);
-  const linkMap = Object.fromEntries(
-    entries.flatMap((item) => [
-      [item.fileSlug, item.slug],
+  const linkMap = Object.fromEntries([
+    ...entries.flatMap((item) => [
       [item.slug, item.slug],
       ...item.aliases.map((alias) => [alias, item.slug]),
     ]),
-  );
+    ...projectEntries.map((item) => [item.fileSlug, item.slug]),
+  ]);
   const bodyContent = stripLeadingTitle(entry.content, entry.title);
   const headings = extractHeadings(bodyContent);
 
   return (
     <div className="site-shell">
       <WorkspaceHeader
-        entries={entries.map(({ slug, order, title, status }) => ({ slug, order, title, status }))}
+        entries={entries.map(({ slug: itemSlug, order, title, status }) => ({ slug: itemSlug, order, title, status }))}
         active="notes"
         showWorkspaceControls
       />
@@ -90,7 +93,7 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
       <section className="note-overview panel">
         <div className="note-heading-row">
           <div>
-            <p className="eyebrow">Research progress / {String(entry.order).padStart(2, "0")}</p>
+            <p className="eyebrow">{project?.label ?? entry.research} / {String(entry.order).padStart(2, "0")}</p>
             <h1>{entry.title}</h1>
             {entry.summary && <p className="note-summary">{entry.summary}</p>}
           </div>
@@ -107,14 +110,19 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
       </section>
 
       <main className="workspace-grid">
-        <ResearchNav entries={entries.map(({ slug, order, title, status }) => ({ slug, order, title, status }))} activeSlug={entry.slug} />
+        <ResearchNav
+          entries={projectEntries.map(({ slug: itemSlug, order, title, status }) => ({ slug: itemSlug, order, title, status }))}
+          activeSlug={entry.slug}
+          projectLabel={project?.label}
+        />
 
         <section className="reader panel">
-          <div className="reader-toolbar">
-            <div><span className="file-chip">MD</span><code>{entry.filename}</code></div>
-            <span className="readonly">source of truth</span>
-          </div>
-          <article><MarkdownRenderer content={bodyContent} linkMap={linkMap} /></article>
+          <NoteDirectEditor
+            slug={entry.slug}
+            filename={entry.filename}
+            displayContent={bodyContent}
+            linkMap={linkMap}
+          />
           <footer className="reader-footer">
             <span>{entry.words.toLocaleString()} words</span><span>·</span><span>{entry.readingMinutes} min</span>
             <div className="page-arrows">
@@ -199,7 +207,7 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
         </aside>
       </main>
 
-      <footer className="site-footer"><span>RESEARCH OBSERVER</span><span>Markdown + GFM + KaTeX · ordered by filename</span></footer>
+      <footer className="site-footer"><span>OBSERVAIRE</span><span>Markdown + GFM + KaTeX · ordered per project folder</span></footer>
     </div>
   );
 }

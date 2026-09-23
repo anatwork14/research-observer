@@ -20,6 +20,8 @@ export default async function GraphPage({
     : workspace.graph.nodes;
   const entriesBySlug = new Map(workspace.entries.map((entry) => [entry.slug, entry]));
   const navEntries = workspace.entries.map(({ slug, order, title, status }) => ({ slug, order, title, status }));
+  const typedCount = workspace.graph.edges.filter((edge) => edge.explicit).length;
+  const referenceCount = workspace.graph.edges.length - typedCount;
 
   return (
     <div className="site-shell">
@@ -28,14 +30,17 @@ export default async function GraphPage({
         <header className="collection-heading">
           <div>
             <p className="eyebrow">Graph</p>
-            <h1>Typed research relationships</h1>
-            <p>See which questions, experiments, evidence, results, literature, and decisions explicitly depend on one another.</p>
+            <h1>Explore research meaning, not just backlinks.</h1>
+            <p>
+              Drag and pin nodes, pan/zoom, focus a local neighborhood, and tune force layout. Solid edges are explicit typed research relationships;
+              dashed edges are ordinary Markdown references so evidence semantics stay distinguishable from simple mentions.
+            </p>
           </div>
-          <span className="collection-count">{workspace.stats.relationships} typed · {workspace.graph.edges.length} total edges</span>
+          <span className="collection-count">{typedCount} typed · {referenceCount} references · {workspace.graph.nodes.length} nodes</span>
         </header>
 
         <nav className="graph-filters panel" aria-label="Relationship filters">
-          <Link href="/graph" className={!filters.relation ? "active" : undefined}>All</Link>
+          <Link href="/graph" className={!filters.relation ? "active" : undefined}>All relationships</Link>
           {relationTypes.map((type) => (
             <Link key={type} href={`/graph?relation=${encodeURIComponent(type)}`} className={filters.relation === type ? "active" : undefined}>
               {type}

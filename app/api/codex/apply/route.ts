@@ -2,6 +2,8 @@ import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { isSameOrigin } from "@/lib/http/same-origin";
 import {
+  allResearchPaths,
+  changedFileStates,
   deleteProposal,
   gitStatusPaths,
   loadProposal,
@@ -41,6 +43,9 @@ export async function POST(request: Request) {
   const root = process.cwd();
   try {
     const { metadata, patch } = await loadProposal(root, id);
+    if (metadata.kind && metadata.kind !== "codex") {
+      return NextResponse.json({ error: "This proposal belongs to another review workflow and cannot be applied through Codex." }, { status: 409 });
+    }
     const patchSha256 = crypto.createHash("sha256").update(patch, "utf8").digest("hex");
     if (patchSha256 !== metadata.patchSha256) {
       return NextResponse.json({ error: "The stored proposal changed after review and cannot be applied." }, { status: 409 });
@@ -49,12 +54,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "This proposal did not pass validation/reviewability checks and cannot be applied." }, { status: 409 });
     }
 
-    const dirty = await gitStatusPaths(root);
-    const overlap = dirty.filter((file) => metadata.files.includes(file));
-    if (overlap.length) {
+    const researchPath = metadata.researchPath || "progress";
+    if (!allResearchPaths(metadata.files, researchPath)) {
+      return NextResponse.json({ error: "The proposal contains files outside its reviewed research directory." }, { status: 409 });
+    }
+
+    const baseline = metadata.baseFiles;
+    const baselineComplete = Boolean(
+      baseline &&
+      Object.keys(baseline).length === metadata.files.length &&
+      metadata.files.every((file) => Object.hasOwn(baseline, file)),
+    );
+    const conflicts = baselineComplete
+      ? await changedFileStates(root, baseline)
+      : (await gitStatusPaths(root)).filter((file) => metadata.files.includes(file));
+
+    if (conflicts.length) {
       return NextResponse.json({
-        error: "The live working tree changed in files touched by this proposal.",
-        conflicts: overlap,
+        error: baselineComplete
+          ? "The live research files changed after this proposal was reviewed."
+          : "The live working tree changed in files touched by this proposal.",
+        conflicts,
       }, { status: 409 });
     }
 
@@ -76,11 +96,14 @@ export async function POST(request: Request) {
 
     const doctor = await runResearchDoctor(root);
     if (doctor.code !== 0) {
-      await runGit(root, ["apply", "-R", "--whitespace=nowarn", "-"], { input: patch });
+      const rollback = await runGit(root, ["apply", "-R", "--whitespace=nowarn", "-"], { input: patch });
       return NextResponse.json({
-        error: "Applied changes failed the research doctor and were rolled back.",
+        error: rollback.code === 0
+          ? "Applied changes failed the research doctor and were rolled back."
+          : "Applied changes failed the research doctor and automatic rollback also failed. Inspect the touched research files before continuing.",
         doctor: (doctor.stdout + "\n" + doctor.stderr).trim().slice(0, 12000),
-      }, { status: 422 });
+        ...(rollback.code !== 0 ? { rollback: rollback.stderr.slice(0, 4000) } : {}),
+      }, { status: rollback.code === 0 ? 422 : 500 });
     }
 
     await deleteProposal(root, id);

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { consensusConfigured, searchConsensus } from "@/lib/consensus/client.mjs";
+import { consensusConfiguration, searchConsensus } from "@/lib/consensus/client.mjs";
 import { isSameOrigin } from "@/lib/http/same-origin";
 
 export const runtime = "nodejs";
@@ -11,12 +11,14 @@ function numberValue(value: unknown) {
 }
 
 export async function GET() {
+  const state = await consensusConfiguration();
   return NextResponse.json(
     {
-      enabled: consensusConfigured(),
-      reason: consensusConfigured()
-        ? "Consensus API is configured for server-side scholarly search."
-        : "Set CONSENSUS_API_KEY on the server to enable Consensus.",
+      enabled: state.enabled,
+      source: state.source,
+      reason: state.enabled
+        ? `Consensus API is configured for server-side scholarly search (${state.source}).`
+        : "Add a Consensus API key in Settings or set CONSENSUS_API_KEY on the server.",
     },
     { headers: { "Cache-Control": "no-store" } },
   );

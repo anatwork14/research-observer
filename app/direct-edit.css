@@ -1,0 +1,81 @@
+.direct-edit-toolbar { gap: 14px; }
+.direct-edit-controls { display: flex; align-items: center; gap: 9px; margin-left: auto; }
+.direct-edit-toggle { display: inline-flex; align-items: center; gap: 7px; min-height: 30px; padding: 0 9px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-soft); background: var(--surface-strong); font: 700 8px var(--mono); letter-spacing: .02em; }
+.direct-edit-toggle > span { position: relative; width: 24px; height: 14px; border-radius: 999px; background: var(--line-strong); transition: background-color .16s ease; }
+.direct-edit-toggle > span::after { content: ""; position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--surface-strong); box-shadow: 0 1px 3px rgba(0,0,0,.15); transition: transform .16s ease; }
+.direct-edit-toggle.active { color: var(--accent-deep); border-color: color-mix(in srgb, var(--accent) 42%, var(--line)); background: color-mix(in srgb, var(--accent-wash) 52%, var(--surface-strong)); }
+.direct-edit-toggle.active > span { background: var(--accent); }
+.direct-edit-toggle.active > span::after { transform: translateX(10px); }
+.direct-edit-toggle:disabled { cursor: wait; opacity: .6; }
+.direct-edit-state { padding: 4px 7px; border-radius: 999px; color: var(--muted); background: var(--canvas); font: 700 7px var(--mono); text-transform: uppercase; letter-spacing: .05em; }
+.direct-edit-state.draft { color: #8a5d20; background: color-mix(in srgb, #e9b866 22%, var(--surface-strong)); }
+.direct-edit-state.reviewed { color: var(--accent-deep); background: var(--accent-wash); }
+.direct-edit-state.blocked { color: var(--warm); background: color-mix(in srgb, var(--warm) 13%, var(--surface-strong)); }
+
+.direct-edit-alert { margin: 0 22px 12px; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line)); border-radius: 8px; background: color-mix(in srgb, var(--accent-wash) 24%, var(--surface-strong)); }
+.direct-edit-alert.error { border-color: color-mix(in srgb, var(--warm) 34%, var(--line)); background: color-mix(in srgb, var(--warm) 9%, var(--surface-strong)); }
+.direct-edit-alert strong { font-size: 9px; }
+.direct-edit-alert p { margin: 3px 0 0; color: var(--muted); font-size: 8px; line-height: 1.45; }
+.direct-edit-inline-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
+.direct-edit-inline-actions button { min-height: 30px; padding: 0 9px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink-soft); background: var(--surface-strong); font-size: 8px; font-weight: 700; }
+.direct-edit-inline-actions button:hover { border-color: var(--accent); color: var(--accent-deep); }
+
+.direct-edit-shell { min-height: 620px; border-top: 1px solid var(--line); background: color-mix(in srgb, var(--surface-strong) 88%, var(--canvas)); }
+.direct-edit-head { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 13px 16px; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--canvas) 42%, transparent); }
+.direct-edit-head > div:first-child { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.direct-edit-head strong { font-size: 10px; }
+.direct-edit-head small { color: var(--muted); font-size: 8px; line-height: 1.4; }
+.direct-edit-tabs { flex: 0 0 auto; display: inline-flex; padding: 3px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-strong); }
+.direct-edit-tabs button { min-height: 28px; padding: 0 9px; border: 0; border-radius: 5px; color: var(--muted); background: transparent; font: 700 8px var(--mono); }
+.direct-edit-tabs button.active { color: var(--ink); background: var(--accent-wash); }
+.direct-edit-tabs button:disabled { opacity: .35; cursor: not-allowed; }
+
+.direct-edit-textarea { display: block; width: 100%; min-height: 560px; resize: vertical; padding: 22px 24px; border: 0; outline: 0; color: var(--ink); background: transparent; font: 12px/1.65 var(--mono); tab-size: 2; }
+.direct-edit-textarea:focus { box-shadow: inset 3px 0 0 color-mix(in srgb, var(--accent) 72%, transparent); }
+.direct-edit-preview { min-height: 560px; padding: 26px 34px; background: var(--surface-strong); }
+.direct-edit-review { min-height: 560px; padding: 16px; }
+.direct-edit-review-summary { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; color: var(--muted); font-size: 8px; }
+.direct-edit-review > pre, .direct-edit-review details pre { max-height: 560px; margin: 0; overflow: auto; padding: 16px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink-soft); background: color-mix(in srgb, var(--canvas) 76%, var(--surface-strong)); font: 8px/1.6 var(--mono); white-space: pre; }
+.direct-edit-review details { margin-top: 10px; }
+.direct-edit-review details summary { margin-bottom: 8px; color: var(--muted); cursor: pointer; font: 8px var(--mono); }
+
+.direct-edit-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px; border-top: 1px solid var(--line); background: var(--surface-strong); }
+.direct-edit-actions > div:first-child { display: flex; flex-direction: column; gap: 2px; }
+.direct-edit-actions > div:first-child span { color: var(--ink-soft); font-size: 8px; }
+.direct-edit-actions > div:first-child small { color: var(--muted); font-size: 7px; }
+.direct-edit-actions > div:last-child { display: flex; align-items: center; gap: 7px; }
+.direct-edit-actions button { min-height: 31px; padding: 0 10px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink-soft); background: var(--surface-strong); font-size: 8px; font-weight: 750; }
+.direct-edit-actions button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent-deep); }
+.direct-edit-actions button:disabled { cursor: not-allowed; opacity: .4; }
+.direct-edit-actions .direct-edit-discard:hover:not(:disabled) { border-color: var(--warm); color: var(--warm); }
+.direct-edit-actions .direct-edit-review-button { border-color: color-mix(in srgb, var(--accent) 36%, var(--line)); }
+.direct-edit-actions .direct-edit-save { border-color: var(--accent-deep); color: white; background: var(--accent-deep); }
+.direct-edit-actions .direct-edit-save:hover:not(:disabled) { color: white; background: var(--accent); }
+
+@media (max-width: 900px) {
+  .direct-edit-head, .direct-edit-actions { align-items: stretch; flex-direction: column; }
+  .direct-edit-tabs { width: 100%; }
+  .direct-edit-tabs button { flex: 1; }
+  .direct-edit-actions > div:last-child { flex-wrap: wrap; }
+  .direct-edit-actions > div:last-child button { flex: 1 1 120px; }
+}
+
+@media (max-width: 620px) {
+  .direct-edit-toolbar { align-items: flex-start; flex-direction: column; }
+  .direct-edit-controls { width: 100%; margin-left: 0; justify-content: space-between; }
+  .direct-edit-state { display: none; }
+  .direct-edit-alert { margin-inline: 12px; }
+  .direct-edit-inline-actions button { flex: 1 1 150px; min-height: 42px; }
+  .direct-edit-head { padding: 12px; }
+  .direct-edit-textarea { min-height: 480px; padding: 16px; font-size: 11px; }
+  .direct-edit-preview { min-height: 480px; padding: 20px 16px; }
+  .direct-edit-review { padding: 10px; }
+  .direct-edit-actions { padding: 10px; }
+}
+
+@media (pointer: coarse) {
+  .direct-edit-toggle,
+  .direct-edit-tabs button,
+  .direct-edit-actions button,
+  .direct-edit-inline-actions button { min-height: 44px; }
+}
