@@ -84,7 +84,7 @@ When configuration is present:
 - use only configured statuses;
 - use only configured relationship types;
 - follow configured media rules when proposing local assets;
-- do **not** require the new folder-backed project ID to already exist in `researchProjects`; the folder manifest registers it automatically.
+- do not require the new folder-backed project ID to already exist in `researchProjects`; the folder manifest registers it automatically.
 
 ## Canonical note frontmatter
 
