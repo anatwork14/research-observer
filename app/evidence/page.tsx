@@ -8,6 +8,11 @@ function paperUrl(path: string, page?: number) {
   const base = "/papers/" + path.split("/").map(encodeURIComponent).join("/");
   return page ? `${base}?page=${page}` : base;
 }
+function externalSourceUrl(source: { url?: string; doi?: string } | undefined) {
+  if (source?.url) return source.url;
+  if (source?.doi) return `https://doi.org/${source.doi}`;
+  return undefined;
+}
 
 export default async function EvidencePage() {
   const workspace = await getResearchWorkspace();
@@ -15,6 +20,7 @@ export default async function EvidencePage() {
   const evidenceNotes = workspace.entries.filter((entry) => entry.type === "evidence");
   const artifacts = workspace.assets.filter((asset) => asset.extension !== ".pdf");
   const bySlug = new Map(workspace.entries.map((entry) => [entry.slug, entry]));
+  const externalEvidence = evidenceNotes.filter((entry) => entry.source?.kind === "consensus" || entry.source?.url || entry.source?.doi);
 
   return (
     <div className="site-shell">
@@ -24,42 +30,56 @@ export default async function EvidencePage() {
           <div>
             <p className="eyebrow">Evidence</p>
             <h1>Evidence and research artifacts</h1>
-            <p>Durable PDF excerpts carry page provenance and typed relationships; figures and data remain source-linked assets.</p>
+            <p>Durable PDF excerpts and reviewed external papers keep explicit provenance, while figures and data remain source-linked assets.</p>
           </div>
-          <span className="collection-count">{evidenceNotes.length} evidence · {artifacts.length} assets</span>
+          <span className="collection-count">{evidenceNotes.length} evidence · {externalEvidence.length} external · {artifacts.length} assets</span>
         </header>
 
         <section className="dashboard-card panel">
           <div className="dashboard-card-heading">
-            <div><span className="kicker">Evidence objects</span><h2>PDF excerpts with provenance</h2></div>
+            <div><span className="kicker">Evidence objects</span><h2>Saved evidence with provenance</h2></div>
             <Link href="/collections?q=type%3Aevidence">Open collection →</Link>
           </div>
           <div className="evidence-object-grid">
-            {evidenceNotes.map((entry) => (
-              <article key={entry.slug} className="evidence-object-card">
-                <div className="evidence-object-topline">
-                  <span>{entry.source?.page ? `p.${entry.source.page}` : "source?"}</span>
-                  <em>{entry.status ?? "evidence"}</em>
-                </div>
-                <Link href={`/progress/${entry.slug}`} className="evidence-object-title">{entry.title}</Link>
-                <p>{entry.summary}</p>
-                {entry.source?.pdf && <Link href={paperUrl(entry.source.pdf, entry.source.page)} className="evidence-source-link">Open PDF source →</Link>}
-                <div className="evidence-relations">
-                  {entry.relationships.map((relation, index) => {
-                    const target = bySlug.get(relation.target);
-                    return target ? (
-                      <Link key={`${relation.type}-${relation.target}-${index}`} href={`/progress/${target.slug}`}>
-                        <em>{relation.type}</em>{target.title}
-                      </Link>
-                    ) : null;
-                  })}
-                </div>
-              </article>
-            ))}
+            {evidenceNotes.map((entry) => {
+              const external = externalSourceUrl(entry.source);
+              const isConsensus = entry.source?.kind === "consensus" || Boolean(external);
+              return (
+                <article key={entry.slug} id={`evidence-${entry.slug}`} className="evidence-object-card">
+                  <div className="evidence-object-topline">
+                    <span>{isConsensus ? "Consensus" : entry.source?.page ? `p.${entry.source.page}` : "source?"}</span>
+                    <em>{entry.status ?? "evidence"}</em>
+                  </div>
+                  <Link href={`/progress/${entry.slug}`} className="evidence-object-title">{entry.title}</Link>
+                  <p>{entry.summary}</p>
+                  <div className="evidence-source-actions">
+                    <Link href={`/progress/${entry.slug}`} className="evidence-source-link">Open saved evidence →</Link>
+                    {entry.source?.pdf && <Link href={paperUrl(entry.source.pdf, entry.source.page)} className="evidence-source-link">Open PDF source →</Link>}
+                    {external && <a href={external} className="evidence-source-link" target="_blank" rel="noreferrer">Open paper source ↗</a>}
+                  </div>
+                  {isConsensus && (entry.source?.doi || entry.source?.query) && (
+                    <div className="evidence-source-meta">
+                      {entry.source.doi && <span>DOI {entry.source.doi}</span>}
+                      {entry.source.query && <span>Search: {entry.source.query}</span>}
+                    </div>
+                  )}
+                  <div className="evidence-relations">
+                    {entry.relationships.map((relation, index) => {
+                      const target = bySlug.get(relation.target);
+                      return target ? (
+                        <Link key={`${relation.type}-${relation.target}-${index}`} href={`/progress/${target.slug}`}>
+                          <em>{relation.type}</em>{target.title}
+                        </Link>
+                      ) : null;
+                    })}
+                  </div>
+                </article>
+              );
+            })}
             {!evidenceNotes.length && (
               <div className="empty-evidence-object">
                 <strong>No durable evidence objects yet.</strong>
-                <span>Open a PDF, select text, and choose <em>Add evidence</em>.</span>
+                <span>Open a PDF and select text, or review a Consensus result and choose <em>Save evidence</em>.</span>
               </div>
             )}
           </div>
