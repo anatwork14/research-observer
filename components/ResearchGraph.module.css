@@ -24,6 +24,7 @@
 .viewport { transform-origin: 0 0; }
 
 .edge {
+  pointer-events: none;
   stroke: color-mix(in srgb, var(--muted) 38%, transparent);
   stroke-width: 1.15;
   vector-effect: non-scaling-stroke;
@@ -305,4 +306,12 @@
   .controls { max-height: 42%; }
   .inspector { max-height: 34%; }
   .statusBar { max-width: calc(100% - 24px); overflow: hidden; text-overflow: ellipsis; }
+}
+
+@media (pointer: coarse) {
+  .segmented button,
+  .buttonRow button,
+  .toggleGrid button,
+  .openButton,
+  .search { min-height: 44px; }
 }
