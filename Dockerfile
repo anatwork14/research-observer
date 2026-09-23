@@ -2,6 +2,7 @@ FROM node:22.13.1-bookworm-slim
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=development
+ENV CODEX_HOME=/app/.research-observer/codex
 
 WORKDIR /app
 
@@ -14,10 +15,9 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
-RUN mkdir -p /app/progress /app/.research-observer /app/.next /app/public/_research /home/node/.codex \
-  && chown -R node:node /app /home/node/.codex \
-  && chmod 0777 /app/.research-observer /app/.next /app/public/_research \
-  && chmod 0700 /home/node/.codex
+RUN mkdir -p /app/progress /app/.research-observer /app/.next /app/public/_research \
+  && chown -R node:node /app \
+  && chmod 0777 /app/.research-observer /app/.next /app/public/_research
 
 USER node
 
