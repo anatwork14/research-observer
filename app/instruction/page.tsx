@@ -9,6 +9,24 @@ async function readInstruction(pathname: string) {
   return fs.readFile(path.join(process.cwd(), ...pathname.split("/")), "utf8");
 }
 
+async function readMountedResearchInstructions() {
+  try {
+    return await readInstruction("progress/AGENTS.md");
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+      return [
+        "# Research content rules",
+        "",
+        "`progress/AGENTS.md` is not present in the currently mounted research directory.",
+        "This is expected when `OBSERVAIRE_RESEARCH_DIR` points at an external host folder.",
+        "Use the repository `AGENTS.md`, `docs/OBSERVAIRE_DATA_CONTRACT.md`, the JSON Schema, and the live workspace config as the active authoring contract.",
+        "",
+      ].join("\n");
+    }
+    throw error;
+  }
+}
+
 function promptBody(document: string) {
   const separator = "\n---\n";
   const index = document.indexOf(separator);
@@ -20,7 +38,7 @@ export default async function InstructionPage() {
   const navEntries = entries.map(({ slug, order, title, status }) => ({ slug, order, title, status }));
   const [rootAgents, progressAgents, noteSkill, dataContract, schema, workspaceConfig, webPrompt] = await Promise.all([
     readInstruction("AGENTS.md"),
-    readInstruction("progress/AGENTS.md"),
+    readMountedResearchInstructions(),
     readInstruction(".agents/skills/create-research-note/SKILL.md"),
     readInstruction("docs/OBSERVAIRE_DATA_CONTRACT.md"),
     readInstruction("docs/observaire-research-frontmatter.schema.json"),
