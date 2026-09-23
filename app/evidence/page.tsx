@@ -26,7 +26,7 @@ export default async function EvidencePage() {
   const evidenceNotes = workspace.entries.filter((entry) => entry.type === "evidence");
   const artifacts = workspace.assets.filter((asset) => asset.extension !== ".pdf");
   const bySlug = new Map(workspace.entries.map((entry) => [entry.slug, entry]));
-  const externalEvidence = evidenceNotes.filter((entry) => entry.source?.kind === "consensus" || entry.source?.url || entry.source?.doi);
+  const externalEvidence = evidenceNotes.filter((entry) => entry.source?.kind === "consensus" || entry.source?.url || entry.source?.doi || entry.source?.paperId);
 
   return (
     <div className="site-shell">
@@ -49,7 +49,7 @@ export default async function EvidencePage() {
           <div className="evidence-object-grid">
             {evidenceNotes.map((entry) => {
               const external = externalSourceUrl(entry.source);
-              const isConsensus = entry.source?.kind === "consensus" || Boolean(external);
+              const isConsensus = entry.source?.kind === "consensus" || Boolean(external) || Boolean(entry.source?.paperId);
               return (
                 <article key={entry.slug} id={`evidence-${entry.slug}`} className="evidence-object-card">
                   <div className="evidence-object-topline">
@@ -63,9 +63,10 @@ export default async function EvidencePage() {
                     {entry.source?.pdf && <Link href={paperUrl(entry.source.pdf, entry.source.page)} className="evidence-source-link">Open PDF source →</Link>}
                     {external && <a href={external} className="evidence-source-link" target="_blank" rel="noreferrer">Open paper source ↗</a>}
                   </div>
-                  {isConsensus && (entry.source?.doi || entry.source?.query) && (
+                  {isConsensus && (entry.source?.doi || entry.source?.paperId || entry.source?.query) && (
                     <div className="evidence-source-meta">
                       {entry.source.doi && <span>DOI {normalizeDoi(entry.source.doi)}</span>}
+                      {entry.source.paperId && <span>Paper ID {entry.source.paperId}</span>}
                       {entry.source.query && <span>Search: {entry.source.query}</span>}
                     </div>
                   )}
