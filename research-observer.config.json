@@ -90,8 +90,8 @@
     },
     {
       "id": "evidence",
-      "label": "PDF evidence",
-      "description": "Durable evidence objects with source provenance.",
+      "label": "Evidence",
+      "description": "Durable local or external evidence objects with source provenance.",
       "query": "type:evidence has:source"
     },
     {
