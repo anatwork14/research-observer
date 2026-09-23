@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 
@@ -23,6 +23,13 @@ type BrowserDraft = {
   content: string;
   baseSha256: string;
   savedAt: number;
+};
+
+type DraftSnapshot = {
+  note: EditorNote | null;
+  content: string;
+  dirty: boolean;
+  editing: boolean;
 };
 
 type Tab = "edit" | "preview" | "changes";
@@ -50,6 +57,16 @@ function readBrowserDraft(slug: string): BrowserDraft | null {
   }
 }
 
+function writeBrowserDraft(slug: string, content: string, baseSha256: string) {
+  const savedAt = Date.now();
+  try {
+    window.localStorage.setItem(browserDraftKey(slug), JSON.stringify({ content, baseSha256, savedAt } satisfies BrowserDraft));
+    return savedAt;
+  } catch {
+    return null;
+  }
+}
+
 function clearBrowserDraft(slug: string) {
   try {
     window.localStorage.removeItem(browserDraftKey(slug));
@@ -70,6 +87,7 @@ export function NoteDirectEditor({
   linkMap: Record<string, string>;
 }) {
   const router = useRouter();
+  const draftSnapshotRef = useRef<DraftSnapshot>({ note: null, content: "", dirty: false, editing: false });
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -87,6 +105,7 @@ export function NoteDirectEditor({
 
   const dirty = Boolean(note && content !== note.content);
   const preview = useMemo(() => markdownBody(content), [content]);
+  draftSnapshotRef.current = { note, content, dirty, editing };
 
   useEffect(() => {
     function warn(event: BeforeUnloadEvent) {
@@ -99,19 +118,18 @@ export function NoteDirectEditor({
   }, [dirty]);
 
   useEffect(() => {
+    return () => {
+      const snapshot = draftSnapshotRef.current;
+      if (!snapshot.editing || !snapshot.note || !snapshot.dirty) return;
+      writeBrowserDraft(snapshot.note.slug, snapshot.content, snapshot.note.baseSha256);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!editing || !note || !dirty) return;
     const timer = window.setTimeout(() => {
-      const savedAt = Date.now();
-      try {
-        window.localStorage.setItem(browserDraftKey(note.slug), JSON.stringify({
-          content,
-          baseSha256: note.baseSha256,
-          savedAt,
-        } satisfies BrowserDraft));
-        setDraftSavedAt(savedAt);
-      } catch {
-        // Local draft persistence is best-effort. The visible dirty state remains authoritative.
-      }
+      const savedAt = writeBrowserDraft(note.slug, content, note.baseSha256);
+      if (savedAt) setDraftSavedAt(savedAt);
     }, 350);
     return () => window.clearTimeout(timer);
   }, [content, dirty, editing, note]);
@@ -178,7 +196,9 @@ export function NoteDirectEditor({
     setDoctor("");
     setMessage("");
     setContent(next);
-    if (note && next === note.content) {
+    const nextDirty = Boolean(note && next !== note.content);
+    draftSnapshotRef.current = { note, content: next, dirty: nextDirty, editing };
+    if (note && !nextDirty) {
       clearBrowserDraft(note.slug);
       setDraftSavedAt(null);
     }
@@ -229,6 +249,7 @@ export function NoteDirectEditor({
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "Could not save the reviewed Markdown patch.");
       if (note) clearBrowserDraft(note.slug);
+      draftSnapshotRef.current = { note, content, dirty: false, editing: false };
       setDraftSavedAt(null);
       setStaleDraft(null);
       setReview(null);
@@ -254,6 +275,7 @@ export function NoteDirectEditor({
     if (!note) return;
     if (review?.id) void discardStoredReview(review.id);
     clearBrowserDraft(note.slug);
+    draftSnapshotRef.current = { note, content: note.content, dirty: false, editing: true };
     setDraftSavedAt(null);
     setStaleDraft(null);
     setContent(note.content);
@@ -289,6 +311,7 @@ export function NoteDirectEditor({
     if (dirty && !window.confirm("Discard the unsaved browser draft and leave Direct Edit?")) return;
     if (review?.id) void discardStoredReview(review.id);
     if (note && dirty) clearBrowserDraft(note.slug);
+    draftSnapshotRef.current = { note, content, dirty: false, editing: false };
     setDraftSavedAt(null);
     setStaleDraft(null);
     setEditing(false);
