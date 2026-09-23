@@ -18,6 +18,7 @@ services:
     volumes:
       - "${OBSERVAIRE_RESEARCH_DIR:-./progress}:/app/progress"
       - "./research-observer.config.json:/app/research-observer.config.json:ro"
+      - "./.git:/app/.git"
       - observaire-state:/app/.research-observer
     restart: unless-stopped
 
