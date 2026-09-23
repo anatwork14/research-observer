@@ -1,4 +1,4 @@
-# Verification checklist — evidence, integrations, Direct Edit, graph, search, and AI contract
+# Verification checklist — evidence, integrations, Direct Edit, graph, search, PDF UX, and AI contract
 
 Run these release gates on `feature/evidence-integrations-settings` with Node 22.13+:
 
@@ -27,6 +27,7 @@ node --test tests/graph-layout.test.mjs
 3. Confirm horizontal workspace tabs scroll smoothly by touch/trackpad and do not create page-level horizontal overflow.
 4. At phone width, confirm collection headings/counts stack and long counts wrap rather than squeezing the title.
 5. Toggle light/dark mode on Overview, a note reader, Graph, Evidence, Instruction, and Settings. Confirm no text, border, selected state, or badge loses contrast.
+6. Test with browser storage blocked/unavailable. Theme, left/right rail, and focus controls must still operate for the current page without throwing; only persistence may be lost.
 
 ## Browser checks — Command Palette / search
 
@@ -50,6 +51,28 @@ node --test tests/graph-layout.test.mjs
 10. Confirm a saved takeaway/abstract is labeled discovery context, while eligible returned full-text chunks are labeled evidence excerpts.
 11. Confirm saving scholarly evidence never auto-creates `supports`, `contradicts`, `answers`, or other semantic relationships.
 
+## Browser checks — New Research + Codex planning
+
+1. Open **New Research** with Consensus configured and Codex signed out. Confirm Consensus can be ready while Codex planning clearly reports authorization required instead of pretending the SDK alone is sufficient.
+2. After Codex sign-in, refresh New Research and confirm the planner reports ready from the same CLI-auth state used by Research Assist.
+3. Search a packet containing normal URL+DOI papers and DOI-only papers. Every returned paper must have a distinct selection key and DOI-only titles must open through the canonical DOI URL.
+4. Deselect/reselect DOI-only papers and confirm the selected count and literature packet remain correct.
+5. Submit at least two papers to Codex planning and confirm returned source IDs map only to real provider IDs, DOI values, or HTTPS source URLs. Title-only records must be rejected rather than receiving invented `source-1` provenance.
+6. If duplicate provider identities are supplied, confirm the server deduplicates them before planning so one paper cannot masquerade as multiple independent sources.
+7. Confirm source trace cards with no external URL/DOI remain readable as static provenance cards rather than broken anchors.
+8. Confirm Ask, New Research planning, and Act all use the same real Codex CLI authorization requirement and direct unauthenticated users to Settings → Codex.
+
+## Browser checks — PDF reader + evidence capture
+
+1. Open a local PDF on desktop and iPad/tablet. Select text with mouse, trackpad, touch selection handles, and pen where available.
+2. Confirm selection updates from the browser selection state rather than requiring a mouse-only event, and the evidence toolbar remains usable after releasing a touch selection handle.
+3. Use **Copy** and **Copy evidence** with normal Clipboard API access. Confirm the button changes to `Copied ✓`.
+4. Repeat in a context where Clipboard API access is unavailable. Confirm fallback copying works or the pressed button shows `Copy failed` instead of silently doing nothing.
+5. Confirm **Add evidence** preserves exact selected text, local PDF path, and positive page number, and that the saved object deep-links back to the correct PDF page.
+6. Confirm **Ask Codex** carries the selection when present and otherwise uses the extracted current-page text; PDF source text remains explicitly marked untrusted in the server prompt boundary.
+7. On coarse-pointer devices, confirm page/view controls, search controls, selection-bar actions, and inspector tabs meet the 44px interaction target.
+8. At phone/tablet widths, confirm the selection toolbar wraps instead of covering the PDF, thumbnails scroll horizontally, and the inspector stacks below the page.
+
 ## Browser checks — Direct Edit
 
 1. Open a research note and enable **Direct Edit**. Change Markdown and confirm Preview renders without modifying the live file.
@@ -63,6 +86,7 @@ node --test tests/graph-layout.test.mjs
 9. Use Discard and disable Direct Edit with a dirty draft; confirm the source stays unchanged and discarded drafts do not recover later.
 10. Confirm Direct Edit does not stage or commit the live Git index.
 11. On phone/tablet, confirm editor tabs, recovery controls, review actions, and save buttons wrap cleanly and coarse-pointer targets remain at least 44px high.
+12. Create/abandon enough Codex/Direct Edit review proposals to exercise cleanup. Confirm `.research-observer/codex-drafts` prunes proposal pairs older than seven days, caps retained metadata/patch pairs at 100, and removes orphan `.patch` files.
 
 ## Browser checks — Instruction / external AI handoff
 
@@ -134,4 +158,4 @@ With production writes disabled, verify:
 - in-app Codex device authorization remains disabled unless `OBSERVAIRE_CODEX_AUTH_UI=1`;
 - production Consensus always uses `https://api.consensus.app` regardless of development base-URL overrides.
 
-Do not record a release as fully verified until `npm run check`, `npm run build`, and browser checks have executed against the exact commit being merged.
+Do not record a release as fully verified until `npm run check`, `npm run build`, and browser checks have executed against the exact commit being merged. A connected Vercel preview may be used for the browser layer only when its deployment metadata names this repository/branch/commit; never reuse a deployment from another project as verification evidence.
