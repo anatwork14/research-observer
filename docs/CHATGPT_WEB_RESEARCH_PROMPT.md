@@ -1,6 +1,6 @@
 # ChatGPT Web prompt for Observaire
 
-Replace only the value inside `{{TOPIC_OR_IDEA_OR_HYPOTHESIS}}`, then paste the whole prompt into ChatGPT on the web.
+Replace only the value inside `{{TOPIC_OR_IDEA_OR_HYPOTHESIS}}`, then paste the whole prompt into ChatGPT on the web. When copied from Observaire's Instruction page, `{{WORKSPACE_CONFIG}}` is filled automatically from the current repository.
 
 ---
 
@@ -59,14 +59,31 @@ relationships:
 ---
 ```
 
-Optional fields include `research`, `aliases`, `authors`, `year`, `doi`, `pdf`, and `source`. Omit them when they are unknown or do not apply. Do not output empty placeholder arrays/values merely to fill the schema. Omit `research` for the default project because an external ChatGPT session cannot know my configured non-default project IDs unless I provide them.
+Optional fields include `research`, `aliases`, `authors`, `year`, `doi`, `pdf`, and `source`. Omit them when they are unknown or do not apply. Do not output empty placeholder arrays/values merely to fill the schema.
+
+### Current workspace configuration
+
+When this prompt is copied from Observaire, the following block is injected directly from `research-observer.config.json`. Treat it as authoritative for current project IDs and vocabularies. Do not modify the configuration itself in this response.
+
+```json
+{{WORKSPACE_CONFIG}}
+```
+
+If that block still literally contains `{{WORKSPACE_CONFIG}}`, the configuration was not supplied. In that case, omit non-default `research` project assignments rather than inventing project IDs.
+
+When the configuration is present:
+
+- use only `researchProjects[].id` values declared there;
+- use only configured object types, statuses, and relationship types;
+- do not invent a project, status, type, relationship vocabulary, saved collection, or media rule;
+- a note may omit `research` when it belongs to the configured default project.
 
 ### Identity
 
 - `id` is canonical identity and should survive filename/order changes.
 - filenames are ordered presentation only.
 - use descriptive filenames such as `900_primary_question.md`.
-- because you cannot inspect my existing repository, choose a self-contained temporary sequence beginning at `900_` for this generated bundle. I can renumber filenames later without changing IDs.
+- because you cannot inspect all existing ordered filenames from this chat alone, choose a self-contained temporary sequence beginning at `900_` for this generated bundle. I can renumber filenames later without changing IDs.
 
 ### Linking
 
@@ -86,7 +103,7 @@ relationships:
     target: primary-question-id
 ```
 
-Allowed relationship types:
+Use only relationship types declared in the supplied workspace configuration. If no configuration was supplied, the common built-in vocabulary is:
 
 `supports`, `contradicts`, `answers`, `investigates`, `builds_on`, `produces`, `uses`, `based_on`, `derived_from`, `reproduces`, `supersedes`, `references`
 
