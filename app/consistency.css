@@ -115,7 +115,9 @@
 
 @media (pointer: coarse) {
   .evidence-source-actions .evidence-source-link,
-  .consensus-citation-actions > span {
+  .consensus-citation-actions > span,
+  .pdf-selection-bar button,
+  .pdf-inspector-tabs button {
     min-height: 44px;
   }
 }
