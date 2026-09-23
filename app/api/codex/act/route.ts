@@ -1,6 +1,7 @@
 import { Codex } from "@openai/codex-sdk";
 import { NextResponse } from "next/server";
 import { isSameOrigin } from "@/lib/http/same-origin";
+import { codexLoginStatus } from "@/lib/settings/codex-auth.mjs";
 import {
   collectResearchDiff,
   gitStatusPaths,
@@ -19,8 +20,35 @@ type ResearchContext = {
   pageText?: string;
 };
 
-function enabled() {
-  return process.env.NODE_ENV !== "production" && process.env.RESEARCH_OBSERVER_CODEX !== "0";
+async function availability() {
+  if (process.env.NODE_ENV === "production") {
+    return { enabled: false, reason: "Codex Act mode is local-development only until an authenticated production agent service is configured." };
+  }
+  if (process.env.RESEARCH_OBSERVER_CODEX === "0") {
+    return { enabled: false, reason: "Codex was disabled with RESEARCH_OBSERVER_CODEX=0." };
+  }
+  try {
+    new Codex();
+  } catch (error) {
+    return {
+      enabled: false,
+      reason: error instanceof Error ? "Codex runtime is unavailable: " + error.message : "Codex runtime is unavailable.",
+    };
+  }
+
+  const auth = await codexLoginStatus();
+  if (!auth.available) return { enabled: false, reason: auth.reason || "Codex CLI is unavailable." };
+  if (!auth.authenticated) {
+    return {
+      enabled: false,
+      reason: "Codex is installed but not authorized. Open Settings → Codex to sign in with ChatGPT.",
+    };
+  }
+
+  return {
+    enabled: true,
+    reason: `Codex is authorized${auth.mode ? ` via ${auth.mode}` : ""} and Act will prepare changes in an isolated review worktree.`,
+  };
 }
 
 function clean(value: unknown, max = 500) {
@@ -72,11 +100,12 @@ function contextText(context: ResearchContext) {
 }
 
 export async function POST(request: Request) {
-  if (!enabled()) {
-    return NextResponse.json({ error: "Codex Act mode is unavailable in this environment." }, { status: 503 });
-  }
   if (!isSameOrigin(request)) {
     return NextResponse.json({ error: "Cross-origin Act requests are not allowed." }, { status: 403 });
+  }
+  const state = await availability();
+  if (!state.enabled) {
+    return NextResponse.json(state, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
 
   let body: { prompt?: unknown; context?: ResearchContext };
@@ -121,7 +150,7 @@ export async function POST(request: Request) {
       });
 
       const boundary = [
-        "You are Research Observer Research Agent in ACT PREVIEW mode.",
+        "You are the Observaire Research Agent in ACT PREVIEW mode.",
         "You are working in an isolated detached Git worktree. Do not commit changes.",
         "You may modify files ONLY under progress/.",
         "Do not modify app/, components/, lib/, scripts/, package files, AGENTS.md, configuration, or Git metadata.",
@@ -134,7 +163,7 @@ export async function POST(request: Request) {
 
       const fullPrompt =
         boundary +
-        "\n\nResearch Observer context:\n" +
+        "\n\nObservaire context:\n" +
         (context || "Workspace only") +
         "\n\nRequested research change:\n" +
         instruction;
