@@ -36,7 +36,7 @@ export default async function ProjectsPage() {
         <section className={styles.rules} aria-label="Project folder convention">
           <article className="panel">
             <span>01</span>
-            <div><strong>Name the folder</strong><small><code>protein-folding/</code> or <code>My Research Project/</code>. Observaire derives a stable project ID automatically.</small></div>
+            <div><strong>Name the folder</strong><small><code>protein-folding/</code> or <code>My Research Project/</code>. Observaire derives the project ID; web imports also persist it in <code>.observaire-project.json</code> so a later folder rename does not change identity.</small></div>
           </article>
           <article className="panel">
             <span>02</span>
