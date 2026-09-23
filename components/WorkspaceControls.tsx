@@ -19,9 +19,13 @@ function subscribe(callback: () => void) {
 }
 
 function readToggle(key: string, fallback: boolean) {
-  const value = window.localStorage.getItem(key);
-  if (value === null) return fallback;
-  return value === "open" || value === "on";
+  try {
+    const value = window.localStorage.getItem(key);
+    if (value === null) return fallback;
+    return value === "open" || value === "on";
+  } catch {
+    return fallback;
+  }
 }
 
 function useStoredToggle(key: string, fallback: boolean) {
@@ -36,7 +40,11 @@ function writeToggle(key: string, value: boolean, datasetKey: "leftRail" | "righ
   const encoded = datasetKey === "focus"
     ? (value ? "on" : "off")
     : (value ? "open" : "closed");
-  window.localStorage.setItem(key, encoded);
+  try {
+    window.localStorage.setItem(key, encoded);
+  } catch {
+    // Browser storage is optional; the current page still reflects the requested layout state.
+  }
   document.documentElement.dataset[datasetKey] = encoded;
   window.dispatchEvent(new Event(UI_EVENT));
 }
