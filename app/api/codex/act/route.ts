@@ -4,6 +4,7 @@ import { Codex } from "@openai/codex-sdk";
 import { NextResponse } from "next/server";
 import { isSameOrigin } from "@/lib/http/same-origin";
 import { compileResearchWorkspace } from "@/lib/research/compiler.mjs";
+import { PROJECT_IMPORT_PREFIX } from "@/lib/research/project-folders.mjs";
 import { codexLoginStatus } from "@/lib/settings/codex-auth.mjs";
 import {
   captureTreeFileStates,
@@ -116,6 +117,12 @@ async function syncConfigSnapshot(root: string, worktree: string) {
   return name;
 }
 
+function includeResearchSnapshot(source: string, researchRoot: string) {
+  const relative = path.relative(researchRoot, source);
+  if (!relative) return true;
+  return !relative.split(path.sep).some((segment) => segment === ".git" || segment.startsWith(PROJECT_IMPORT_PREFIX));
+}
+
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) {
     return NextResponse.json({ error: "Cross-origin Act requests are not allowed." }, { status: 403 });
@@ -160,7 +167,11 @@ export async function POST(request: Request) {
       const workResearchRoot = path.join(worktree, ...researchPath.split("/"));
       await fs.rm(workResearchRoot, { recursive: true, force: true });
       await fs.mkdir(path.dirname(workResearchRoot), { recursive: true });
-      await fs.cp(workspace.progressRoot, workResearchRoot, { recursive: true, force: true });
+      await fs.cp(workspace.progressRoot, workResearchRoot, {
+        recursive: true,
+        force: true,
+        filter: (source) => includeResearchSnapshot(source, workspace.progressRoot),
+      });
       const configName = await syncConfigSnapshot(root, worktree);
 
       const stage = await runGit(worktree, ["add", "-A", "--", researchPath, configName]);
