@@ -54,7 +54,7 @@ test("Consensus paper results can be saved as validated external evidence", asyn
       authors: ["Ada Researcher", "Lin Scholar"],
       year: 2025,
       journal: "Journal of Retrieval Studies",
-      doi: "10.1000/example",
+      doi: "https://doi.org/10.1000/example",
       url: "https://example.org/paper-123",
       studyType: "Systematic Review",
       citationCount: 42,
@@ -71,6 +71,7 @@ test("Consensus paper results can be saved as validated external evidence", asyn
   assert.match(content, /kind: consensus/);
   assert.match(content, /paper_id: "paper-123"/);
   assert.match(content, /doi: "10\.1000\/example"/);
+  assert.doesNotMatch(content, /doi: "https:\/\/doi\.org\//);
   assert.match(content, /query: "retrieval evaluation systematic review"/);
   assert.match(content, /> Evaluation design materially affected reported retrieval quality\./);
   assert.match(content, /target: target-question/);
@@ -79,6 +80,7 @@ test("Consensus paper results can be saved as validated external evidence", asyn
   const entry = workspace.entries.find((item) => item.slug === created.slug);
   assert.equal(entry?.source?.kind, "consensus");
   assert.equal(entry?.source?.url, "https://example.org/paper-123");
+  assert.equal(entry?.source?.doi, "10.1000/example");
   assert.equal(entry?.source?.paperId, "paper-123");
   assert.ok(!workspace.health.evidenceMissingSource.includes(created.slug));
 });
