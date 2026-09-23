@@ -117,3 +117,22 @@ test("browser-style project import persists a folder and immediately indexes it"
     (error) => error?.code === "PROJECT_IMPORT_EXISTS",
   );
 });
+
+test("project import rejects files from a different selected root", async (t) => {
+  const root = await workspaceFixture();
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+
+  await assert.rejects(
+    importResearchProject({
+      rootDir: root,
+      projectName: "Expected Project",
+      files: [{
+        name: "00_question.md",
+        relativePath: "Other Project/00_question.md",
+        data: Buffer.from(note({ id: "mixed-root-question", title: "Mixed root" })),
+      }],
+    }),
+    /selected project folder/i,
+  );
+  await assert.rejects(fs.stat(path.join(root, "progress", "Expected Project")), { code: "ENOENT" });
+});
