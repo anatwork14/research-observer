@@ -13,6 +13,7 @@ services:
       OBSERVAIRE_SETTINGS_WRITES: "1"
       OBSERVAIRE_CODEX_AUTH_UI: "1"
       OBSERVAIRE_WATCH_POLL_MS: "1000"
+      CODEX_HOME: "/app/.research-observer/codex"
     ports:
       - "${OBSERVAIRE_PORT:-4173}:3000"
     volumes:
@@ -20,9 +21,7 @@ services:
       - "./research-observer.config.json:/app/research-observer.config.json:ro"
       - "./.git:/app/.git"
       - observaire-state:/app/.research-observer
-      - observaire-codex:/home/node/.codex
     restart: unless-stopped
 
 volumes:
   observaire-state:
-  observaire-codex:
