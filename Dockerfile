@@ -5,12 +5,18 @@ ENV NODE_ENV=development
 
 WORKDIR /app
 
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends git ca-certificates \
+  && rm -rf /var/lib/apt/lists/* \
+  && git config --system --add safe.directory /app
+
 COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
-RUN mkdir -p /app/progress /app/.research-observer \
-  && chown -R node:node /app
+RUN mkdir -p /app/progress /app/.research-observer /app/.next /app/public/_research \
+  && chown -R node:node /app \
+  && chmod 0777 /app/.research-observer /app/.next /app/public/_research
 
 USER node
 
