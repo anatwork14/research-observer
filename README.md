@@ -62,7 +62,7 @@ My Research Project/
     └── result.svg
 ```
 
-Observaire validates the folder, writes it under the mounted `progress/` directory, registers it as a project, recompiles the workspace, and refreshes the live index.
+Observaire validates the folder, writes it under the configured research directory (`progress/` by default), registers it as a project, recompiles the workspace, and refreshes the live index.
 
 With the default Compose mount, that example becomes a real host directory:
 
@@ -76,7 +76,7 @@ The browser importer is transactional: invalid imports are rolled back instead o
 
 ### Direct host copy works too
 
-The web importer is optional. Copy a folder directly into the host `progress/` directory:
+The web importer is optional. With the default configuration, copy a folder directly into the host `progress/` directory:
 
 ```text
 progress/
@@ -86,11 +86,11 @@ progress/
     └── 02_analysis.md
 ```
 
-Observaire watches the research tree and recompiles it. Docker Compose also enables a 1-second signature poll so host changes still appear on Docker Desktop/filesystems where recursive filesystem events are unreliable.
+Observaire watches the configured research tree and recompiles it. Docker Compose also enables a 1-second signature poll so host changes still appear on Docker Desktop/filesystems where recursive filesystem events are unreliable.
 
 ## Project folder convention
 
-A top-level folder under `progress/` becomes a research project when it contains at least one ordered Markdown note matching the numeric-prefix convention:
+A top-level folder under the configured research root (`progress/` by default) becomes a research project when it contains at least one ordered Markdown note matching the numeric-prefix convention:
 
 ```text
 00_*.md
@@ -117,7 +117,7 @@ The filename number controls sequence only. It is not object identity.
 
 Asset-only folders such as `figures/`, `papers/`, `data/`, or `media/` do not become projects unless they themselves contain ordered Markdown research notes.
 
-Legacy root-level ordered notes such as `progress/00_start_here.md` remain supported.
+Legacy root-level ordered notes such as `progress/00_start_here.md` remain supported with the default research root.
 
 ## Stable project identity
 
@@ -210,7 +210,7 @@ npm run check:full   # everything above + production build
 `lib/research/compiler.mjs` is the canonical content compiler. UI surfaces do not maintain independent project registries.
 
 ```text
-progress/
+progress/                 # default configured research root
 ├── Project A/00_*.md + assets
 ├── Project B/00_*.md + assets
 └── legacy root notes
@@ -305,11 +305,11 @@ My Project/
 
 Supported media includes common browser-viewable image formats, PDF, MP4/WebM/OGV video, MP3/WAV/M4A/AAC/FLAC audio, plus CSV/JSON/TXT downloads.
 
-Approved local assets are compiled to `public/_research/media/` for the web runtime while the originals remain the durable source under `progress/`.
+Approved local assets are compiled to `public/_research/media/` for the web runtime while the originals remain durable source files under the configured research root.
 
 ## PDF research reader
 
-Local PDFs under `progress/` appear in **Papers** and open in a PDF.js/React-PDF research reader with page navigation, lazy thumbnails, zoom/rotation, full-document text search, mouse/touch text selection, extracted text view, related notes, Codex context, and page-deep-linked URLs.
+Local PDFs under the configured research root appear in **Papers** and open in a PDF.js/React-PDF research reader with page navigation, lazy thumbnails, zoom/rotation, full-document text search, mouse/touch text selection, extracted text view, related notes, Codex context, and page-deep-linked URLs.
 
 A literature note can use verified metadata:
 
@@ -327,6 +327,8 @@ The PDF worker, cMaps, standard fonts, and WASM assets are copied from the insta
 ## Evidence
 
 PDF selections can be stored as durable `type: evidence` objects with PDF/page provenance. Reviewed Consensus results can also be saved as external scholarly evidence with canonical provider ID/DOI/HTTPS source identity.
+
+Folder-backed projects keep generated evidence inside their own project folder at the next project-local order number, so the project remains portable as a self-contained research tree.
 
 Observaire keeps discovery context separate from verified source quotations and does not automatically create `supports`, `contradicts`, `answers`, or other strong semantic relationships from search results.
 
@@ -355,10 +357,12 @@ Research-note and PDF contexts can use the local Codex integration.
 
 - **Ask** is read-only analysis.
 - **Draft** is read-only proposed research change.
-- **Act** writes only inside an isolated detached review worktree; changes outside allowed research paths are rejected.
-- **Apply** is an explicit separate action after patch/doctor review.
+- **Act** snapshots the current live research filesystem into an isolated detached review worktree, so imported/untracked or already-uncommitted research does not need to be committed first. Changes outside the configured research root are rejected.
+- **Apply** is an explicit separate action after patch/doctor review. New proposals store per-file baseline blob states, so Apply rejects touched files changed after review rather than rejecting research merely because it was dirty relative to Git HEAD.
 - **Direct Edit** keeps browser-local drafts, shows a review diff, validates with the research doctor, rejects stale overwrites, and rolls back failed saves.
 - Codex and Direct Edit proposal types cannot be cross-applied.
+
+Act restores its frozen review index after the Codex turn, so accidental staging inside the isolated worktree cannot erase the human-review comparison point. The live repository index is not staged or committed by Act/Apply.
 
 Codex authentication delegates to the installed Codex CLI. Observaire checks actual CLI login status and does not read or expose Codex access/refresh tokens.
 
@@ -397,7 +401,7 @@ relationships:
 
 ## AI authoring instructions
 
-`AGENTS.md` is the repository-level AI authoring contract. `progress/AGENTS.md`, `docs/OBSERVAIRE_DATA_CONTRACT.md`, the JSON Schema, and `.agents/skills/create-research-note/SKILL.md` refine the same model.
+`AGENTS.md` is the repository-level AI authoring contract. `progress/AGENTS.md` (for the default research root), `docs/OBSERVAIRE_DATA_CONTRACT.md`, the JSON Schema, and `.agents/skills/create-research-note/SKILL.md` refine the same model.
 
 AI-created research must preserve:
 
@@ -409,7 +413,7 @@ AI-created research must preserve:
 - non-fabrication rules;
 - existing valid project and vocabulary constraints.
 
-The **Instruction** tab exposes the repository's actual prompt/contract sources for external AI handoff.
+The **Instruction** tab exposes the repository's actual prompt/contract sources for external AI handoff and falls back to repository-level contracts when an external bind mount does not contain `progress/AGENTS.md`.
 
 ## Configuration
 
@@ -422,7 +426,7 @@ The **Instruction** tab exposes the repository's actual prompt/contract sources 
 - asset-size thresholds;
 - saved Collections;
 - legacy/predeclared `researchProjects`;
-- progress directory location.
+- progress directory location (`progressDir`).
 
 For ordinary new research projects, you no longer need to edit `researchProjects`; create/import a project folder instead.
 
@@ -430,16 +434,16 @@ If you intentionally extend a global vocabulary, update the config and authoring
 
 ## Storage model
 
-Durable research source:
+Durable research source lives under the configured `progressDir` (`progress/` by default):
 
 ```text
-progress/**
+<progressDir>/**
 ```
 
 Folder-local project metadata:
 
 ```text
-progress/<project>/.observaire-project.json
+<progressDir>/<project>/.observaire-project.json
 ```
 
 Rebuildable generated index/media:
@@ -454,14 +458,17 @@ Local integration/Codex transient state:
 .research-observer/**
 ```
 
-Under Docker Compose, `progress/**` is a host bind mount. `.research-observer/**` uses a separate named volume. Do not confuse transient app state with durable research source.
+Under the supplied Docker Compose configuration, the host research directory is bind-mounted at `/app/progress`, while `.research-observer/**` uses the separate `observaire-state` named volume. Do not confuse transient app state with durable research source.
 
 ## Architecture and detailed guides
 
 - `docs/ARCHITECTURE.md` — architecture and trust boundaries.
 - `docs/OBSERVAIRE_DATA_CONTRACT.md` — canonical research content contract.
 - `docs/PROJECT_FOLDERS_AND_DOCKER.md` — folder auto-indexing, browser import, and Docker persistence.
-- `docs/VERIFICATION_EVIDENCE_SETTINGS_EDIT.md` — release/browser verification matrix for the current feature branch.
+- `docs/INTEGRATIONS_AND_DIRECT_EDIT.md` — integration state, filesystem-first Codex review, and Direct Edit safety model.
+- `docs/VERIFICATION_EVIDENCE_SETTINGS_EDIT.md` — release/browser verification matrix for evidence/settings/edit UX.
+- `docs/VERIFICATION_PROJECT_FOLDERS_DOCKER.md` — project-folder and host-persistence verification matrix.
+- `docs/VERIFICATION_CODEX_FILESYSTEM_REVIEW.md` — filesystem-first Act/Apply verification matrix.
 
 ## License
 
