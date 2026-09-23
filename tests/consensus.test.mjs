@@ -33,12 +33,13 @@ test("Consensus search normalization preserves citation provenance", () => {
   assert.equal(normalized.papers[0].fullTextChunks[0].section, "Results");
 });
 
-test("Consensus keeps DOI-only scholarly results with durable provenance", () => {
+test("Consensus keeps DOI-only scholarly results and normalizes unsafe optional source fields", () => {
   const normalized = normalizeConsensusSearch({
     papers: [{
       title: "DOI-only result",
       authors: ["Researcher"],
-      doi: "10.1234/doi-only",
+      doi: "https://doi.org/10.1234/doi-only",
+      url: "http://legacy.example/paper",
     }],
   });
 
