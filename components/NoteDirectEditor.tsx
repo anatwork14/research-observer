@@ -19,11 +19,43 @@ type EditorNote = {
   baseSha256: string;
 };
 
+type BrowserDraft = {
+  content: string;
+  baseSha256: string;
+  savedAt: number;
+};
+
 type Tab = "edit" | "preview" | "changes";
+
+const DRAFT_PREFIX = "observaire-direct-edit-draft-v1:";
 
 function markdownBody(raw: string) {
   const withoutFrontmatter = raw.replace(/^---\s*\r?\n[\s\S]*?\r?\n---\s*(?:\r?\n)?/, "");
   return withoutFrontmatter.replace(/^\s*#\s+.+?(?:\r?\n)+/, "");
+}
+
+function browserDraftKey(slug: string) {
+  return DRAFT_PREFIX + slug;
+}
+
+function readBrowserDraft(slug: string): BrowserDraft | null {
+  try {
+    const raw = window.localStorage.getItem(browserDraftKey(slug));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<BrowserDraft>;
+    if (typeof parsed.content !== "string" || typeof parsed.baseSha256 !== "string" || typeof parsed.savedAt !== "number") return null;
+    return { content: parsed.content, baseSha256: parsed.baseSha256, savedAt: parsed.savedAt };
+  } catch {
+    return null;
+  }
+}
+
+function clearBrowserDraft(slug: string) {
+  try {
+    window.localStorage.removeItem(browserDraftKey(slug));
+  } catch {
+    // Draft persistence is a convenience layer; source editing still works without it.
+  }
 }
 
 export function NoteDirectEditor({
@@ -50,6 +82,8 @@ export function NoteDirectEditor({
   const [doctor, setDoctor] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
+  const [staleDraft, setStaleDraft] = useState<BrowserDraft | null>(null);
 
   const dirty = Boolean(note && content !== note.content);
   const preview = useMemo(() => markdownBody(content), [content]);
@@ -64,23 +98,59 @@ export function NoteDirectEditor({
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
 
+  useEffect(() => {
+    if (!editing || !note || !dirty) return;
+    const timer = window.setTimeout(() => {
+      const savedAt = Date.now();
+      try {
+        window.localStorage.setItem(browserDraftKey(note.slug), JSON.stringify({
+          content,
+          baseSha256: note.baseSha256,
+          savedAt,
+        } satisfies BrowserDraft));
+        setDraftSavedAt(savedAt);
+      } catch {
+        // Local draft persistence is best-effort. The visible dirty state remains authoritative.
+      }
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [content, dirty, editing, note]);
+
   async function loadEditor() {
     setLoading(true);
     setError("");
     setMessage("");
+    setStaleDraft(null);
     try {
       const response = await fetch(`/api/research/note/edit?slug=${encodeURIComponent(slug)}`, { cache: "no-store" });
       const payload = await response.json();
       if (!response.ok || !payload.enabled || !payload.note) {
         throw new Error(payload.error || payload.reason || "Direct editing is unavailable.");
       }
-      setNote(payload.note);
-      setContent(payload.note.content);
+      const nextNote = payload.note as EditorNote;
+      const storedDraft = readBrowserDraft(nextNote.slug);
+      setNote(nextNote);
       setReview(null);
       setPatch("");
       setDoctor("");
       setEditing(true);
       setTab("edit");
+
+      if (storedDraft && storedDraft.content !== nextNote.content) {
+        if (storedDraft.baseSha256 === nextNote.baseSha256) {
+          setContent(storedDraft.content);
+          setDraftSavedAt(storedDraft.savedAt);
+          setMessage("Recovered the browser-local draft for this exact source version. The .md file is still unchanged.");
+        } else {
+          setContent(nextNote.content);
+          setDraftSavedAt(null);
+          setStaleDraft(storedDraft);
+          setMessage("A browser draft from an older source version is available. Restore it only if you want to reconcile it against the latest file.");
+        }
+      } else {
+        setContent(nextNote.content);
+        setDraftSavedAt(null);
+      }
     } catch (requestError) {
       setEditing(false);
       setError(requestError instanceof Error ? requestError.message : "Could not open the Markdown editor.");
@@ -108,6 +178,10 @@ export function NoteDirectEditor({
     setDoctor("");
     setMessage("");
     setContent(next);
+    if (note && next === note.content) {
+      clearBrowserDraft(note.slug);
+      setDraftSavedAt(null);
+    }
   }
 
   async function reviewChanges() {
@@ -154,6 +228,9 @@ export function NoteDirectEditor({
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "Could not save the reviewed Markdown patch.");
+      if (note) clearBrowserDraft(note.slug);
+      setDraftSavedAt(null);
+      setStaleDraft(null);
       setReview(null);
       setPatch("");
       setDoctor(payload.doctor || "");
@@ -176,6 +253,9 @@ export function NoteDirectEditor({
   function discardDraft() {
     if (!note) return;
     if (review?.id) void discardStoredReview(review.id);
+    clearBrowserDraft(note.slug);
+    setDraftSavedAt(null);
+    setStaleDraft(null);
     setContent(note.content);
     setReview(null);
     setPatch("");
@@ -185,6 +265,22 @@ export function NoteDirectEditor({
     setTab("edit");
   }
 
+  function restoreStaleDraft() {
+    if (!staleDraft || !note) return;
+    const draft = staleDraft;
+    setStaleDraft(null);
+    changeContent(draft.content);
+    setMessage("Older browser draft restored against the latest source. Review the full diff carefully before saving.");
+  }
+
+  function discardStaleDraft() {
+    if (!note) return;
+    clearBrowserDraft(note.slug);
+    setStaleDraft(null);
+    setDraftSavedAt(null);
+    setMessage("Older browser draft discarded. The current .md source was not changed.");
+  }
+
   function toggleEditor() {
     if (!editing) {
       void loadEditor();
@@ -192,6 +288,9 @@ export function NoteDirectEditor({
     }
     if (dirty && !window.confirm("Discard the unsaved browser draft and leave Direct Edit?")) return;
     if (review?.id) void discardStoredReview(review.id);
+    if (note && dirty) clearBrowserDraft(note.slug);
+    setDraftSavedAt(null);
+    setStaleDraft(null);
     setEditing(false);
     setNote(null);
     setContent("");
@@ -229,6 +328,16 @@ export function NoteDirectEditor({
 
       {error && <div className="direct-edit-alert error" role="alert"><strong>Direct Edit needs attention</strong><p>{error}</p></div>}
       {message && <div className="direct-edit-alert" aria-live="polite"><strong>{review?.valid ? "Review ready" : "Editor"}</strong><p>{message}</p></div>}
+      {staleDraft && (
+        <div className="direct-edit-alert" role="status">
+          <strong>Older local draft available</strong>
+          <p>The source changed after this draft was saved. Restore it only to reconcile manually against the latest source; saving still requires a fresh validated diff.</p>
+          <div className="direct-edit-inline-actions">
+            <button type="button" onClick={restoreStaleDraft}>Restore for reconciliation</button>
+            <button type="button" onClick={discardStaleDraft}>Discard old draft</button>
+          </div>
+        </div>
+      )}
 
       {!editing && <article><MarkdownRenderer content={displayContent} linkMap={linkMap} /></article>}
 
@@ -299,8 +408,8 @@ export function NoteDirectEditor({
 
           <footer className="direct-edit-actions">
             <div>
-              <span>{dirty ? "Unsaved browser draft" : "No local draft changes"}</span>
-              <small>⌘/Ctrl + S reviews; it never bypasses diff review.</small>
+              <span>{dirty ? draftSavedAt ? `Browser draft autosaved · ${new Date(draftSavedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "Unsaved browser draft" : "No local draft changes"}</span>
+              <small>⌘/Ctrl + S reviews; it never bypasses diff review or writes the source directly.</small>
             </div>
             <div>
               <button type="button" className="direct-edit-discard" onClick={discardDraft} disabled={!dirty || reviewing || saving}>Discard</button>
