@@ -41,6 +41,9 @@ export async function POST(request: Request) {
   const root = process.cwd();
   try {
     const { metadata, patch } = await loadProposal(root, id);
+    if (metadata.kind && metadata.kind !== "codex") {
+      return NextResponse.json({ error: "This proposal belongs to another review workflow and cannot be applied through Codex." }, { status: 409 });
+    }
     const patchSha256 = crypto.createHash("sha256").update(patch, "utf8").digest("hex");
     if (patchSha256 !== metadata.patchSha256) {
       return NextResponse.json({ error: "The stored proposal changed after review and cannot be applied." }, { status: 409 });
