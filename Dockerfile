@@ -9,7 +9,8 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
-RUN chown -R node:node /app
+RUN mkdir -p /app/progress /app/.research-observer \
+  && chown -R node:node /app
 
 USER node
 
