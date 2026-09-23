@@ -30,6 +30,29 @@ function authorLine(paper: Paper) {
     : paper.authors.join(", ");
 }
 
+function normalizeDoi(value?: string) {
+  return (value ?? "")
+    .trim()
+    .replace(/^doi:\s*/i, "")
+    .replace(/^https?:\/\/(?:dx\.)?doi\.org\//i, "");
+}
+
+function sourceUrl(paper: Paper) {
+  const direct = paper.url.trim();
+  if (/^https:\/\//i.test(direct)) return direct;
+  const doi = normalizeDoi(paper.doi);
+  return doi ? `https://doi.org/${doi}` : "";
+}
+
+function durablePaperId(paper: Paper) {
+  return paper.id.trim() || normalizeDoi(paper.doi) || paper.url.trim();
+}
+
+function paperKey(paper: Paper, index?: number) {
+  return durablePaperId(paper)
+    || [paper.title.trim(), paper.year ?? "", paper.journal.trim(), paper.authors.join("|"), index ?? ""].join("::");
+}
+
 function fallbackCopy(value: string) {
   const textarea = document.createElement("textarea");
   textarea.value = value;
@@ -143,7 +166,7 @@ export function ConsensusCitationPanel({
 
   async function copy(kind: "reference" | "markdown", paper: Paper) {
     const value = kind === "reference" ? consensusReference(paper) : consensusMarkdownCitation(paper);
-    const key = `${kind}-${paper.id || paper.url}`;
+    const key = `${kind}-${paperKey(paper)}`;
     setError("");
     try {
       if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(value);
@@ -156,7 +179,7 @@ export function ConsensusCitationPanel({
   }
 
   async function saveEvidence(paper: Paper) {
-    const id = paper.id || paper.url;
+    const id = durablePaperId(paper);
     if (!id || savingId || savedEvidence[id]) return;
     setSavingId(id);
     setError("");
@@ -280,11 +303,13 @@ export function ConsensusCitationPanel({
             <strong>“{lastQuery}”</strong>
           </div>
           {papers.map((paper, index) => {
-            const id = paper.id || paper.url;
+            const id = durablePaperId(paper);
+            const key = paperKey(paper, index);
+            const externalUrl = sourceUrl(paper);
             const summary = paper.takeaway || paper.abstract;
-            const saved = savedEvidence[id];
+            const saved = id ? savedEvidence[id] : undefined;
             return (
-              <article key={id} className="consensus-citation-result">
+              <article key={key} className="consensus-citation-result">
                 <div className="consensus-result-topline">
                   <span>{String(index + 1).padStart(2, "0")}</span>
                   <div className="consensus-citation-meta">
@@ -295,7 +320,9 @@ export function ConsensusCitationPanel({
                   </div>
                 </div>
 
-                <a href={paper.url} target="_blank" rel="noreferrer">{paper.title}</a>
+                {externalUrl
+                  ? <a href={externalUrl} target="_blank" rel="noreferrer">{paper.title}</a>
+                  : <strong>{paper.title}</strong>}
                 <small>{authorLine(paper)}{paper.year ? ` · ${paper.year}` : ""}{paper.journal ? ` · ${paper.journal}` : ""}</small>
 
                 {summary && (
@@ -306,16 +333,18 @@ export function ConsensusCitationPanel({
                 )}
 
                 <div className="consensus-citation-actions">
-                  <a href={paper.url} target="_blank" rel="noreferrer">Open source ↗</a>
-                  <button type="button" onClick={() => void saveEvidence(paper)} disabled={savingId === id || Boolean(saved)}>
+                  {externalUrl
+                    ? <a href={externalUrl} target="_blank" rel="noreferrer">Open source ↗</a>
+                    : <span>Source link unavailable</span>}
+                  <button type="button" onClick={() => void saveEvidence(paper)} disabled={!id || savingId === id || Boolean(saved)} title={!id ? "Consensus did not return a durable source identifier for this result." : undefined}>
                     {savingId === id ? "Saving…" : saved ? "Saved ✓" : "Save evidence"}
                   </button>
                   {saved && <Link href={`/progress/${saved.slug}`}>Open saved →</Link>}
                   <button type="button" onClick={() => void copy("reference", paper)}>
-                    {copied === `reference-${id}` ? "Copied ✓" : "Copy reference"}
+                    {copied === `reference-${paperKey(paper)}` ? "Copied ✓" : "Copy reference"}
                   </button>
                   <button type="button" onClick={() => void copy("markdown", paper)}>
-                    {copied === `markdown-${id}` ? "Copied ✓" : "Copy Markdown"}
+                    {copied === `markdown-${paperKey(paper)}` ? "Copied ✓" : "Copy Markdown"}
                   </button>
                 </div>
               </article>
