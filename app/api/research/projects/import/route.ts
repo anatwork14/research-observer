@@ -56,7 +56,11 @@ export async function POST(request: Request) {
     return noStore(result, { status: 201 });
   } catch (error) {
     const code = error && typeof error === "object" && "code" in error ? String(error.code) : "";
-    const status = code === "PROJECT_IMPORT_EXISTS" ? 409 : code === "PROJECT_IMPORT_DISABLED" ? 503 : 422;
+    const status = code === "PROJECT_IMPORT_EXISTS" || code === "PROJECT_IMPORT_ID_CONFLICT"
+      ? 409
+      : code === "PROJECT_IMPORT_DISABLED"
+        ? 503
+        : 422;
     return noStore({
       error: error instanceof Error ? error.message : "Could not import the research project folder.",
       ...(code ? { code } : {}),
