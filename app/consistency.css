@@ -39,6 +39,18 @@
   font-size: 8px;
 }
 
+.research-plan-source-static {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--ink);
+  background: var(--canvas);
+}
+
 @media (max-width: 1180px) {
   .workbench-topbar {
     flex-wrap: wrap;
