@@ -8,10 +8,16 @@ function paperUrl(path: string, page?: number) {
   const base = "/papers/" + path.split("/").map(encodeURIComponent).join("/");
   return page ? `${base}?page=${page}` : base;
 }
+function normalizeDoi(value?: string) {
+  return (value ?? "")
+    .trim()
+    .replace(/^doi:\s*/i, "")
+    .replace(/^https?:\/\/(?:dx\.)?doi\.org\//i, "");
+}
 function externalSourceUrl(source: { url?: string; doi?: string } | undefined) {
-  if (source?.url) return source.url;
-  if (source?.doi) return `https://doi.org/${source.doi}`;
-  return undefined;
+  if (source?.url && /^https:\/\//i.test(source.url)) return source.url;
+  const doi = normalizeDoi(source?.doi);
+  return doi ? `https://doi.org/${doi}` : undefined;
 }
 
 export default async function EvidencePage() {
@@ -59,7 +65,7 @@ export default async function EvidencePage() {
                   </div>
                   {isConsensus && (entry.source?.doi || entry.source?.query) && (
                     <div className="evidence-source-meta">
-                      {entry.source.doi && <span>DOI {entry.source.doi}</span>}
+                      {entry.source.doi && <span>DOI {normalizeDoi(entry.source.doi)}</span>}
                       {entry.source.query && <span>Search: {entry.source.query}</span>}
                     </div>
                   )}
