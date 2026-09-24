@@ -5,7 +5,7 @@ import path from "node:path";
 import { compileResearchWorkspace } from "@/lib/research/compiler.mjs";
 import { parseImportFile } from "@/lib/research/experiments.mjs";
 import { createExperimentRun, createExperimentRuns } from "@/lib/research/run-write.mjs";
-import { assertImportBatchStorageWithinLimit } from "@/lib/research/experiments-shared.mjs";
+import { assertImportBatchStorageWithinLimit, finiteNumericValue } from "@/lib/research/experiments-shared.mjs";
 import { isSameOrigin } from "@/lib/http/same-origin";
 
 export const runtime = "nodejs";
@@ -65,8 +65,8 @@ export async function POST(request: Request) {
         const runs = parsed.rows.map((row, index) => {
           const runId = safeRunId(mapping.runIdColumn ? row?.[mapping.runIdColumn] : "", `run-${index + 1}`);
           const metrics = Object.fromEntries(mapping.metricMappings.map(({ column, metricId }) => {
-            const value = Number(row?.[column]);
-            if (!Number.isFinite(value)) throw new Error(`Row ${index + 1} has a nonnumeric value for ${column}.`);
+            const value = finiteNumericValue(row?.[column]);
+            if (value === undefined) throw new Error(`Row ${index + 1} has a missing or nonnumeric value for ${column}.`);
             return [metricId, { value, source: { file: filename, column, aggregation: "none" } }];
           }));
           const parameters = Object.fromEntries((mapping.parameterColumns ?? []).filter((column) => parsed.columns.includes(column)).map((column) => [column, row?.[column]]));
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ runs: created.map(({ run }) => run), count: created.length }, { status: 201, headers: { "Cache-Control": "no-store" } });
       }
       const metrics = Object.fromEntries(mapping.metricMappings.map(({ column, metricId }) => {
-        const values = parsed.rows.map((row) => Number(row?.[column])).filter(Number.isFinite);
+        const values = parsed.rows.map((row) => finiteNumericValue(row?.[column])).filter((value): value is number => value !== undefined);
         const definition = plan.metrics.find((metric: { id: string }) => metric.id === metricId);
         const operation = definition?.aggregation ?? "mean", value = aggregate(values, operation);
         if (value === undefined) throw new Error(`Column ${column} contains no numeric values.`);

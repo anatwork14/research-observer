@@ -4,9 +4,9 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { compileResearchWorkspace, discoverMetricCandidates } from "../lib/research/compiler.mjs";
-import { compareRuns, detectConfounding, parseImportFile, recommendVisualizations, resolveMetricColumn, validateEvaluationPlan, validateRunId } from "../lib/research/experiments.mjs";
+import { compareRuns, detectConfounding, IMPORT_LIMITS, parseImportFile, recommendVisualizations, resolveMetricColumn, validateEvaluationPlan, validateRunId } from "../lib/research/experiments.mjs";
 import { createExperimentRun } from "../lib/research/run-write.mjs";
-import { assertImportBatchStorageWithinLimit, IMPORT_BATCH_STORAGE_LIMIT } from "../lib/research/experiments-shared.mjs";
+import { assertImportBatchStorageWithinLimit, finiteNumericValue, IMPORT_BATCH_STORAGE_LIMIT } from "../lib/research/experiments-shared.mjs";
 
 const metric = (extra = {}) => ({ id:"recall-at-10", label:"Recall @ 10", role:"primary", direction:"maximize", unit:"fraction", aggregation:"mean", display:"percent", aliases:["recall@10"], ...extra });
 
@@ -45,6 +45,12 @@ test("run-per-row imports bound total duplicated source storage before writing",
   assert.equal(IMPORT_BATCH_STORAGE_LIMIT, 128 * 1024 * 1024);
 });
 
+test("imported metric conversion preserves blanks as missing and rejects non-finite values", () => {
+  assert.equal(finiteNumericValue("1.25e-3"), 0.00125);
+  assert.equal(finiteNumericValue(0), 0);
+  for (const value of ["", "  ", undefined, null, "NaN", "Infinity", "-Infinity", "not-a-number"]) assert.equal(finiteNumericValue(value), undefined);
+});
+
 test("CSV and TSV imports preserve rows, quote parsing and infer columns", async (t) => {
   const dir=await fs.mkdtemp(path.join(os.tmpdir(),"observaire-import-")); t.after(()=>fs.rm(dir,{recursive:true,force:true}));
   const csv=path.join(dir,"input.csv"), tsv=path.join(dir,"input.tsv");
@@ -55,6 +61,26 @@ test("CSV and TSV imports preserve rows, quote parsing and infer columns", async
   assert.equal(parsedCsv.rows[0].note,"quoted, value");
   assert.equal(parsedTsv.rows.length,2);
   assert.equal(parsedTsv.rows[1].latency,"10");
+  await fs.writeFile(csv,"run,accuracy,accuracy\na,0.8,0.9\n");
+  await assert.rejects(parseImportFile(csv,".csv"),/Header names must be non-empty and unique/);
+  await fs.writeFile(tsv,"run\taccuracy\taccuracy\na\t0.8\t0.9\n");
+  await assert.rejects(parseImportFile(tsv,".tsv"),/Header names must be non-empty and unique/);
+});
+
+test("CSV and TSV preserve UTF-8, quoted newlines, quoted delimiters, blanks, and string values", async (t) => {
+  const dir=await fs.mkdtemp(path.join(os.tmpdir(),"observaire-import-edges-")); t.after(()=>fs.rm(dir,{recursive:true,force:true}));
+  const csv=path.join(dir,"edge.csv"), tsv=path.join(dir,"edge.tsv"), empty=path.join(dir,"empty.csv"), header=path.join(dir,"header.csv");
+  await fs.writeFile(csv,'run,score,note\nrow-1,1e-3,"first line,\nsecond line 東京"\nrow-2,,""\n');
+  await fs.writeFile(tsv,'run\tnote\nrow-1\t"tab\tinside and comma, café"\n');
+  await fs.writeFile(empty,""); await fs.writeFile(header,"run\tscore\n");
+  const csvResult=await parseImportFile(csv,".csv"), tsvResult=await parseImportFile(tsv,".tsv");
+  assert.equal(csvResult.rows[0].score,"1e-3");
+  assert.equal(csvResult.rows[0].note,"first line,\nsecond line 東京");
+  assert.equal(csvResult.rows[1].score,"");
+  assert.equal(csvResult.rows[1].note,"");
+  assert.equal(tsvResult.rows[0].note,"tab\tinside and comma, café");
+  assert.deepEqual(await parseImportFile(empty,".csv"),{format:"csv",columns:[],rows:[]});
+  assert.deepEqual(await parseImportFile(header,".tsv"),{format:"tsv",columns:["run","score"],rows:[]});
 });
 
 test("JSON and JSONL imports are bounded and reject malformed or deeply nested input", async (t) => {
@@ -66,7 +92,27 @@ test("JSON and JSONL imports are bounded and reject malformed or deeply nested i
   await fs.writeFile(json,"{"); await assert.rejects(parseImportFile(json,".json"));
   await fs.writeFile(json,JSON.stringify({a:{b:{c:1}}}));
   assert.equal((await parseImportFile(json,".json")).rows.length,1);
+  await fs.writeFile(json,`${"[".repeat(IMPORT_LIMITS.jsonDepth + 2)}0${"]".repeat(IMPORT_LIMITS.jsonDepth + 2)}`);
+  await assert.rejects(parseImportFile(json,".json"),/JSON nesting limit exceeded/);
   await fs.writeFile(json,Buffer.from([0xc3,0x28])); await assert.rejects(parseImportFile(json,".json"));
+});
+
+test("CSV, JSON, and JSONL imports enforce byte and row bounds", async (t) => {
+  const dir=await fs.mkdtemp(path.join(os.tmpdir(),"observaire-import-limits-")); t.after(()=>fs.rm(dir,{recursive:true,force:true}));
+  const oversized=path.join(dir,"oversized.json"), csv=path.join(dir,"rows.csv"), jsonl=path.join(dir,"rows.jsonl");
+  await fs.writeFile(oversized,Buffer.alloc(IMPORT_LIMITS.bytes + 1));
+  await assert.rejects(parseImportFile(oversized,".json"),/exceeds 26214400 bytes/);
+  await fs.writeFile(csv,`run\n${"row\n".repeat(IMPORT_LIMITS.rows + 1)}`);
+  await assert.rejects(parseImportFile(csv,".csv"),/row limit exceeded/);
+  await fs.writeFile(jsonl,'{"run":"row"}\n'.repeat(IMPORT_LIMITS.rows + 1));
+  await assert.rejects(parseImportFile(jsonl,".jsonl"),/row limit exceeded/);
+});
+
+test("JSONL malformed records identify their physical line, including blank lines", async (t) => {
+  const dir=await fs.mkdtemp(path.join(os.tmpdir(),"observaire-jsonl-lines-")); t.after(()=>fs.rm(dir,{recursive:true,force:true}));
+  const jsonl=path.join(dir,"data.jsonl");
+  await fs.writeFile(jsonl,'{"step":1}\n\n{broken}\n');
+  await assert.rejects(parseImportFile(jsonl,".jsonl"),/JSONL line 3 is invalid/);
 });
 
 test("comparison deltas respect direction and parameter diffs without selecting a winner", () => {
@@ -75,6 +121,14 @@ test("comparison deltas respect direction and parameter diffs without selecting 
   assert.equal(compared[1].metrics["recall-at-10"].outcome,"improvement");
   assert.equal(compared[1].parameterDiff.seed,true);
   assert.equal("winner" in compared[1],false);
+});
+
+test("zero-baseline comparisons keep the absolute delta without inventing a relative delta", () => {
+  const compared=compareRuns([{id:"baseline",parameters:{},metrics:{"recall-at-10":{value:0}}},{id:"variant",parameters:{},metrics:{"recall-at-10":{value:.1}}}],"baseline",[metric()]);
+  const measurement=compared[1].metrics["recall-at-10"];
+  assert.equal(measurement.delta,.1);
+  assert.equal("relativeDelta" in measurement,false);
+  assert.ok(Number.isFinite(measurement.delta));
 });
 
 test("ablation confounding detects uncontrolled parameter changes and missing controls", () => {
