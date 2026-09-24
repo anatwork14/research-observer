@@ -18,6 +18,16 @@ test("machine-readable frontmatter schema exposes the canonical indexed core", a
   assert.equal(schema.additionalProperties, false);
   assert.equal(schema.$defs.relationship.additionalProperties, false);
   assert.ok(schema.$defs.source.oneOf.length >= 2);
+  assert.ok(schema.properties.evaluationPlan);
+  assert.ok(schema.properties.experimentSpec);
+});
+
+test("run manifest schema requires portable IDs, raw files, parameters, metrics, and provenance", async () => {
+  const schema = JSON.parse(await read("docs/observaire-run-manifest.schema.json"));
+  for (const field of ["schemaVersion", "id", "experimentId", "label", "status", "timestamps", "parameters", "metrics", "dataFiles", "artifacts"]) assert.ok(schema.required.includes(field));
+  assert.ok(schema.$defs.measurement.properties.source.oneOf.some((source) => source.required.includes("note")));
+  assert.ok(schema.$defs.measurement.properties.source.oneOf.some((source) => source.required.includes("column")));
+  assert.equal(schema.additionalProperties, false);
 });
 
 test("human contract documents every current configured vocabulary value", async () => {
@@ -26,6 +36,9 @@ test("human contract documents every current configured vocabulary value", async
     read("research-observer.config.json"),
   ]);
   const config = JSON.parse(configRaw);
+
+  assert.ok(config.allowedTypes.includes("evaluation"));
+  assert.ok([".csv", ".tsv", ".json", ".jsonl"].every((extension) => config.allowedMediaExtensions.includes(extension)));
 
   for (const value of config.allowedTypes) assert.ok(contract.includes(`\`${value}\``), `contract missing type ${value}`);
   for (const value of config.allowedStatuses) assert.ok(contract.includes(`\`${value}\``), `contract missing status ${value}`);
@@ -49,6 +62,7 @@ test("ChatGPT Web prompt mirrors current vocabularies and emits an importable fo
   assert.ok(prompt.includes("no `research:` frontmatter is needed"));
   assert.ok(!prompt.includes("900_primary_question.md"));
   assert.ok(!prompt.includes("research: default"));
+  assert.ok(prompt.includes("search and reuse the existing project metric dictionary"));
   assert.ok(prompt.includes("Do **not** create a `type: result` file unless"));
 
   for (const value of config.allowedTypes) assert.ok(prompt.includes(`\`${value}\``), `prompt missing type ${value}`);
@@ -72,4 +86,6 @@ test("agent-facing instructions require one canonical contract, schema, live con
   assert.ok(skill.includes("docs/observaire-research-frontmatter.schema.json"));
   assert.ok(skill.includes("research-observer.config.json"));
   assert.ok(skill.includes(".observaire-project.json"));
+  assert.ok(rootAgents.includes("Run manifests"));
+  assert.ok(progressAgents.includes("stable canonical IDs"));
 });

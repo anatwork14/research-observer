@@ -117,7 +117,7 @@ research: retrieval-study
 
 Current `type` vocabulary is defined in `research-observer.config.json` and presently includes:
 
-`note`, `question`, `hypothesis`, `literature`, `method`, `dataset`, `experiment`, `result`, `decision`, `milestone`, `evidence`.
+`note`, `question`, `hypothesis`, `literature`, `method`, `dataset`, `evaluation`, `experiment`, `result`, `decision`, `milestone`, `evidence`.
 
 Current `status` vocabulary is:
 
@@ -448,6 +448,53 @@ A browser folder import is transactional:
 5. compiler errors roll the imported folder back rather than leaving a half-registered project.
 
 Existing project folders are never silently overwritten by browser import.
+
+## Evaluation plans, experiments, and runs
+
+Evaluation plans are Markdown research objects with `type: evaluation` and a structured `evaluationPlan` field. Metrics use lowercase kebab-case canonical IDs, distinct from human display labels. Every metric defines role (`primary`, `secondary`, `guardrail`, `diagnostic`), direction (`maximize`, `minimize`, `target`), unit, aggregation, display, and aliases; threshold and description are optional when known. The plan also defines comparisons, baselines, ablations, and success criteria.
+
+```yaml
+evaluationPlan:
+  schemaVersion: 1
+  metrics:
+    - id: recall-at-10
+      label: Recall at 10
+      role: primary
+      direction: maximize
+      unit: fraction
+      aggregation: mean
+      display: percent
+      aliases: [recall@10]
+  comparisons:
+    - id: against-baseline
+      baseline: baseline-v1
+      metrics: [recall-at-10]
+  ablations: []
+  successCriteria:
+    - metricId: recall-at-10
+      operator: ">="
+      value: 0.8
+```
+
+An experiment references the evaluation note by its stable ID:
+
+```yaml
+experimentSpec:
+  schemaVersion: 1
+  evaluationPlan: retrieval-evaluation-v1
+  kind: benchmark
+  factors:
+    - id: top-k
+      values: [5, 10, 20]
+  controlledVariables: [dataset-version, random-seed]
+  datasets: [retrieval-dataset-v1]
+```
+
+An experiment may include `experimentSpec` with `schemaVersion: 1`, one stable `evaluationPlan` ID, `kind`, `factors`, `controlledVariables`, and optional dataset IDs/references. New structured experiments must resolve to an evaluation plan in the same project. Legacy unstructured notes remain readable and are diagnosed as warnings.
+
+Run manifests are `.observaire-run.json` under `experiments/<experiment-id>/runs/<run-id>/` within the project folder (or the research root for legacy root-level projects). IDs use portable lowercase letters, digits, and hyphens. Manifests keep parameters, metrics, data files, artifacts, timestamps, and optional notes. Every metric carries source provenance: file/column/aggregation for imported or calculated values, or an explicit manual note for manually entered values. Keep raw uploaded input bytes alongside the manifest.
+
+Supported import formats are CSV, TSV, JSON, and JSONL. Imports are bounded, previewed, mapped and confirmed before writing; numeric columns are not metrics by default. Markdown metric discovery is advisory and never silently promotes prose to the metric dictionary. Measurements do not establish scientific interpretation, determine a winner, or create typed evidence relationships automatically.
 
 ## 12. Minimum quality gate
 

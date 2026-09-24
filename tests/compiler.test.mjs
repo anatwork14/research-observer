@@ -392,7 +392,7 @@ test("compiler assigns research projects and derives portfolio stats", async (t)
   ]);
 
   const workspace = await compileResearchWorkspace({ rootDir: root, fresh: true });
-  assert.equal(workspace.schemaVersion, 3);
+  assert.equal(workspace.schemaVersion, 4);
   assert.equal(workspace.entries.find((entry) => entry.slug === "retrieval-hypothesis")?.research, "retrieval");
   assert.equal(workspace.entries.find((entry) => entry.slug === "default-note")?.research, "default");
 
@@ -405,7 +405,7 @@ test("compiler assigns research projects and derives portfolio stats", async (t)
 
   await writeResearchArtifacts({ rootDir: root, fresh: true });
   const manifest = JSON.parse(await fs.readFile(path.join(root, "public", "_research", "manifest.json"), "utf8"));
-  assert.equal(manifest.schemaVersion, 3);
+  assert.equal(manifest.schemaVersion, 4);
   assert.equal(manifest.projects.length, 3);
   assert.equal(manifest.entries.find((entry) => entry.slug === "evaluation-result").research, "evaluation");
 });

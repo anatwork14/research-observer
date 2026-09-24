@@ -72,6 +72,7 @@ export default async function ProjectsPage() {
                 <div className={styles.actions}>
                   <Link href={`/progress?research=${encodeURIComponent(project.id)}`}>Open notes</Link>
                   <Link href={`/insights?research=${encodeURIComponent(project.id)}`}>Insights</Link>
+                  <Link href={`/projects/${encodeURIComponent(project.id)}/experiments`}>Experiments</Link>
                 </div>
               </article>
             ))}

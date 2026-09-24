@@ -1,0 +1,14 @@
+export const RUN_MANIFEST: string;
+export const RUN_ID: RegExp;
+export const IMPORT_LIMITS: { readonly bytes: number; readonly rows: number; readonly columns: number; readonly jsonDepth: number };
+export type MetricDefinition = { id: string; label: string; role: string; direction: string; unit: string; aggregation: string; display: string; aliases: string[]; threshold?: unknown; description?: string };
+export type ImportPreview = { format: string; columns: string[]; rows: Array<Record<string, unknown>> };
+export function validateRunId(value: unknown): string | null;
+export function normalizeMetric(metric: unknown): MetricDefinition | null;
+export function validateEvaluationPlan(plan: unknown, file: string, diagnostics: Array<{ severity: string; code: string; message: string; file?: string }>): { schemaVersion?: number; metrics: MetricDefinition[]; comparisons: Array<Record<string, unknown>>; ablations: Array<Record<string, unknown>>; successCriteria: Array<Record<string, unknown>> } | null;
+export function parseImportFile(file: string, extension?: string): Promise<ImportPreview>;
+export function resolveMetricColumn(column: string, plan: { metrics?: MetricDefinition[] } | undefined, approvedMapping?: Record<string, string>): { metricId: string; reason: string } | null;
+export function compareRuns(runs: Array<Record<string, unknown>>, baselineId: string, metricDefinitions?: MetricDefinition[]): Array<Record<string, unknown>>;
+export function recommendVisualizations(runs: Array<{ parameters?: Record<string, unknown> }>, metrics?: MetricDefinition[]): string[];
+export function detectConfounding(baseline: { parameters?: Record<string, unknown> } | undefined, variants: Array<{ parameters?: Record<string, unknown> }>, factor: string, controlled?: string[]): { potentiallyConfounded: boolean; differing: string[]; missingControls: string[] };
+export function listRunManifests(progressRoot: string, diagnostics?: Array<{ severity: string; code: string; message: string; file?: string }>): Promise<Array<{ file: string; relative: string; data: Record<string, unknown> }>>;

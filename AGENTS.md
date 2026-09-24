@@ -235,6 +235,16 @@ A literature note may instead use:
 
 Do not present a planned experiment as if it already produced a result.
 
+## Experiments and evaluation plans
+
+An evaluation object uses `type: evaluation` and a structured `evaluationPlan` with canonical metric IDs, definitions, comparisons, ablations, and success criteria. Metric identity is the stable `id`, never the display label. Experiments with structured data use `experimentSpec` with schema version, one existing evaluation-plan ID, kind, factors, controlled variables, and optional dataset references. Keep older unstructured experiment notes readable while upgrading them deliberately.
+
+Run manifests follow `docs/observaire-run-manifest.schema.json`; compiler diagnostics remain authoritative at runtime.
+
+When creating an experiment, explicitly define the evaluation objective, dataset or measurement population where applicable, primary metric, secondary and guardrail metrics, direction, units, aggregation, baseline, comparison plan, ablation factors, controlled variables, success criteria, and failure/regression criteria. Search existing project metric definitions and reuse canonical IDs or declared aliases before proposing a new metric. Do not treat prose discovery as an approved metric definition.
+
+Runs live under `<project>/experiments/<experiment-id>/runs/<run-id>/` in `.observaire-run.json`. Preserve original imported files alongside manifests. Every metric measurement records explicit manual provenance or its source file, source column, and aggregation. Never fabricate outcomes, infer research conclusions from metric direction, or create `supports`/`contradicts` relationships from measurements.
+
 ## Assets, papers, and executable content
 
 Store local research assets inside `progress/`. For folder-backed projects, keep project-specific assets inside that project folder when practical, under folders such as `papers/`, `figures/`, `data/`, or `media/`, and reference them relatively.

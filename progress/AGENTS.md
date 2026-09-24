@@ -196,3 +196,11 @@ Do not assume GitHub Actions exist; validation is local-first.
 - Cross-project relationships are permitted when they express a real dependency or evidence relationship.
 - Use `relationships: [{ type: supersedes, target: ... }]` only for meaningful research/idea versions that should remain independently reviewable.
 - Ordinary edits to the same idea should remain edits to the same Markdown file and stable ID.
+
+## Evaluation plans, experiments, and runs
+
+Use `type: evaluation` for a structured evaluation plan. Define metrics with stable canonical IDs, labels, roles, direction, units, aggregation, display, aliases, and known thresholds/descriptions. Define comparisons, baselines, ablations, and success criteria. Metric labels are presentation text and never identity.
+
+Structured `type: experiment` notes use `experimentSpec` to reference one existing evaluation note by stable ID and describe the experiment kind, factors, controlled variables, and optional datasets. Before creating metrics, search the project’s existing plans and reuse their IDs/aliases when appropriate. Agents must specify the evaluation objective, measurement population/dataset, primary/secondary/guardrail metrics, directions, units, aggregation, baseline, comparison plan, ablation factors, controls, success criteria, and regression/failure criteria. Omit facts that are unknown and state the uncertainty; do not invent them.
+
+Store run manifests and raw files under `experiments/<experiment-id>/runs/<run-id>/`. Preserve original imported files and attach provenance to every derived metric; manual measurements must say they are manual. Candidate metrics found in Markdown are advisory until a person reviews/adopts them. Measurements do not imply scientific conclusions or typed `supports`/`contradicts` relationships.

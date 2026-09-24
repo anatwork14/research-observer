@@ -32,6 +32,12 @@ export type ResearchEvidenceSource = {
   query?: string;
 };
 
+export type ResearchMetric = {
+  id: string; label: string; role: "primary" | "secondary" | "guardrail" | "diagnostic";
+  direction: "maximize" | "minimize" | "target"; unit: string; aggregation: string; display: string;
+  aliases: string[]; threshold?: unknown; description?: string;
+};
+
 export type ResearchEntry = {
   filename: string;
   fileSlug: string;
@@ -51,6 +57,9 @@ export type ResearchEntry = {
   doi?: string;
   pdf?: string;
   source?: ResearchEvidenceSource;
+  evaluationPlan?: { schemaVersion?: number; metrics: ResearchMetric[]; comparisons: Array<Record<string, unknown>>; ablations: Array<Record<string, unknown>>; successCriteria: Array<Record<string, unknown>> };
+  experimentSpec?: { schemaVersion: number; evaluationPlan: string; kind: string; factors: Array<Record<string, unknown>>; controlledVariables: string[]; datasets?: string[] };
+  candidateMetricDefinitions: Array<{ heading: string; text: string }>;
   relationships: ResearchRelationship[];
   incomingRelationships: IncomingResearchRelationship[];
   content: string;
@@ -77,6 +86,7 @@ export type ResearchProjectSummary = {
   experiments: number;
   results: number;
   evidence: number;
+  evaluations: number;
   decisions: number;
   words: number;
   relationships: number;
@@ -105,6 +115,11 @@ export type ResearchWorkspace = {
   };
   signature: string;
   entries: ResearchEntry[];
+  experiments: Array<{
+    id: string; experimentId: string; label: string; status: string; timestamps?: Record<string, string>;
+    parameters?: Record<string, unknown>; metrics?: Record<string, { value: number; source: Record<string, unknown> }>;
+    dataFiles?: Array<string | { path: string }>; artifacts?: unknown[]; notes?: string; manifest: string; project?: string; experimentSlug?: string;
+  }>;
   assets: Array<{ path: string; extension: string; size: number }>;
   projects: ResearchProjectSummary[];
   graph: {
@@ -134,3 +149,4 @@ export type ResearchWorkspace = {
 
 export function compileResearchWorkspace(options?: { rootDir?: string; fresh?: boolean }): Promise<ResearchWorkspace>;
 export function writeResearchArtifacts(options?: { rootDir?: string; fresh?: boolean }): Promise<ResearchWorkspace>;
+export function discoverMetricCandidates(content: string): Array<{ heading: string; text: string }>;

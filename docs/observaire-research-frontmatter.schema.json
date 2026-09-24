@@ -23,9 +23,53 @@
       "type": "array",
       "items": { "$ref": "#/$defs/relationship" }
     },
-    "source": { "$ref": "#/$defs/source" }
+    "source": { "$ref": "#/$defs/source" },
+    "evaluationPlan": { "$ref": "#/$defs/evaluationPlan" },
+    "experimentSpec": { "$ref": "#/$defs/experimentSpec" }
   },
   "$defs": {
+    "metric": {
+      "type": "object",
+      "required": ["id", "label", "role", "direction", "unit", "aggregation", "display", "aliases"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "label": { "type": "string", "minLength": 1 },
+        "role": { "enum": ["primary", "secondary", "guardrail", "diagnostic"] },
+        "direction": { "enum": ["maximize", "minimize", "target"] },
+        "unit": { "type": "string", "minLength": 1 },
+        "aggregation": { "enum": ["mean", "median", "sum", "min", "max", "count", "last", "first", "none"] },
+        "display": { "type": "string", "minLength": 1 },
+        "aliases": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "threshold": {},
+        "description": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "evaluationPlan": {
+      "type": "object",
+      "required": ["schemaVersion", "metrics", "comparisons", "ablations", "successCriteria"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "metrics": { "type": "array", "items": { "$ref": "#/$defs/metric" } },
+        "comparisons": { "type": "array", "items": { "type": "object" } },
+        "ablations": { "type": "array", "items": { "type": "object" } },
+        "successCriteria": { "type": "array", "items": { "type": "object" } }
+      },
+      "additionalProperties": false
+    },
+    "experimentSpec": {
+      "type": "object",
+      "required": ["schemaVersion", "evaluationPlan", "kind", "factors", "controlledVariables"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "evaluationPlan": { "type": "string", "minLength": 1 },
+        "kind": { "type": "string", "minLength": 1 },
+        "factors": { "type": "array", "items": { "type": "object" } },
+        "controlledVariables": { "type": "array", "items": { "type": "string" } },
+        "datasets": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
     "relationship": {
       "type": "object",
       "required": ["type", "target"],

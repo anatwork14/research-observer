@@ -94,7 +94,7 @@ Each durable research object should have a stable lowercase kebab-case `id`.
 
 Built-in object types are:
 
-`note`, `question`, `hypothesis`, `literature`, `method`, `dataset`, `experiment`, `result`, `decision`, `milestone`, `evidence`
+`note`, `question`, `hypothesis`, `literature`, `method`, `dataset`, `evaluation`, `experiment`, `result`, `decision`, `milestone`, `evidence`
 
 Built-in statuses are:
 
@@ -221,6 +221,8 @@ For each experiment include:
 - confounders;
 - stopping criteria;
 - interpretation rules for positive/negative/mixed results.
+
+For every project that includes experiments, first search and reuse the existing project metric dictionary. Include an evaluation note with a structured `evaluationPlan` and canonical metric IDs, then reference it from each structured experiment using `experimentSpec.evaluationPlan`. Specify evaluation objective, dataset or measurement population where applicable, primary, secondary and guardrail metrics, metric direction, unit, aggregation, baseline, comparison plan, ablation factors, controlled variables, success criteria, and failure/regression criteria. Do not invent outcomes. Imported run measurements require provenance and preserve their original source files.
 
 ## Output format
 

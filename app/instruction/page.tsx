@@ -33,6 +33,12 @@ function promptBody(document: string) {
   return index >= 0 ? document.slice(index + separator.length).trim() : document.trim();
 }
 
+const experimentAuthoringContract = [
+  "## Experiment authoring requirements",
+  "For projects with experiments, reuse metric IDs/aliases from existing evaluation plans before creating metrics. Define an evaluation objective and dataset or measurement population where applicable; primary, secondary, and guardrail metrics; direction, unit, aggregation, baseline, comparison plan, ablation factors, controls, success criteria, and failure/regression criteria.",
+  "Use type: evaluation with evaluationPlan for structured definitions, and experimentSpec.evaluationPlan to reference one existing stable ID. Keep outcomes unclaimed until measured. Preserve raw import files and metric provenance. Markdown-discovered metric prose is advisory until reviewed and adopted.",
+].join("\n\n");
+
 export default async function InstructionPage() {
   const entries = await getProgressEntries();
   const navEntries = entries.map(({ slug, order, title, status }) => ({ slug, order, title, status }));
@@ -79,7 +85,7 @@ export default async function InstructionPage() {
           <div><strong>4</strong><span>Evidence keeps provenance</span></div>
         </section>
 
-        <ChatGPTWebPrompt template={promptBody(webPrompt)} workspaceConfig={workspaceConfig} />
+        <ChatGPTWebPrompt template={`${promptBody(webPrompt)}\n\n${experimentAuthoringContract}`} workspaceConfig={workspaceConfig} />
         <InstructionViewer sources={sources} />
       </main>
     </div>
