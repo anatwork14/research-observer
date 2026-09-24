@@ -1,26 +1,14 @@
+import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { CommandPalette } from "@/components/CommandPalette";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { WorkspaceControls } from "@/components/WorkspaceControls";
+import { WorkspaceNavigation } from "@/components/WorkspaceNavigation";
+import { WorkspaceProjectSelector } from "@/components/WorkspaceProjectSelector";
 
 type NavEntry = { slug: string; order: number; title: string; status?: string };
 type Section = "overview" | "projects" | "insights" | "new-research" | "notes" | "papers" | "evidence" | "graph" | "collections" | "health" | "instruction" | "settings";
-
-const sections: Array<{ key: Section; href: string; label: string }> = [
-  { key: "overview", href: "/", label: "Overview" },
-  { key: "projects", href: "/projects", label: "Projects" },
-  { key: "insights", href: "/insights", label: "Insights" },
-  { key: "new-research", href: "/new-research", label: "New Research" },
-  { key: "notes", href: "/progress", label: "Notes" },
-  { key: "papers", href: "/papers", label: "Papers" },
-  { key: "evidence", href: "/evidence", label: "Evidence" },
-  { key: "graph", href: "/graph", label: "Graph" },
-  { key: "collections", href: "/collections", label: "Collections" },
-  { key: "health", href: "/health", label: "Health" },
-  { key: "instruction", href: "/instruction", label: "Instruction" },
-  { key: "settings", href: "/settings", label: "Settings" },
-];
 
 export function WorkspaceHeader({
   entries,
@@ -44,20 +32,14 @@ export function WorkspaceHeader({
         </span>
       </Link>
 
-      <nav className="workspace-tabs" aria-label="Research workspace">
-        {sections.map((section) => (
-          <Link
-            key={section.key}
-            href={section.href}
-            className={section.key === active ? "active" : undefined}
-            aria-current={section.key === active ? "page" : undefined}
-          >
-            {section.label}
-          </Link>
-        ))}
-      </nav>
+      <Suspense fallback={<nav className="workspace-tabs" aria-label="Research workspace" />}>
+        <WorkspaceNavigation active={active} />
+      </Suspense>
 
       <CommandPalette entries={entries} />
+      <Suspense fallback={<span className="project-context-selector">Project</span>}>
+        <WorkspaceProjectSelector />
+      </Suspense>
       {showWorkspaceControls && <WorkspaceControls />}
       <ThemeToggle />
     </header>
