@@ -31,7 +31,7 @@ export function WorkspaceProjectSelector() {
 
   return (
     <label className="project-context-selector">
-      <span>Project</span>
+      <span className="sr-only">Current project</span>
       <select aria-label="Current research project" value={selectedId} onChange={(event) => changeProject(event.target.value)}>
         <option value="">All projects</option>
         {projects.map((project) => <option key={project.id} value={project.id}>{project.label}</option>)}

@@ -20,6 +20,7 @@ export function WorkspaceHeader({
   showWorkspaceControls?: boolean;
 }) {
   return (
+    <>
     <header className="topbar workbench-topbar">
       <Link href="/" className="brand" aria-label="Observaire home">
         <span className="brand-mark" aria-hidden="true">
@@ -37,11 +38,19 @@ export function WorkspaceHeader({
       </Suspense>
 
       <CommandPalette entries={entries} />
-      <Suspense fallback={<span className="project-context-selector">Project</span>}>
-        <WorkspaceProjectSelector />
-      </Suspense>
       {showWorkspaceControls && <WorkspaceControls />}
       <ThemeToggle />
     </header>
+    <Suspense fallback={<div className="workspace-project-context" aria-hidden="true" />}>
+      <div className="workspace-project-context">
+        <span className="workspace-project-mark" aria-hidden="true" />
+        <div className="workspace-project-copy">
+          <span className="workspace-project-label">Current project</span>
+          <WorkspaceProjectSelector />
+        </div>
+        <span className="workspace-project-hint">Project context scopes notes, papers, and evidence.</span>
+      </div>
+    </Suspense>
+    </>
   );
 }
