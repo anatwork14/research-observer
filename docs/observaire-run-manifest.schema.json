@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://observaire.local/schema/observaire-run-manifest-v1.json",
+  "title": "Observaire experiment run manifest",
+  "type": "object",
+  "required": ["schemaVersion", "id", "experimentId", "label", "status", "timestamps", "parameters", "metrics", "dataFiles", "artifacts"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$" },
+    "experimentId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "label": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "status": { "enum": ["running", "complete", "failed", "cancelled"] },
+    "timestamps": {
+      "type": "object",
+      "required": ["createdAt"],
+      "properties": { "createdAt": { "type": "string", "format": "date-time" }, "startedAt": { "type": "string", "format": "date-time" }, "finishedAt": { "type": "string", "format": "date-time" } },
+      "additionalProperties": false
+    },
+    "parameters": { "type": "object" },
+    "metrics": { "type": "object", "additionalProperties": { "$ref": "#/$defs/measurement" } },
+    "dataFiles": { "type": "array", "items": { "$ref": "#/$defs/file" } },
+    "artifacts": { "type": "array", "items": { "$ref": "#/$defs/file" } },
+    "notes": { "type": "string" }
+  },
+  "$defs": {
+    "portablePath": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$" },
+    "file": {
+      "oneOf": [
+        { "$ref": "#/$defs/portablePath" },
+        { "type": "object", "required": ["path"], "properties": { "path": { "$ref": "#/$defs/portablePath" }, "label": { "type": "string" }, "mediaType": { "type": "string" } }, "additionalProperties": false }
+      ]
+    },
+    "measurement": {
+      "type": "object",
+      "required": ["value", "source"],
+      "properties": {
+        "value": { "type": "number" },
+        "source": {
+          "oneOf": [
+            { "type": "object", "required": ["kind", "note"], "properties": { "kind": { "const": "manual" }, "note": { "type": "string", "minLength": 1 } }, "additionalProperties": false },
+            { "type": "object", "required": ["file", "column", "aggregation"], "properties": { "file": { "$ref": "#/$defs/portablePath" }, "column": { "type": "string", "minLength": 1 }, "aggregation": { "type": "string", "minLength": 1 } }, "additionalProperties": false }
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

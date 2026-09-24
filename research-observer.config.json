@@ -9,6 +9,7 @@
     "literature",
     "method",
     "dataset",
+    "evaluation",
     "experiment",
     "result",
     "decision",
@@ -44,7 +45,9 @@
     ".aac",
     ".flac",
     ".csv",
+    ".tsv",
     ".json",
+    ".jsonl",
     ".txt"
   ],
   "maxAssetBytes": 262144000,
