@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createConsensusEvidenceNote, createEvidenceNote } from "@/lib/research/evidence-write.mjs";
+import { uploadEvidence } from "@/lib/research/asset-upload.mjs";
 import { isSameOrigin } from "@/lib/http/same-origin";
 
 export const runtime = "nodejs";
@@ -35,6 +36,27 @@ export async function POST(request: Request) {
   }
   if (!writable()) {
     return NextResponse.json({ error: "Evidence capture is disabled in this environment." }, { status: 503 });
+  }
+
+  if (request.headers.get("content-type")?.toLowerCase().includes("multipart/form-data")) {
+    try {
+      const form = await request.formData();
+      const title = form.get("title");
+      const comment = form.get("comment");
+      const research = form.get("research");
+      const result = await uploadEvidence({
+        file: form.get("file"),
+        title: typeof title === "string" ? title : "",
+        comment: typeof comment === "string" ? comment : "",
+        research: typeof research === "string" ? research : "",
+      });
+      return NextResponse.json(result, { status: 201, headers: { "Cache-Control": "no-store" } });
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "Could not upload evidence." },
+        { status: 422, headers: { "Cache-Control": "no-store" } },
+      );
+    }
   }
 
   let body: {

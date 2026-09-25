@@ -1,18 +1,23 @@
 import Link from "next/link";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
-import { getProgressEntries } from "@/lib/progress";
+import { getProgressEntries, getResearchWorkspace } from "@/lib/progress";
+import { matchesResearchText } from "@/lib/research/collection-filter.mjs";
+import { CollectionFilters } from "@/components/CollectionFilters";
+import { NewResearchNoteDialog } from "@/components/NewResearchNoteDialog";
+import { noteCreateWritable } from "@/lib/research/note-create.mjs";
 
 export default async function ProgressIndexPage({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string; status?: string; research?: string }>;
+  searchParams: Promise<{ type?: string; status?: string; research?: string; q?: string }>;
 }) {
-  const entries = await getProgressEntries();
+  const [entries, workspace] = await Promise.all([getProgressEntries(), getResearchWorkspace()]);
   const filters = await searchParams;
   const visible = entries.filter((entry) => {
     if (filters.type && entry.type !== filters.type) return false;
     if (filters.status && entry.status !== filters.status) return false;
     if (filters.research && entry.research !== filters.research) return false;
+    if (!matchesResearchText([entry.title, entry.summary, entry.filename, entry.text, ...entry.tags], filters.q ?? "")) return false;
     return true;
   });
   const navEntries = entries.map(({ slug, order, title, status }) => ({ slug, order, title, status }));
@@ -27,8 +32,25 @@ export default async function ProgressIndexPage({
             <h1>Research log</h1>
             <p>Ordered Markdown notes remain the durable record of the work.</p>
           </div>
-          <span className="collection-count">{visible.length} / {entries.length}</span>
+          <div className="collection-heading-actions">
+            <span className="collection-count">{visible.length} / {entries.length}</span>
+            <NewResearchNoteDialog
+              types={workspace.config.allowedTypes}
+              projects={workspace.projects.map(({ id, label }) => ({ id, label }))}
+              research={filters.research ?? ""}
+              enabled={noteCreateWritable()}
+            />
+          </div>
         </header>
+
+        <CollectionFilters
+          query={filters.q}
+          type={filters.type}
+          status={filters.status}
+          typeOptions={workspace.config.allowedTypes.map((value) => ({ value, label: value }))}
+          statusOptions={workspace.config.allowedStatuses.map((value) => ({ value, label: value }))}
+          placeholder="Search titles, summaries, tags, and note text…"
+        />
 
         <section className="note-index panel">
           {visible.map((entry) => (
