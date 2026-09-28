@@ -8,6 +8,14 @@ function activeLatexTextarea() {
   return document.querySelector<HTMLTextAreaElement>('textarea[aria-label^="Edit "]');
 }
 
+function validateLatexTarget() {
+  const editor = activeLatexTextarea();
+  if (!editor) throw new Error("Open a LaTeX source file before inserting a citation.");
+  const file = editor.getAttribute("aria-label")?.replace(/^Edit\s+/, "") ?? "";
+  if (!file.toLowerCase().endsWith(".tex")) throw new Error("Open a .tex source file before inserting a citation.");
+  return editor;
+}
+
 function replaceTextareaValue(textarea: HTMLTextAreaElement, value: string) {
   const descriptor = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value");
   if (!descriptor?.set) throw new Error("The current editor does not expose a writable text adapter.");
@@ -19,11 +27,7 @@ export function LatexCitationLauncher({ projectId }: { projectId: string }) {
   const [open, setOpen] = useState(false);
 
   const insertCitation = (key: string) => {
-    const editor = activeLatexTextarea();
-    if (!editor) throw new Error("Open a LaTeX source file before inserting a citation.");
-    const file = editor.getAttribute("aria-label")?.replace(/^Edit\s+/, "") ?? "";
-    if (!file.toLowerCase().endsWith(".tex")) throw new Error("Open a .tex source file before inserting a citation.");
-
+    const editor = validateLatexTarget();
     const start = editor.selectionStart;
     const end = editor.selectionEnd;
     const token = `\\cite{${key}}`;
@@ -47,6 +51,7 @@ export function LatexCitationLauncher({ projectId }: { projectId: string }) {
         projectId={projectId}
         open={open}
         onClose={() => setOpen(false)}
+        validateInsert={() => { validateLatexTarget(); }}
         onInsert={(key) => insertCitation(key)}
         onLibraryChanged={() => undefined}
       />
