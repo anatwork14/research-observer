@@ -1,6 +1,8 @@
 {
   "schemaVersion": 1,
   "progressDir": "progress",
+  "annotationDir": "annotations",
+  "manuscriptsDir": "manuscripts",
   "warnOnMissingId": true,
   "allowedTypes": [
     "note",
