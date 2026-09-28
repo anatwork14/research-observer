@@ -123,6 +123,10 @@ export function PdfAnnotationBridge({ paperPath }: { paperPath: string }) {
   const [type, setType] = useState<AnnotationType>("comment");
   const [comment, setComment] = useState("");
   const [tags, setTags] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editType, setEditType] = useState<AnnotationType>("comment");
+  const [editComment, setEditComment] = useState("");
+  const [editTags, setEditTags] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
@@ -245,6 +249,32 @@ export function PdfAnnotationBridge({ paperPath }: { paperPath: string }) {
       : `Promoted to durable evidence: ${result.evidence.title}.`);
   }, [mutate]);
 
+  const beginEdit = (annotation: Annotation) => {
+    setEditingId(annotation.id);
+    setEditType(annotation.type);
+    setEditComment(annotation.comment);
+    setEditTags(annotation.tags.join(", "));
+    setComposerOpen(false);
+    setError("");
+    setMessage("");
+  };
+
+  const saveEdit = useCallback(async (annotation: Annotation) => {
+    const result = await mutate({
+      action: "update",
+      id: annotation.id,
+      patch: {
+        type: editType,
+        comment: editComment,
+        tags: editTags.split(",").map((tag) => tag.trim()).filter(Boolean),
+        color: colors[editType],
+      },
+    });
+    if (!result) return;
+    setEditingId(null);
+    setMessage("Annotation updated.");
+  }, [editComment, editTags, editType, mutate]);
+
   const annotationsOnPage = useMemo(
     () => state.annotations.filter((annotation) => annotation.page === pageNumber && !annotation.deletedAt),
     [pageNumber, state.annotations],
@@ -257,6 +287,7 @@ export function PdfAnnotationBridge({ paperPath }: { paperPath: string }) {
   const openComposer = (nextType: AnnotationType) => {
     setType(nextType);
     setComposerOpen(true);
+    setEditingId(null);
     setDrawerOpen(true);
   };
 
@@ -344,8 +375,27 @@ export function PdfAnnotationBridge({ paperPath }: { paperPath: string }) {
                   <span>p. {annotation.page}</span>
                 </div>
                 {annotation.quote.exact && <blockquote className={styles.quote}>{annotation.quote.exact}</blockquote>}
-                {annotation.comment && <p className={styles.comment}>{annotation.comment}</p>}
-                {annotation.tags.length > 0 && <p className={styles.message}>{annotation.tags.map((tag) => `#${tag}`).join(" · ")}</p>}
+                {editingId === annotation.id && !annotation.deletedAt ? (
+                  <form className={styles.inlineEditor} onSubmit={(event) => { event.preventDefault(); void saveEdit(annotation); }}>
+                    <div className={styles.composerRow}>
+                      <select value={editType} onChange={(event) => setEditType(event.target.value as AnnotationType)} aria-label="Edit annotation type">
+                        {(state.types ?? (Object.keys(labels) as AnnotationType[])).map((item) => <option key={item} value={item}>{labels[item]}</option>)}
+                      </select>
+                      <span className={styles.editSwatch} style={annotationStyle(colors[editType])} aria-hidden="true" />
+                    </div>
+                    <textarea value={editComment} onChange={(event) => setEditComment(event.target.value)} placeholder="Comment or interpretation…" required={editType === "comment"} />
+                    <input value={editTags} onChange={(event) => setEditTags(event.target.value)} placeholder="tags, comma, separated" />
+                    <div className={styles.itemActions}>
+                      <button type="submit" className={styles.primary} disabled={saving}>Save changes</button>
+                      <button type="button" disabled={saving} onClick={() => setEditingId(null)}>Cancel</button>
+                    </div>
+                  </form>
+                ) : (
+                  <>
+                    {annotation.comment && <p className={styles.comment}>{annotation.comment}</p>}
+                    {annotation.tags.length > 0 && <p className={styles.message}>{annotation.tags.map((tag) => `#${tag}`).join(" · ")}</p>}
+                  </>
+                )}
                 {annotation.evidence && <p className={styles.promotionStatus}>Durable evidence created · {annotation.evidence.title}</p>}
                 <div className={styles.itemActions}>
                   {annotation.evidence ? (
@@ -353,6 +403,9 @@ export function PdfAnnotationBridge({ paperPath }: { paperPath: string }) {
                   ) : !annotation.deletedAt && annotation.quote.exact.trim().length >= 3 ? (
                     <button type="button" className={styles.primary} disabled={saving} onClick={() => void promote(annotation)}>Promote to evidence</button>
                   ) : null}
+                  {!annotation.deletedAt && editingId !== annotation.id && (
+                    <button type="button" disabled={saving} onClick={() => beginEdit(annotation)}>Edit</button>
+                  )}
                   {annotation.deletedAt ? (
                     <button type="button" disabled={saving} onClick={() => void mutate({ action: "restore", id: annotation.id })}>Restore</button>
                   ) : (
