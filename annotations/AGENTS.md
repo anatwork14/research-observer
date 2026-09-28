@@ -7,5 +7,8 @@ This directory is durable Research Observer source data. It is not generated bro
 - Deleting an annotation in the UI is always a soft delete. Set `deletedAt`; never physically remove the annotation record for a normal user delete action. Restoring clears `deletedAt`.
 - Keep annotation sidecars project-scoped and bound to their source PDF path. A sidecar must never be allowed to escape the configured `annotationDir`.
 - Mutations use optimistic revision checks and atomic writes. Do not bypass those mechanisms with ad-hoc filesystem writes.
+- Promoting an annotation to research evidence is an explicit user action. Promotion creates a normal durable `type: evidence` Markdown note through the existing evidence writer; an annotation label such as `evidence`, `claim`, or `limitation` must never automatically create a semantic research relationship.
+- Promoted evidence records preserve a human-readable `Observaire source annotation` marker containing the stable annotation ID. Promotion must remain idempotent: retries resolve to the existing evidence object instead of generating duplicates.
+- Hiding an annotation does not delete already-promoted evidence. Annotation visibility and research-evidence lifecycle are separate decisions.
 - Do not copy this directory into `public/_research`; annotations may contain private research comments.
 - If the schema changes, introduce an explicit schema version and migration path instead of silently changing existing records.
