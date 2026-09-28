@@ -9,12 +9,12 @@ Repository: anatwork14/research-observer
 Base branch: main
 Base commit: f1ed442d4a9c914d02014df731fae4b0cb1ad472
 Feature branch: feature/pdf-annotations-latex-ide
-Branch state before this progress commit: 82 commits ahead of main, 0 behind
+Branch state before this progress commit: 89 commits ahead of main, 0 behind
 ```
 
-Observaire now connects PDF reading/annotation, annotation → evidence promotion, project-scoped LaTeX authoring/compilation, source ↔ PDF SyncTeX, research-aware citations/BibTeX, bibliography setup, and a dependency-free LaTeX editor-assistance layer.
+Observaire now connects PDF reading/annotation, annotation → evidence promotion, project-scoped LaTeX authoring/compilation, source ↔ PDF SyncTeX, research-aware citations/BibTeX, bibliography setup, a dependency-free LaTeX editor-assistance layer, and read-only Codex manuscript Ask/Draft context.
 
-The implementation continues to preserve the existing Markdown research compiler, evidence writer, PDF.js reader, Direct Edit/Codex review boundaries, and filesystem-first project model. No parallel research database has been introduced.
+The implementation preserves the Markdown research compiler, evidence writer, PDF.js reader, existing Codex Act review boundary, and filesystem-first project model. No parallel research database has been introduced.
 
 ## Implemented — PDF annotator
 
@@ -35,8 +35,8 @@ The implementation continues to preserve the existing Markdown research compiler
 - Explicit **Promote to evidence** action.
 - Reuses the existing Markdown evidence writer.
 - Preserves PDF path, page, selected excerpt, annotation comment/type/tags, and annotation ID provenance.
-- Promoted evidence is rediscovered from annotation listing after reload.
-- Repeated promotion is idempotent and resolves to the same evidence object.
+- Promoted evidence is rediscovered after reload.
+- Repeated promotion is idempotent.
 - Annotation labels never automatically create scientific graph relationships.
 - Hiding/editing a source annotation does not silently rewrite already-promoted evidence.
 
@@ -71,9 +71,9 @@ The implementation continues to preserve the existing Markdown research compiler
 
 - `lib/research/latex-citations.mjs` + declarations.
 - `/api/ide/citations` with same-origin/write protections.
-- Project-scoped search over canonical compiler `literature` and `evidence` objects.
-- Search uses title, summary, author, year, DOI, URL, and tags.
-- Results link back to research notes, local PDFs, and verified external sources.
+- Project-scoped search over canonical `literature` and `evidence` objects.
+- Search uses title, summary, author, year, DOI, URL, tags.
+- Results link to research notes, local PDFs, verified external sources.
 - Missing author/year/source identity is never fabricated; incomplete sources remain visible but non-insertable.
 - Local/promoted evidence may inherit bibliography metadata from the most complete literature object resolving to the same indexed PDF.
 - Reviewed Consensus evidence uses metadata already persisted into canonical research objects.
@@ -83,10 +83,10 @@ The implementation continues to preserve the existing Markdown research compiler
 - Creates `references.bib` or uses an existing visible `.bib` file.
 - `.bib` writes reuse manuscript path guards and stale-write protection.
 - One stale concurrent write is retried rather than overwritten.
-- Deduplication identity order: DOI → source URL → local PDF path → title/year.
+- Deduplication identity: DOI → source URL → local PDF path → title/year.
 - Existing matching records reuse their citation key.
 - New keys are deterministic author/year/title keys with collision suffixes.
-- Generated records intentionally use conservative `@misc` rather than guessing publication classes absent from verified metadata.
+- Generated records use conservative `@misc` rather than guessing publication classes absent from verified metadata.
 
 ### IDE citation UX
 
@@ -96,68 +96,69 @@ The implementation continues to preserve the existing Markdown research compiler
 - Missing/inherited metadata shown explicitly.
 - Open source note/PDF/external source.
 - **Insert citation** creates/reuses the BibTeX record and inserts `\cite{key}` at the active `.tex` cursor.
-- Validates the insertion target before `.bib` mutation, avoiding orphan bibliography writes.
-- Current textarea adapter dispatches the native input event so React dirty/save semantics remain intact.
+- Validates the insertion target before `.bib` mutation.
+- Current textarea adapter dispatches native input events so React dirty/save semantics remain intact.
 
 ## Implemented — explicit bibliography setup
 
 - Browser-safe `lib/research/latex-bibliography.mjs` + declarations/tests.
 - **Configure bibliography in current TeX file** action.
 - Unsafe/escaping `.bib` paths rejected.
-- Requires a normal `\begin{document}` / `\end{document}` document body.
-- Classic BibTeX:
-  - preserves existing `\bibliographystyle{...}`;
-  - adds selected `\bibliography{...}` when missing;
-  - adds `plain` only when a basic style is actually needed;
-  - repairs a matching existing bibliography that has no style;
-  - does not silently replace a different existing bibliography library.
-- `biblatex`:
-  - detects package/resource usage;
-  - adds missing selected `\addbibresource{...}`;
-  - adds `\printbibliography` only when missing;
-  - never mixes classic BibTeX commands into detected `biblatex` setup.
+- Requires a normal `\begin{document}` / `\end{document}` pair.
+- Classic BibTeX preserves existing style choices, connects the selected library, adds `plain` only when needed, repairs a matching bibliography with missing style, and refuses to silently switch a different existing library.
+- `biblatex` uses missing `\addbibresource` / `\printbibliography` only and never mixes classic BibTeX commands.
 - Cursor/selection offsets are mapped through inserted configuration text.
 
 ## Implemented — richer dependency-free LaTeX editor fallback
 
-This checkpoint adds useful IDE behavior without introducing an invalid dependency/lockfile state.
-
-- Added browser-safe `lib/research/latex-editor-tools.mjs` + declarations/tests.
-- Added `LatexEditorAssistant` to the IDE.
-- `Ctrl/⌘ + Shift + P` opens the editor command surface.
-- `Ctrl/⌘ + /` toggles comments for the selected/current lines.
+- Browser-safe `lib/research/latex-editor-tools.mjs` + declarations/tests.
+- `LatexEditorAssistant` integrated into `/ide`.
+- `Ctrl/⌘ + Shift + P` opens editor commands.
+- `Ctrl/⌘ + /` toggles comments for selected/current lines.
 - Command palette supports:
   - bold / italic / emphasis wrapping;
   - section / subsection insertion;
-  - equation / align environments;
+  - equation / align;
   - itemize / enumerate;
-  - figure / table environments.
-- Live current-file outline extracts sections/subsections and labels.
-- Clicking outline items jumps to the corresponding source position.
-- Lightweight structural diagnostics detect:
-  - unmatched/mismatched environments;
-  - missing `\end{document}`;
-  - unmatched braces;
-  - duplicate labels.
-- Clicking a structural diagnostic jumps to its source position.
-- Structural hints are advisory only; `latexmk` diagnostics remain authoritative for build success/failure.
-- Editor tools use the same temporary textarea/native-input adapter pattern as citation insertion so dirty/save semantics stay intact.
+  - figure / table.
+- Current-file outline extracts sections/subsections and labels.
+- Outline entries navigate to source.
+- Lightweight advisory diagnostics detect environment mismatches/unclosed environments, missing document end, unmatched braces, and duplicate labels.
+- Diagnostic items navigate to source positions.
+- `latexmk` remains authoritative for actual build status.
 - Responsive bottom-sheet behavior is retained for tablet/mobile.
 
-### Why CodeMirror itself is not committed yet
+### CodeMirror integration status
 
-Current official CodeMirror packages are actively maintained, and the official legacy-mode package includes the `stex` LaTeX stream parser. However, this repository uses a committed npm lockfile and the current execution environment cannot reach GitHub/npm to generate and verify a matching `package-lock.json` update. Adding dependencies only to `package.json` would deliberately break `npm ci`, so that step is deferred rather than faked.
+Official CodeMirror packages are actively maintained and the official legacy-mode package includes `stex` LaTeX support. The repository, however, commits `package-lock.json`, and this execution environment cannot reach GitHub/npm to generate and verify a matching lockfile update. Adding CodeMirror only to `package.json` would intentionally break `npm ci`, so the dependency change is deferred rather than faked.
 
-When a networked checkout is available, introduce CodeMirror as one isolated lockfile-safe change and retain this textarea assistant as the mobile/safe fallback.
+When a networked checkout is available, introduce CodeMirror in one lockfile-safe change and retain the current textarea assistant as the mobile/safe fallback.
 
-## Persistence and agent contracts
+## Implemented — Codex manuscript Ask/Draft
+
+- Added a dedicated `LatexCodexAssistant` surface to the IDE.
+- Manuscript AI intentionally exposes only **Ask** and **Draft**.
+- Existing `/api/codex/ask` accepts optional manuscript context:
+  - project ID;
+  - active `.tex` filename;
+  - current unsaved selection or source snapshot;
+  - latest compiler diagnostics.
+- Manuscript source and compiler diagnostics are wrapped as explicitly untrusted source material in the Codex prompt boundary.
+- Ask/Draft remain read-only (`sandboxMode: read-only`, no file mutation).
+- Quick prompts cover compiler explanation, citation gaps, structure review, clarity drafts, transitions, and evidence-grounded limitations.
+- Draft responses are proposals only and can be copied; they are never automatically inserted into manuscript source.
+- Existing Codex **Act** remains restricted to reviewed changes under `progress/`.
+- Manuscript Act is deliberately not implemented by weakening that restriction.
+- A future manuscript Act flow must have a separate stale-safe review/apply path using manuscript hashes, project-scoped path guards, visible diffs, and explicit approval.
+- If Codex is unavailable, the IDE continues to work normally.
+
+## Persistence and contracts
 
 - `annotationDir` and `manuscriptsDir` are explicit configured roots.
 - `annotations/AGENTS.md` documents sidecar schema, locking, soft delete, promotion, provenance, idempotency.
 - `manuscripts/AGENTS.md` documents manuscript state, compilation boundaries, SyncTeX, citations, bibliography behavior, and metadata non-fabrication.
-- `app/AGENTS.md` documents PDF/IDE/mobile/server-client boundaries.
-- Manuscript `.gitignore` excludes normal TeX intermediates.
-- `docs/PDF_ANNOTATIONS_AND_LATEX_IDE.md` documents the unified architecture.
+- `app/AGENTS.md` now also documents editor-transform safety and manuscript Codex Ask/Draft/Act boundaries.
+- `docs/PDF_ANNOTATIONS_AND_LATEX_IDE.md` is updated through the editor/Codex integration.
 
 ## Docker/toolchain persistence
 
@@ -173,17 +174,15 @@ ${OBSERVAIRE_MANUSCRIPTS_DIR:-./manuscripts} -> /app/manuscripts
 
 `.research-observer/` remains transient/rebuildable state on the named volume.
 
-`observaire:start` / `observaire:start:build` run a preflight that creates host bind directories before Compose starts.
-
 ## Tests added in code
 
 ### `tests/pdf-annotations.test.mjs`
 
-- structured creation/listing;
-- stale revision rejection;
-- non-destructive metadata editing;
+- creation/listing;
+- stale revisions;
+- metadata editing;
 - Hide/Restore;
-- evidence promotion + annotation-ID provenance;
+- evidence promotion/provenance;
 - promoted-evidence discovery;
 - idempotent promotion.
 
@@ -192,24 +191,24 @@ ${OBSERVAIRE_MANUSCRIPTS_DIR:-./manuscripts} -> /app/manuscripts
 - source creation;
 - main file/engine state;
 - stale-safe save/rejection;
-- Hide/Restore without deleting bytes;
-- manuscript separation from Markdown compiler.
+- Hide/Restore;
+- separation from Markdown compiler.
 
 ### `tests/latex-retention.test.mjs`
 
 - retention defaults/config/clamping;
-- synchronized build/preview pruning;
+- build/preview pruning;
 - newest-build retention.
 
 ### `tests/latex-citations.test.mjs`
 
 - project citation discovery;
-- evidence → verified literature metadata resolution;
+- evidence → literature metadata resolution;
 - `.bib` creation;
-- deterministic key generation;
-- DOI deduplication across evidence/literature views;
+- deterministic keys;
+- DOI deduplication;
 - local PDF provenance;
-- refusal of incomplete metadata.
+- incomplete metadata refusal.
 
 ### `tests/latex-bibliography.test.mjs`
 
@@ -217,36 +216,37 @@ ${OBSERVAIRE_MANUSCRIPTS_DIR:-./manuscripts} -> /app/manuscripts
 - existing-style preservation;
 - missing-style repair;
 - duplicate-setup avoidance;
-- `biblatex` resource/print setup;
+- `biblatex` setup;
 - cursor mapping;
 - unsafe-path/non-document rejection.
 
 ### `tests/latex-editor-tools.test.mjs`
 
-- section/label outline extraction;
+- outline extraction;
 - commented-command exclusion;
 - environment mismatch/unclosed detection;
-- brace and duplicate-label diagnostics;
-- reversible line commenting;
+- brace/duplicate-label diagnostics;
+- reversible line comments;
 - selection wrapping;
-- environment/section insertion ranges;
-- rejection of unsupported transforms.
+- environment/section insertion;
+- unsupported-transform rejection.
 
-These tests are present in the branch but the current connector environment still cannot execute the repository quality gate.
+The current GitHub connector environment cannot execute the repository test/type/lint/build commands, so these tests remain present but unexecuted here.
 
 ## Verification status
 
 ### Confirmed by repository inspection
 
-- Branch remained directly based on `main`: 82 commits ahead / 0 behind before this progress commit.
+- Branch remained directly based on `main`: 89 commits ahead / 0 behind before this progress commit.
 - Annotation/manuscript stores remain path-scoped and separate from Markdown research.
 - Browser Hide flows remain non-destructive.
 - Annotation promotion reuses canonical evidence writing.
 - Citation discovery reuses canonical research compiler metadata.
-- Citation/BibTeX writes reuse manuscript path/stale-write guards.
+- Citation/BibTeX writes reuse manuscript stale-write/path guards.
 - Bibliography/editor transforms are browser-safe and import no Node/process/filesystem modules.
 - Compile/citation mutation APIs remain server-side/same-origin gated.
-- `latexmk` remains authoritative; client structural diagnostics do not change build status.
+- `latexmk` remains authoritative over client hints.
+- Manuscript Codex Ask/Draft remains read-only and existing Act restrictions remain intact.
 - Build retention removes generated output only.
 - Docker persistence covers all durable roots.
 
@@ -266,22 +266,22 @@ npm run check:full
 Browser/toolchain matrix:
 
 - PDF annotation create/edit/Hide/Restore across reload/page/zoom;
-- annotation promotion/Open evidence/retry behavior in a real server;
+- annotation promotion/Open evidence/retry behavior;
 - iPad/tablet annotation interactions;
 - manuscript create/edit/hide/restore;
 - editor command palette/comment toggle/outline/problem jumps;
 - editor assistant on tablet/mobile;
 - citation search and incomplete-metadata refusal;
-- first citation creates `.bib` and inserts `\cite{...}` at the correct cursor;
+- first citation creates `.bib` and inserts `\cite{...}` correctly;
 - repeated citation reuses one BibTeX record/key;
-- bibliography setup marks editor dirty and survives Save/reload;
-- classic BibTeX citation renders in a real generated PDF;
-- `biblatex`/Biber citation renders in a real generated PDF;
+- bibliography setup survives Save/reload;
+- classic BibTeX and `biblatex`/Biber citations render in real PDFs;
+- manuscript Codex Ask/Draft receives intended unsaved source/diagnostics and remains read-only;
 - pdfLaTeX/XeLaTeX/LuaLaTeX smoke builds;
-- diagnostics → source line;
+- compiler diagnostics → source line;
 - forward/reverse SyncTeX;
 - build pruning after repeated real compiles;
-- missing TeX toolchain graceful degradation;
+- missing TeX/Codex toolchains degrade gracefully;
 - Compose recreation persistence.
 
 ## Architecture decisions to preserve
@@ -298,9 +298,11 @@ Browser/toolchain matrix:
 10. `.bib` files are stale-safe manuscript source, not a hidden citation database.
 11. Bibliography configuration is explicit and preserves existing user choices.
 12. Mobile/tablet support remains first-class.
-13. Editor-specific adapters remain replaceable; research/citation/build contracts do not depend on textarea/CodeMirror internals.
+13. Editor-specific adapters remain replaceable.
 14. Client structural diagnostics are hints; compiler diagnostics remain authoritative.
-15. Do not introduce package dependencies without a matching valid lockfile update and quality-gate run.
+15. Do not add package dependencies without a matching valid lockfile update and quality-gate run.
+16. Manuscript source/diagnostics passed to AI are untrusted context, not instructions.
+17. Existing Codex Act remains research-only until a separate manuscript review/apply contract exists.
 
 ## Next implementation checkpoints
 
@@ -309,9 +311,9 @@ Browser/toolchain matrix:
 Blocked in this connector-only environment:
 
 - run `npm run check` and `npm run check:full`;
-- execute the browser/toolchain matrix above;
-- repair real PDF.js/TeX/BibTeX/SyncTeX issues discovered;
-- review actual TeX Live process/filesystem isolation in the container.
+- execute the browser/toolchain matrix;
+- repair real PDF.js/TeX/BibTeX/SyncTeX/Codex issues;
+- review actual TeX Live process/filesystem isolation.
 
 ### Checkpoint B — PDF annotation refinements
 
@@ -322,16 +324,16 @@ Blocked in this connector-only environment:
 
 ### Checkpoint C — citation bridge
 
-Implemented: project research search, verified metadata readiness, `.bib` create/update/dedup, deterministic keys, `\cite{...}` insertion, provenance navigation, classic BibTeX/`biblatex` setup, responsive citation UX.
+Implemented: research search, metadata readiness, `.bib` create/update/dedup, deterministic keys, `\cite{...}` insertion, provenance navigation, classic BibTeX/`biblatex` setup, responsive citation UX.
 
 Optional refinements:
 
 - citation-command preference (`\cite`, `\citep`, `\parencite`, etc.);
-- verified publication-type fields only after the canonical research schema stores them explicitly.
+- verified publication-type fields only after canonical schema support.
 
-### Checkpoint D — richer editor without sacrificing mobile
+### Checkpoint D — richer editor
 
-Implemented in this continuation:
+Implemented:
 
 - dependency-free command palette;
 - comment toggle;
@@ -342,19 +344,24 @@ Implemented in this continuation:
 
 Remaining:
 
-- generate a real CodeMirror dependency + lockfile update from a networked checkout;
-- use official CodeMirror packages and `stex` LaTeX language support;
-- keep current textarea assistant as safe/mobile fallback;
+- legitimate CodeMirror dependency + lockfile update from a networked checkout;
+- official CodeMirror + `stex` LaTeX mode;
 - optional TexLab/LSP provider for symbols/hover/references/completion;
 - compiler diagnostics remain authoritative.
 
-### Checkpoint E — deeper unified research IDE
+### Checkpoint E — deeper unified IDE
 
-- Codex context for manuscript selection, diagnostics, annotations, evidence, citations;
-- preserve Ask/Draft/Act review boundaries;
-- map compiled-PDF annotations back to TeX using SyncTeX;
-- expose manuscript/evidence/citation events in Insights/Timeline/Graph without treating build artifacts as durable graph nodes;
-- annotation import/export (XFDF/W3C-inspired) after internal model stabilization.
+Implemented foundation:
+
+- manuscript Codex Ask/Draft with unsaved source + compiler diagnostics as read-only context.
+
+Remaining:
+
+- direct citation-token navigation from TeX source;
+- compiled-PDF annotations mapped back to TeX through SyncTeX;
+- stale-safe manuscript Codex Act review/apply;
+- manuscript/evidence/citation events in Insights/Timeline/Graph without treating build artifacts as durable nodes;
+- annotation import/export after internal schema stabilization.
 
 ## Resume instructions
 
@@ -363,7 +370,7 @@ Remaining:
 3. Continue on `feature/pdf-annotations-latex-ide` unless already merged.
 4. Compare against `main` before editing.
 5. If a networked shell/browser becomes available, run Checkpoint A first and generate the CodeMirror lockfile change legitimately.
-6. Otherwise continue with PDF region/re-anchoring or deeper IDE/Codex integration.
+6. Otherwise continue with PDF region/re-anchoring, direct citation navigation, or manuscript review/apply design.
 
 ## Definition of merge-ready
 
@@ -375,11 +382,12 @@ The branch is merge-ready only when:
 - promotion is browser-confirmed and duplicate-safe;
 - manuscript stale-write + Hide/Restore is browser-confirmed;
 - editor assistant is browser/tablet-confirmed;
-- citation search/BibTeX dedup/cursor insertion is browser-confirmed;
-- a real classic BibTeX or `biblatex` citation renders in the generated PDF;
+- citation/BibTeX/bibliography flows are browser-confirmed;
+- manuscript Codex Ask/Draft context/read-only behavior is browser-confirmed;
+- a real classic BibTeX or `biblatex` citation renders;
 - real `latexmk` build succeeds;
 - forward/reverse SyncTeX succeeds;
-- build retention succeeds across repeated real builds;
-- missing TeX toolchain remains graceful;
+- build retention succeeds across repeated builds;
+- missing toolchains remain graceful;
 - Compose recreation preserves all durable roots;
 - docs/contracts remain aligned with implementation.
