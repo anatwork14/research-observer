@@ -4,6 +4,7 @@ import {
   createPdfAnnotation,
   listPdfAnnotations,
   pdfAnnotationTypes,
+  promotePdfAnnotationToEvidence,
   restorePdfAnnotation,
   softDeletePdfAnnotation,
   updatePdfAnnotation,
@@ -44,7 +45,7 @@ export async function GET(request: Request) {
       enabled: writable(),
       types: pdfAnnotationTypes,
       reason: writable()
-        ? "PDF annotations are stored as durable sidecars and delete actions only hide records."
+        ? "PDF annotations are stored as durable sidecars; delete actions only hide records and promotion to evidence is explicit."
         : "PDF annotation writes are disabled in production unless RESEARCH_OBSERVER_WRITES=1 is configured.",
     });
   } catch (error) {
@@ -101,6 +102,10 @@ export async function POST(request: Request) {
     if (action === "restore") {
       const result = await restorePdfAnnotation({ paperPath, id, expectedRevision });
       return noStore(result);
+    }
+    if (action === "promote") {
+      const result = await promotePdfAnnotationToEvidence({ paperPath, id, expectedRevision });
+      return noStore(result, { status: result.existing ? 200 : 201 });
     }
     return noStore({ error: "Unsupported annotation action." }, { status: 400 });
   } catch (error) {
