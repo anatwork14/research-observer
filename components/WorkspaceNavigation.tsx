@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
-type Section = "overview" | "projects" | "insights" | "new-research" | "notes" | "papers" | "evidence" | "graph" | "collections" | "health" | "instruction" | "settings";
+type Section = "overview" | "projects" | "insights" | "new-research" | "notes" | "papers" | "ide" | "evidence" | "graph" | "collections" | "health" | "instruction" | "settings";
 
 const sections: Array<{ key: Section; href: string; label: string }> = [
   { key: "overview", href: "/", label: "Overview" },
@@ -12,6 +12,7 @@ const sections: Array<{ key: Section; href: string; label: string }> = [
   { key: "new-research", href: "/new-research", label: "New Research" },
   { key: "notes", href: "/progress", label: "Notes" },
   { key: "papers", href: "/papers", label: "Papers" },
+  { key: "ide", href: "/ide", label: "LaTeX IDE" },
   { key: "evidence", href: "/evidence", label: "Evidence" },
   { key: "graph", href: "/graph", label: "Graph" },
   { key: "collections", href: "/collections", label: "Collections" },
