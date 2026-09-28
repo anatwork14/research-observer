@@ -128,7 +128,7 @@ test("annotation promotion creates one durable evidence note and remains idempot
   const notePath = path.join(root, "progress", ...promoted.evidence.filename.split("/"));
   const note = await fs.readFile(notePath, "utf8");
   assert.match(note, /The sample was limited to twenty participants\./);
-  assert.match(note, new RegExp(`Observaire source annotation:\\*\\* \\`${created.annotation.id}\\``));
+  assert.ok(note.includes("**Observaire source annotation:** `" + created.annotation.id + "`"));
   assert.match(note, /Annotation type:\*\* limitation/);
 
   const listed = await listPdfAnnotations({ rootDir: root, paperPath: "papers/sample.pdf" });
