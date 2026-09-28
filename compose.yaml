@@ -10,6 +10,7 @@ services:
     environment:
       NEXT_TELEMETRY_DISABLED: "1"
       RESEARCH_OBSERVER_WRITES: "1"
+      RESEARCH_OBSERVER_LATEX: "1"
       OBSERVAIRE_SETTINGS_WRITES: "1"
       OBSERVAIRE_CODEX_AUTH_UI: "1"
       OBSERVAIRE_WATCH_POLL_MS: "1000"
@@ -18,6 +19,8 @@ services:
       - "${OBSERVAIRE_PORT:-4173}:3000"
     volumes:
       - "${OBSERVAIRE_RESEARCH_DIR:-./progress}:/app/progress"
+      - "${OBSERVAIRE_ANNOTATIONS_DIR:-./annotations}:/app/annotations"
+      - "${OBSERVAIRE_MANUSCRIPTS_DIR:-./manuscripts}:/app/manuscripts"
       - "./research-observer.config.json:/app/research-observer.config.json:ro"
       - "./.git:/app/.git"
       - observaire-state:/app/.research-observer
