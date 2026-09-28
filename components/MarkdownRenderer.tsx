@@ -9,6 +9,70 @@ const imageTypes = new Set(["png", "jpg", "jpeg", "gif", "webp", "avif", "svg", 
 const videoTypes = new Set(["mp4", "webm", "ogv", "ogg"]);
 const audioTypes = new Set(["mp3", "wav", "m4a", "aac", "flac"]);
 
+/**
+ * remark-math uses dollar delimiters, while many research notes use the
+ * equivalent LaTeX delimiters. Normalize those delimiters before Markdown is
+ * parsed, without changing examples inside fenced or inline code.
+ */
+function normalizeMathDelimiters(markdown: string) {
+  let fence: { character: "`" | "~"; length: number } | null = null;
+  let inlineCodeLength = 0;
+
+  return markdown.split(/(\r?\n)/).map((line) => {
+    if (line === "\n" || line === "\r\n") return line;
+
+    const fenceMatch = /^\s{0,3}(`{3,}|~{3,})/.exec(line);
+    if (fence) {
+      const closePattern = new RegExp(`^\\s{0,3}${fence.character}{${fence.length},}\\s*$`);
+      if (closePattern.test(line)) fence = null;
+      return line;
+    }
+    if (inlineCodeLength === 0 && fenceMatch) {
+      const marker = fenceMatch[1];
+      fence = { character: marker[0] as "`" | "~", length: marker.length };
+      return line;
+    }
+
+    if (inlineCodeLength === 0) {
+      const displayDelimiter = /^(\s{0,3})\\([\[\]])(\s*)$/.exec(line);
+      if (displayDelimiter) return `${displayDelimiter[1]}$$${displayDelimiter[3]}`;
+    }
+
+    let normalized = "";
+    for (let index = 0; index < line.length;) {
+      if (line[index] === "`") {
+        let end = index + 1;
+        while (line[end] === "`") end += 1;
+        const length = end - index;
+        if (inlineCodeLength === 0) inlineCodeLength = length;
+        else if (inlineCodeLength === length) inlineCodeLength = 0;
+        normalized += line.slice(index, end);
+        index = end;
+        continue;
+      }
+
+      if (line[index] === "\\") {
+        let end = index + 1;
+        while (line[end] === "\\") end += 1;
+        const delimiter = line[end];
+        if (inlineCodeLength === 0 && delimiter !== undefined && "()[]".includes(delimiter) && (end - index) % 2 === 1) {
+          normalized += "\\".repeat(end - index - 1);
+          normalized += delimiter === "(" || delimiter === ")" ? "$" : "$$";
+          index = end + 1;
+          continue;
+        }
+        normalized += line.slice(index, end);
+        index = end;
+        continue;
+      }
+
+      normalized += line[index];
+      index += 1;
+    }
+    return normalized;
+  }).join("");
+}
+
 function extension(src: string) {
   return src.split(/[?#]/)[0].split(".").pop()?.toLowerCase() ?? "";
 }
@@ -94,13 +158,21 @@ export function MarkdownRenderer({
   content: string;
   linkMap?: Record<string, string>;
 }) {
+  const renderedContent = normalizeMathDelimiters(content);
+
   return (
     <div className="markdown-body">
       <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkMath]}
+        remarkPlugins={[remarkGfm, [remarkMath, { singleDollarTextMath: true }]]}
         rehypePlugins={[rehypeSlug, rehypeKatex]}
         components={{
           img: ({ src = "", alt = "" }) => <Media src={src} alt={alt} />,
+          span: ({ className, children, ...props }) => {
+            const { node, ...spanProps } = props;
+            void node;
+            const isScrollableEquation = className?.split(/\s+/).includes("katex-display");
+            return <span {...spanProps} className={className} tabIndex={isScrollableEquation ? 0 : undefined}>{children}</span>;
+          },
           a: ({ href = "", children, ...props }) => {
             const { node, ...anchorProps } = props;
             void node;
@@ -113,7 +185,7 @@ export function MarkdownRenderer({
           },
         }}
       >
-        {content}
+        {renderedContent}
       </ReactMarkdown>
     </div>
   );
