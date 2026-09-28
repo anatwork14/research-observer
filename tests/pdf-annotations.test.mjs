@@ -6,6 +6,7 @@ import test from "node:test";
 import {
   createPdfAnnotation,
   listPdfAnnotations,
+  promotePdfAnnotationToEvidence,
   restorePdfAnnotation,
   softDeletePdfAnnotation,
 } from "../lib/research/pdf-annotations.mjs";
@@ -94,4 +95,54 @@ test("annotation mutations reject stale revisions", async (t) => {
     }),
     (error) => error?.code === "ANNOTATION_STALE",
   );
+});
+
+test("annotation promotion creates one durable evidence note and remains idempotent", async (t) => {
+  const root = await fixture();
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+
+  const created = await createPdfAnnotation({
+    rootDir: root,
+    paperPath: "papers/sample.pdf",
+    expectedRevision: 0,
+    annotation: {
+      type: "limitation",
+      page: 4,
+      quote: { exact: "The sample was limited to twenty participants." },
+      rects: [rect],
+      comment: "Important limitation for the synthesis.",
+      tags: ["sample-size", "limitations"],
+    },
+  });
+
+  const promoted = await promotePdfAnnotationToEvidence({
+    rootDir: root,
+    paperPath: "papers/sample.pdf",
+    id: created.annotation.id,
+    expectedRevision: 1,
+  });
+  assert.equal(promoted.existing, false);
+  assert.ok(promoted.evidence.slug.startsWith("evidence-"));
+  assert.equal(promoted.revision, 1, "promotion should not mutate annotation geometry/state revision");
+
+  const notePath = path.join(root, "progress", ...promoted.evidence.filename.split("/"));
+  const note = await fs.readFile(notePath, "utf8");
+  assert.match(note, /The sample was limited to twenty participants\./);
+  assert.match(note, new RegExp(`Observaire source annotation:\\*\\* \\`${created.annotation.id}\\``));
+  assert.match(note, /Annotation type:\*\* limitation/);
+
+  const listed = await listPdfAnnotations({ rootDir: root, paperPath: "papers/sample.pdf" });
+  assert.equal(listed.annotations[0].evidence?.slug, promoted.evidence.slug);
+
+  const repeated = await promotePdfAnnotationToEvidence({
+    rootDir: root,
+    paperPath: "papers/sample.pdf",
+    id: created.annotation.id,
+    expectedRevision: 1,
+  });
+  assert.equal(repeated.existing, true);
+  assert.equal(repeated.evidence.slug, promoted.evidence.slug);
+
+  const progressFiles = await fs.readdir(path.join(root, "progress"));
+  assert.equal(progressFiles.filter((file) => /_evidence_.*\.md$/i.test(file)).length, 1);
 });
