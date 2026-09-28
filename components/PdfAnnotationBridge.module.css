@@ -19,6 +19,72 @@
   box-shadow: none;
 }
 
+.mark[data-type="area"],
+.mark[data-type="figure"],
+.mark[data-type="table"] {
+  background: color-mix(in srgb, var(--annotation-color, #65a8ff) 8%, transparent);
+  outline: 2px solid color-mix(in srgb, var(--annotation-color, #65a8ff) 82%, transparent);
+  outline-offset: -2px;
+  box-shadow: none;
+}
+
+.mark[data-anchor-status="stale"] {
+  outline: 2px dashed #c94b55;
+  outline-offset: -2px;
+}
+
+.mark[data-anchor-status="legacy"] {
+  outline: 1px dashed color-mix(in srgb, var(--text) 55%, transparent);
+  outline-offset: -1px;
+}
+
+.regionCaptureLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 18;
+  cursor: crosshair;
+  touch-action: none;
+  background: color-mix(in srgb, var(--accent) 3%, transparent);
+}
+
+.regionDraft {
+  position: absolute;
+  border: 2px solid var(--accent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  box-shadow: 0 0 0 9999px rgb(0 0 0 / 8%);
+  pointer-events: none;
+}
+
+.captureHint {
+  position: fixed;
+  z-index: 92;
+  left: 50%;
+  top: 5.4rem;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: min(92vw, 760px);
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--panel) 96%, transparent);
+  color: var(--text);
+  box-shadow: 0 12px 36px rgb(0 0 0 / 22%);
+  backdrop-filter: blur(18px);
+  font-size: 0.84rem;
+}
+
+.captureHint button {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.36rem 0.5rem;
+  background: var(--panel-strong, var(--panel));
+  color: var(--text);
+  cursor: pointer;
+}
+
 .selectionToolbar {
   position: fixed;
   z-index: 80;
@@ -94,10 +160,10 @@
   z-index: 75;
   right: 1rem;
   bottom: 1rem;
-  width: min(390px, calc(100vw - 2rem));
-  max-height: min(72vh, 720px);
+  width: min(410px, calc(100vw - 2rem));
+  max-height: min(74vh, 760px);
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto auto minmax(0, 1fr);
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 18px;
@@ -127,17 +193,28 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.6rem;
+  gap: 0.5rem;
   padding: 0.6rem 0.9rem;
   border-bottom: 1px solid var(--border);
   color: var(--muted);
-  font-size: 0.86rem;
+  font-size: 0.82rem;
 }
 
 .drawerControls label {
   display: inline-flex;
   align-items: center;
   gap: 0.42rem;
+}
+
+.anchorWarning {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.58rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, #c94b55 7%, transparent);
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
 }
 
 .list {
@@ -163,6 +240,10 @@
 
 .item[data-hidden="true"] {
   opacity: 0.62;
+}
+
+.item[data-anchor-status="stale"] {
+  border-color: color-mix(in srgb, #c94b55 48%, var(--border));
 }
 
 .itemMeta {
@@ -207,6 +288,28 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
   overflow: hidden;
+}
+
+.regionLabel {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.anchorStatus {
+  margin: 0;
+  padding: 0.4rem 0.5rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--muted) 8%, transparent);
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.anchorStatus[data-status="stale"] {
+  background: color-mix(in srgb, #c94b55 9%, transparent);
+  color: #c94b55;
 }
 
 .comment {
@@ -296,6 +399,14 @@
     overflow-x: auto;
   }
 
+  .captureHint {
+    top: auto;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
+    width: calc(100vw - 1.5rem);
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
   .drawerToggle {
     bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
   }
@@ -304,8 +415,12 @@
     right: 0;
     bottom: 0;
     width: 100vw;
-    max-height: 68vh;
+    max-height: 72vh;
     border-radius: 18px 18px 0 0;
     padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .drawerControls {
+    flex-wrap: wrap;
   }
 }
