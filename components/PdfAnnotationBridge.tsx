@@ -7,8 +7,19 @@ import styles from "./PdfAnnotationBridge.module.css";
 type AnnotationType = "highlight" | "comment" | "evidence" | "claim" | "question" | "limitation" | "method" | "definition" | "important" | "area" | "figure" | "table";
 type AnchorKind = "text" | "region";
 type AnchorStatus = "current" | "stale" | "legacy";
+type SourceTextKind = "caption" | "ocr" | "transcription";
 type Rect = { x: number; y: number; width: number; height: number };
 type EvidenceLink = { slug: string; title: string; filename: string };
+type SourceText = {
+  kind: SourceTextKind;
+  text: string;
+  sha256: string;
+  verifiedAt: string;
+  anchorDocumentSha256: string;
+  anchorPage: number;
+  reviewRequired: boolean;
+  reviewReason?: string;
+};
 type Annotation = {
   id: string;
   type: AnnotationType;
@@ -18,6 +29,8 @@ type Annotation = {
   rects: Rect[];
   anchorStatus?: AnchorStatus;
   anchorHistory?: unknown[];
+  sourceText?: SourceText | null;
+  sourceTextHistory?: unknown[];
   comment: string;
   tags: string[];
   color: string;
@@ -78,6 +91,12 @@ const colors: Record<AnnotationType, string> = {
   table: "#58c98d",
 };
 
+const sourceTextLabels: Record<SourceTextKind, string> = {
+  caption: "Caption",
+  ocr: "Reviewed OCR",
+  transcription: "Transcription",
+};
+
 function clamp(value: number) {
   return Math.max(0, Math.min(1, value));
 }
@@ -99,7 +118,7 @@ function normalizedPageText(page: HTMLElement) {
 
 async function sha256Text(value: string) {
   if (!value || !globalThis.crypto?.subtle) return undefined;
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
@@ -142,6 +161,17 @@ async function captureSelectionFromPage(): Promise<SelectionCapture | null> {
   };
 }
 
+function sourceTextPayload(kind: SourceTextKind, text: string) {
+  const value = text.trim();
+  return value ? { kind, text: value } : null;
+}
+
+function canPromote(annotation: Annotation) {
+  if (annotation.deletedAt || annotation.anchorStatus !== "current") return false;
+  if (annotation.anchorKind === "text") return annotation.quote.exact.trim().length >= 3;
+  return Boolean(annotation.sourceText?.text.trim().length && !annotation.sourceText.reviewRequired);
+}
+
 export function PdfAnnotationBridge({ paperPath }: { paperPath: string }) {
   const [state, setState] = useState<AnnotationState>({ revision: 0, annotations: [], hiddenCount: 0 });
   const [capture, setCapture] = useState<SelectionCapture | null>(null);
@@ -153,10 +183,14 @@ export function PdfAnnotationBridge({ paperPath }: { paperPath: string }) {
   const [type, setType] = useState<AnnotationType>("comment");
   const [comment, setComment] = useState("");
   const [tags, setTags] = useState("");
+  const [sourceTextKind, setSourceTextKind] = useState<SourceTextKind>("caption");
+  const [sourceText, setSourceText] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editType, setEditType] = useState<AnnotationType>("comment");
   const [editComment, setEditComment] = useState("");
   const [editTags, setEditTags] = useState("");
+  const [editSourceTextKind, setEditSourceTextKind] = useState<SourceTextKind>("caption");
+  const [editSourceText, setEditSourceText] = useState("");
   const [reanchorId, setReanchorId] = useState<string | null>(null);
   const [regionMode, setRegionMode] = useState<RegionMode>(null);
   const [regionDraft, setRegionDraft] = useState<RegionDraft>(null);
@@ -278,6 +312,15 @@ export function PdfAnnotationBridge({ paperPath }: { paperPath: string }) {
     pageTextIndex: value.pageTextIndex,
   }), []);
 
+  const resetComposer = () => {
+    setCapture(null);
+    setComposerOpen(false);
+    setComment("");
+    setTags("");
+    setSourceTextKind("caption");
+    setSourceText("");
+  };
+
   const create = useCallback(async (nextType: AnnotationType, nextComment = "", nextTags: string[] = []) => {
     if (!capture) return;
     const result = await mutate({
@@ -285,6 +328,7 @@ export function PdfAnnotationBridge({ paperPath }: { paperPath: string }) {
       annotation: {
         type: nextType,
         ...anchorPayload(capture),
+        ...(capture.anchorKind === "region" ? { sourceText: sourceTextPayload(sourceTextKind, sourceText) } : {}),
         comment: nextComment,
         tags: nextTags,
         color: colors[nextType],
@@ -292,12 +336,9 @@ export function PdfAnnotationBridge({ paperPath }: { paperPath: string }) {
     });
     if (!result) return;
     setMessage(`${labels[nextType]} saved.`);
-    setCapture(null);
-    setComposerOpen(false);
-    setComment("");
-    setTags("");
+    resetComposer();
     window.getSelection()?.removeAllRanges();
-  }, [anchorPayload, capture, mutate]);
+  }, [anchorPayload, capture, mutate, sourceText, sourceTextKind]);
 
   const reanchor = useCallback(async (id: string, nextCapture: SelectionCapture) => {
     const result = await mutate({ action: "reanchor", id, anchor: anchorPayload(nextCapture) });
@@ -306,7 +347,7 @@ export function PdfAnnotationBridge({ paperPath }: { paperPath: string }) {
     setReanchorId(null);
     setRegionMode(null);
     setRegionDraft(null);
-    setMessage("Annotation re-anchored. Previous geometry is preserved in anchor history.");
+    setMessage("Annotation re-anchored. Previous geometry is preserved in anchor history; region source text must be re-reviewed if present.");
     window.getSelection()?.removeAllRanges();
   }, [anchorPayload, mutate]);
 
@@ -323,6 +364,8 @@ export function PdfAnnotationBridge({ paperPath }: { paperPath: string }) {
     setEditType(annotation.type);
     setEditComment(annotation.comment);
     setEditTags(annotation.tags.join(", "));
+    setEditSourceTextKind(annotation.sourceText?.kind ?? "caption");
+    setEditSourceText(annotation.sourceText?.text ?? "");
     setComposerOpen(false);
     setError("");
     setMessage("");
@@ -337,12 +380,15 @@ export function PdfAnnotationBridge({ paperPath }: { paperPath: string }) {
         comment: editComment,
         tags: editTags.split(",").map((tag) => tag.trim()).filter(Boolean),
         color: colors[editType],
+        ...(annotation.anchorKind === "region" ? { sourceText: sourceTextPayload(editSourceTextKind, editSourceText) } : {}),
       },
     });
     if (!result) return;
     setEditingId(null);
-    setMessage("Annotation updated.");
-  }, [editComment, editTags, editType, mutate]);
+    setMessage(annotation.anchorKind === "region" && editSourceText.trim()
+      ? "Annotation updated and region source text verified against the current anchor."
+      : "Annotation updated.");
+  }, [editComment, editSourceText, editSourceTextKind, editTags, editType, mutate]);
 
   const annotationsOnPage = useMemo(
     () => state.annotations.filter((annotation) => annotation.page === pageNumber && !annotation.deletedAt),
@@ -440,6 +486,8 @@ export function PdfAnnotationBridge({ paperPath }: { paperPath: string }) {
     setType("area");
     setComment("");
     setTags("");
+    setSourceTextKind("caption");
+    setSourceText("");
     setComposerOpen(true);
     setDrawerOpen(true);
   };
@@ -542,12 +590,20 @@ export function PdfAnnotationBridge({ paperPath }: { paperPath: string }) {
                 </select>
                 <input type="color" value={colors[type]} readOnly aria-label="Annotation color" />
               </div>
-              {capture.anchorKind === "region" && <p className={styles.message}>Region anchor · use Figure or Table when the selection has a specific research role.</p>}
-              <textarea value={comment} onChange={(event) => setComment(event.target.value)} placeholder={capture.anchorKind === "region" ? "Describe this figure/table/region…" : type === "comment" ? "Leave a comment…" : "Add an interpretation, caveat, or note…"} required={type === "comment"} />
+              {capture.anchorKind === "region" && (
+                <div className={styles.sourceTextEditor}>
+                  <p className={styles.message}>Optional verified source text. This is separate from your comment and can unlock evidence promotion.</p>
+                  <select value={sourceTextKind} onChange={(event) => setSourceTextKind(event.target.value as SourceTextKind)} aria-label="Region source text provenance">
+                    {(Object.keys(sourceTextLabels) as SourceTextKind[]).map((kind) => <option key={kind} value={kind}>{sourceTextLabels[kind]}</option>)}
+                  </select>
+                  <textarea value={sourceText} onChange={(event) => setSourceText(event.target.value)} placeholder="Paste/review the figure caption, OCR text, or your exact transcription…" />
+                </div>
+              )}
+              <textarea value={comment} onChange={(event) => setComment(event.target.value)} placeholder={capture.anchorKind === "region" ? "Your comment or interpretation of this region…" : type === "comment" ? "Leave a comment…" : "Add an interpretation, caveat, or note…"} required={type === "comment"} />
               <input value={tags} onChange={(event) => setTags(event.target.value)} placeholder="tags, comma, separated" />
               <div className={styles.itemActions}>
                 <button type="submit" className={styles.primary} disabled={saving}>Save annotation</button>
-                <button type="button" onClick={() => { setComposerOpen(false); setCapture(null); }}>Cancel</button>
+                <button type="button" onClick={resetComposer}>Cancel</button>
               </div>
             </form>
           )}
@@ -582,6 +638,13 @@ export function PdfAnnotationBridge({ paperPath }: { paperPath: string }) {
                 )}
                 {annotation.quote.exact && <blockquote className={styles.quote}>{annotation.quote.exact}</blockquote>}
                 {!annotation.quote.exact && annotation.anchorKind === "region" && <p className={styles.regionLabel}>Visual region · {Math.round((annotation.rects[0]?.width ?? 0) * 100)}% × {Math.round((annotation.rects[0]?.height ?? 0) * 100)}% of page</p>}
+                {annotation.sourceText && (
+                  <div className={styles.sourceText} data-review-required={annotation.sourceText.reviewRequired}>
+                    <strong>{sourceTextLabels[annotation.sourceText.kind]}</strong>
+                    {annotation.sourceText.reviewRequired && <span>Re-review after re-anchor</span>}
+                    <p>{annotation.sourceText.text}</p>
+                  </div>
+                )}
                 {editingId === annotation.id && !annotation.deletedAt ? (
                   <form className={styles.inlineEditor} onSubmit={(event) => { event.preventDefault(); void saveEdit(annotation); }}>
                     <div className={styles.composerRow}>
@@ -590,6 +653,18 @@ export function PdfAnnotationBridge({ paperPath }: { paperPath: string }) {
                       </select>
                       <span className={styles.editSwatch} style={annotationStyle(colors[editType])} aria-hidden="true" />
                     </div>
+                    {annotation.anchorKind === "region" && (
+                      <div className={styles.sourceTextEditor}>
+                        <label>
+                          <span className={styles.message}>Verified source text</span>
+                          <select value={editSourceTextKind} onChange={(event) => setEditSourceTextKind(event.target.value as SourceTextKind)}>
+                            {(Object.keys(sourceTextLabels) as SourceTextKind[]).map((kind) => <option key={kind} value={kind}>{sourceTextLabels[kind]}</option>)}
+                          </select>
+                        </label>
+                        <textarea value={editSourceText} onChange={(event) => setEditSourceText(event.target.value)} placeholder="Leave empty to remove verified source text." />
+                        {annotation.sourceText?.reviewRequired && <p className={styles.message}>Saving this source text again confirms you reviewed it against the new region.</p>}
+                      </div>
+                    )}
                     <textarea value={editComment} onChange={(event) => setEditComment(event.target.value)} placeholder="Comment or interpretation…" required={editType === "comment"} />
                     <input value={editTags} onChange={(event) => setEditTags(event.target.value)} placeholder="tags, comma, separated" />
                     <div className={styles.itemActions}>
@@ -607,7 +682,7 @@ export function PdfAnnotationBridge({ paperPath }: { paperPath: string }) {
                 <div className={styles.itemActions}>
                   {annotation.evidence ? (
                     <a className={styles.actionLink} href={`/progress/${encodeURIComponent(annotation.evidence.slug)}`}>Open evidence</a>
-                  ) : !annotation.deletedAt && annotation.quote.exact.trim().length >= 3 ? (
+                  ) : canPromote(annotation) ? (
                     <button type="button" className={styles.primary} disabled={saving} onClick={() => void promote(annotation)}>Promote to evidence</button>
                   ) : null}
                   {!annotation.deletedAt && editingId !== annotation.id && (
