@@ -39,10 +39,17 @@ These instructions apply to application code under `app/` and complement the rep
 - Paper routes use `/papers/[...path]?page=N`.
 - Local PDF assets are generated into `public/_research/media/`.
 - Never reintroduce a runtime route that reads arbitrary source files from `progress/`.
-- User annotations use normalized page rectangles plus text quote context so zoom/responsive layout changes do not invalidate anchors.
+- Text annotations use normalized page rectangles plus quote context and optional page-text SHA/index hints so zoom/responsive changes do not invalidate anchors.
+- Visual-region annotations are first-class and may use `area`, `figure`, or `table` types with normalized rectangles even when no selectable text exists.
+- Never fabricate quote text for a visual region. A region may only gain source text from explicit user-provided/verified OCR, caption, or selected text.
+- New annotation anchors are bound to the current source-PDF SHA-256. If the PDF bytes change, expose the old anchor as `stale`; do not silently treat its old page/coordinates as verified.
+- Legacy v1 sidecars remain readable. They surface as `legacy` anchors until explicitly re-anchored rather than being destructively rewritten on read.
+- Re-anchoring is an explicit user action. Preserve the old page/quote/rectangles/fingerprint in bounded anchor history before applying a new text or region anchor.
+- Future fuzzy re-anchoring may suggest candidates, but must not auto-write a guessed anchor without review and must expose confidence/provenance.
 - Annotation deletion is always a soft delete (`deletedAt`); UI wording should use Hide/Restore rather than implying physical deletion.
 - Annotation sidecars use optimistic revision checks and atomic writes. Do not replace them with client-only state or destructive overwrite behavior.
 - Structured annotation types are interpretation/reading aids. A `claim`, `evidence`, or similar annotation must not silently create strong research graph relationships or a durable evidence Markdown object.
+- Region-only annotations without verified source text cannot be promoted to textual evidence merely by using their comment as a quote.
 
 ## LaTeX IDE
 
@@ -96,7 +103,12 @@ npm run check:full
 
 For PDF annotation / LaTeX IDE work, also verify at minimum:
 
-- annotation create, hide, restore, edit, promote-to-evidence, and stale-revision behavior;
+- text annotation create/edit/Hide/Restore and stale-revision behavior;
+- visual area/figure/table drag annotation on desktop and touch/tablet;
+- PDF-byte replacement marks previous anchors stale rather than silently current;
+- text and region re-anchor preserve history and survive reload;
+- schema-v1 sidecars remain readable as legacy anchors;
+- promotion-to-evidence refuses region-only annotations without verified source text;
 - manuscript create, save, stale-save rejection, hide, and restore;
 - editor command palette, comment toggle, outline navigation, and advisory structural diagnostics;
 - citation search, incomplete-metadata refusal, BibTeX creation/deduplication, and editor cursor insertion;
