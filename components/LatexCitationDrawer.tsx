@@ -51,6 +51,7 @@ export function LatexCitationDrawer({
   onClose,
   validateInsert,
   onInsert,
+  onConfigureBibliography,
   onLibraryChanged,
 }: {
   projectId: string;
@@ -58,6 +59,7 @@ export function LatexCitationDrawer({
   onClose: () => void;
   validateInsert: () => void;
   onInsert: (key: string, bibFile: string) => void;
+  onConfigureBibliography: (bibFile: string) => string;
   onLibraryChanged: () => void | Promise<void>;
 }) {
   const [query, setQuery] = useState("");
@@ -104,6 +106,17 @@ export function LatexCitationDrawer({
     values.add(bibFile || data.defaultBibFile || "references.bib");
     return [...values];
   }, [bibFile, data.bibFiles, data.defaultBibFile]);
+
+  const configureBibliography = () => {
+    setError("");
+    setMessage("");
+    try {
+      validateInsert();
+      setMessage(onConfigureBibliography(bibFile));
+    } catch (configurationError) {
+      setError(configurationError instanceof Error ? configurationError.message : "Could not configure the bibliography.");
+    }
+  };
 
   const insert = async (candidate: CitationCandidate) => {
     if (!candidate.citationReady || writing) return;
@@ -162,6 +175,14 @@ export function LatexCitationDrawer({
             {bibChoices.map((file) => <option key={file} value={file}>{file}</option>)}
           </select>
         </label>
+        <button
+          type="button"
+          className={styles.setupButton}
+          disabled={data.enabled === false}
+          onClick={configureBibliography}
+        >
+          Configure bibliography in current TeX file
+        </button>
         {!data.bibFiles.length && <p className={styles.hint}>The first citation will create <code>{bibFile}</code>.</p>}
       </div>
 
