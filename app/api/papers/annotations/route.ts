@@ -73,7 +73,9 @@ export async function POST(request: Request) {
   const action = typeof body.action === "string" ? body.action : "";
   const paperPath = typeof body.paperPath === "string" ? body.paperPath : "";
   const id = typeof body.id === "string" ? body.id : "";
-  const expectedRevision = Number.isInteger(body.expectedRevision) ? Number(body.expectedRevision) : undefined;
+  const expectedRevision = typeof body.expectedRevision === "number" && Number.isInteger(body.expectedRevision)
+    ? body.expectedRevision
+    : undefined;
   try {
     if (action === "create") {
       const result = await createPdfAnnotation({
