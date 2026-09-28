@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./LatexCitationDrawer.module.css";
 
 type CitationCandidate = {
@@ -69,6 +69,11 @@ export function LatexCitationDrawer({
   const [writing, setWriting] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const openRef = useRef(open);
+
+  useEffect(() => {
+    openRef.current = open;
+  }, [open]);
 
   const load = useCallback(async (needle = "") => {
     setLoading(true);
@@ -81,7 +86,7 @@ export function LatexCitationDrawer({
         return payload.defaultBibFile || "references.bib";
       });
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not load research citations.");
+      if (openRef.current) setError(requestError instanceof Error ? requestError.message : "Could not load research citations.");
     } finally {
       setLoading(false);
     }
@@ -92,14 +97,6 @@ export function LatexCitationDrawer({
     const timer = window.setTimeout(() => void load(query), 180);
     return () => window.clearTimeout(timer);
   }, [load, open, query]);
-
-  useEffect(() => {
-    if (!open) {
-      setError("");
-      setMessage("");
-      setWriting("");
-    }
-  }, [open]);
 
   const bibChoices = useMemo(() => {
     const values = new Set(data.bibFiles);
@@ -116,6 +113,13 @@ export function LatexCitationDrawer({
     } catch (configurationError) {
       setError(configurationError instanceof Error ? configurationError.message : "Could not configure the bibliography.");
     }
+  };
+
+  const close = () => {
+    openRef.current = false;
+    setError("");
+    setMessage("");
+    onClose();
   };
 
   const insert = async (candidate: CitationCandidate) => {
@@ -138,12 +142,14 @@ export function LatexCitationDrawer({
       }) as CitationResult;
       await onLibraryChanged();
       onInsert(result.key, result.bibFile);
-      setMessage(result.created
-        ? `Added ${result.key} to ${result.bibFile} and inserted the citation.`
-        : `Reused ${result.key} from ${result.bibFile} and inserted the citation.`);
+      if (openRef.current) {
+        setMessage(result.created
+          ? `Added ${result.key} to ${result.bibFile} and inserted the citation.`
+          : `Reused ${result.key} from ${result.bibFile} and inserted the citation.`);
+      }
       if (result.bibFileCreated || !data.bibFiles.includes(result.bibFile)) await load(query);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not insert citation.");
+      if (openRef.current) setError(requestError instanceof Error ? requestError.message : "Could not insert citation.");
     } finally {
       setWriting("");
     }
@@ -158,7 +164,7 @@ export function LatexCitationDrawer({
           <strong>Citations</strong>
           <small>Verified project literature and evidence</small>
         </div>
-        <button type="button" onClick={onClose} aria-label="Close citation drawer">×</button>
+        <button type="button" onClick={close} aria-label="Close citation drawer">×</button>
       </header>
 
       <div className={styles.controls}>

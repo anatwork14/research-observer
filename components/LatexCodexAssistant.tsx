@@ -57,16 +57,17 @@ export function LatexCodexAssistant({ projectId }: { projectId: string }) {
     return () => controller.abort();
   }, []);
 
-  useEffect(() => {
-    if (!open) return;
+  const openAssistant = () => {
     const current = activeTexEditor();
     if (!current) {
       setContextLabel("Workspace · no TeX source open");
+      setOpen(true);
       return;
     }
     const selected = current.editor.value.slice(current.editor.selectionStart, current.editor.selectionEnd).trim();
     setContextLabel(selected ? `${current.file} · selection` : current.file);
-  }, [open]);
+    setOpen(true);
+  };
 
   const modeDescription = useMemo(() => mode === "ask" ? "Read-only manuscript reasoning" : "Read-only draft proposal", [mode]);
 
@@ -126,7 +127,7 @@ export function LatexCodexAssistant({ projectId }: { projectId: string }) {
   return (
     <>
       {!open && (
-        <button type="button" className={styles.launcher} onClick={() => setOpen(true)} title="Codex manuscript assistant (Ask/Draft only)">
+        <button type="button" className={styles.launcher} onClick={openAssistant} title="Codex manuscript assistant (Ask/Draft only)">
           ✦ Codex
         </button>
       )}

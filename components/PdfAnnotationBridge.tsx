@@ -199,21 +199,33 @@ export function PdfAnnotationBridge({ paperPath }: { paperPath: string }) {
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const fetchState = useCallback(async (): Promise<AnnotationState> => {
+    const response = await fetch(`/api/papers/annotations?paper=${encodeURIComponent(paperPath)}&includeDeleted=1`, { cache: "no-store" });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "Could not load annotations.");
+    return payload as AnnotationState;
+  }, [paperPath]);
+
   const load = useCallback(async () => {
     try {
-      const response = await fetch(`/api/papers/annotations?paper=${encodeURIComponent(paperPath)}&includeDeleted=1`, { cache: "no-store" });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "Could not load annotations.");
-      setState(payload);
+      setState(await fetchState());
       setError("");
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Could not load annotations.");
     }
-  }, [paperPath]);
+  }, [fetchState]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    let active = true;
+    fetchState().then((payload) => {
+      if (!active) return;
+      setState(payload);
+      setError("");
+    }).catch((requestError) => {
+      if (active) setError(requestError instanceof Error ? requestError.message : "Could not load annotations.");
+    });
+    return () => { active = false; };
+  }, [fetchState]);
 
   useEffect(() => {
     let frame = 0;

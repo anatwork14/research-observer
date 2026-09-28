@@ -33,7 +33,7 @@ Verified metadata for the local paper.
 `, "utf8");
   await fs.writeFile(path.join(root, "progress", "01_evidence.md"), `---
 id: promoted-evidence
-title: Evidence: sample p. 2
+title: "Evidence: sample p. 2"
 type: evidence
 status: complete
 source:

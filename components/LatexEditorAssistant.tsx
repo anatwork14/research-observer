@@ -78,6 +78,10 @@ export function LatexEditorAssistant() {
   const [query, setQuery] = useState("");
   const [snapshot, setSnapshot] = useState<Snapshot>({ file: "", content: "", outline: [], diagnostics: [] });
   const [error, setError] = useState("");
+  const refreshSnapshot = () => {
+    const editor = activeEditor();
+    setSnapshot(editor ? snapshotFromEditor(editor) : { file: "", content: "", outline: [], diagnostics: [] });
+  };
   const commands = useMemo(() => latexEditorCommands(), []);
   const visibleCommands = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -111,6 +115,7 @@ export function LatexEditorAssistant() {
     const keydown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === "p") {
         event.preventDefault();
+        refreshSnapshot();
         setOpen(true);
         setTab("commands");
         return;
@@ -123,6 +128,7 @@ export function LatexEditorAssistant() {
           setError("");
         } catch (requestError) {
           setError(requestError instanceof Error ? requestError.message : "Could not toggle comments.");
+          refreshSnapshot();
           setOpen(true);
         }
       }
@@ -134,12 +140,6 @@ export function LatexEditorAssistant() {
       window.removeEventListener("keydown", keydown);
     };
   }, []);
-
-  useEffect(() => {
-    if (!open) return;
-    const editor = activeEditor();
-    if (editor) setSnapshot(snapshotFromEditor(editor));
-  }, [open]);
 
   const run = (id: string) => {
     setError("");
@@ -178,7 +178,7 @@ export function LatexEditorAssistant() {
   return (
     <>
       {!open && (
-        <button type="button" className={styles.launcher} onClick={() => setOpen(true)} title="LaTeX editor tools (Ctrl/⌘ + Shift + P)">
+        <button type="button" className={styles.launcher} onClick={() => { refreshSnapshot(); setOpen(true); }} title="LaTeX editor tools (Ctrl/⌘ + Shift + P)">
           Editor
           {snapshot.diagnostics.length > 0 && <span>{snapshot.diagnostics.length}</span>}
         </button>

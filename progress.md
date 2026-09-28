@@ -577,3 +577,35 @@ This branch is not merge-ready until:
 - missing TeX toolchain remains graceful;
 - Compose recreation preserves durable roots;
 - docs/contracts remain aligned with implementation.
+
+---
+
+## 2026-09-29 verification checkpoint — repository quality gate
+
+Revision at inspection: `feature/pdf-annotations-latex-ide` at `0959cd4f3f8317123f5f620ee3a150227ebb88e6`, tracking the matching origin branch; 114 commits ahead of `main` at `f1ed442d4a9c914d02014df731fae4b0cb1ad472`, 0 behind. No source changes were present before this checkpoint. Work is in a separate worktree so unrelated Thesis checkout files are untouched. No merge to `main` was performed.
+
+Environment and dependency installation:
+
+- Node `v22.23.3`; npm `10.9.9` (package declares npm `10.9.2`).
+- `npm ci` passed: 493 packages installed, 0 vulnerabilities. npm emitted the existing deprecation warning for `eslint@9.39.5`. The committed lockfile was not changed.
+- npm/network access works in this checkout; the optional CodeMirror phase is therefore available for a later checkpoint, with the textarea fallback retained.
+
+Initial failures and fixes:
+
+- The first full `npm test` run had 2 failures in `tests/latex-citations.test.mjs`. The evidence fixture's YAML title contained an unquoted colon, so the compiler correctly rejected its frontmatter and citation promotion could not resolve the evidence. Quoted the fixture title; the three citation tests and the complete 102-test suite then passed.
+- Initial typecheck failed because the annotations API supplied `{}` when create/re-anchor payloads were missing, although both library inputs require a positive page and rectangle list. The route now returns HTTP 400 for malformed create/re-anchor shapes before calling the typed mutation services.
+- Initial ESLint reported 6 `react-hooks/set-state-in-effect` errors in citation, Codex, LaTeX editor/workbench, PDF annotation, and suggestion components. Moved open-time snapshot/context refreshes to UI events and made initial fetch effects consume async results without calling stateful loaders synchronously. No lint rules were suppressed.
+
+Executed results:
+
+- `npm run doctor`: PASS, 0 errors and 1 warning (`AGENTS.md` ignored because it is not an ordered research note).
+- `npm test`: PASS, 102 tests, 0 failures.
+- `npm run typecheck`: PASS.
+- `npm run lint`: PASS, 0 errors and 2 pre-existing unused-variable warnings (`app/api/codex/ask/route.ts`, `lib/research/latex-editor-tools.mjs`).
+- `npm run check`: PASS.
+- `npm run check:full`: PASS, including optimized Next.js build. Next reports 20 dynamic-filesystem-tracing warnings across existing and new runtime filesystem modules; these are warnings, not build failures, and still need deployment/runtime assessment.
+- The build regenerated local `next-env.d.ts` and `tsconfig.json`; these generated edits are not part of the fix and must not be committed.
+
+Still not verified at this checkpoint: browser interaction, real-PDF annotation/revision/re-anchor flows, evidence promotion in-browser, real TeX engines/latexmk/SyncTeX, citations in compiled PDF, responsive tablet/touch behavior, production smoke, and Docker recreation persistence. No claim of merge readiness is made.
+
+Follow-up on 2026-09-29: the annotation route also rejects a non-object JSON body with HTTP 400, and its service inputs now use declared TypeScript parameter types instead of unchecked `never` casts. Citation insert failures no longer update a closed drawer. A repeated full test command initially hit the host's global SSH commit-signing configuration and stalled a fixture commit; rerunning once with `GIT_CONFIG_GLOBAL=/dev/null` passed all 102 tests, typecheck, and lint. This environment-only override was scoped to the check process and did not change repository or global configuration. Docker Compose configuration validation passed. An existing Compose stack from the original checkout is running and binds that checkout's folders, so it was left untouched; branch-isolated container persistence remains untested. Local tool discovery found pdfLaTeX, XeLaTeX, LuaLaTeX, BibTeX, Biber, and SyncTeX, but no `latexmk`; direct feature-path compilation is therefore blocked until an isolated latexmk environment is available.

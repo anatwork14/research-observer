@@ -159,10 +159,11 @@ export function LatexWorkbench({ projectId }: { projectId: string }) {
   useEffect(() => {
     let cancelled = false;
     Promise.all([
-      refreshWorkspace(),
+      jsonRequest(`/api/ide/files?research=${encodeURIComponent(projectId)}`),
       jsonRequest(`/api/ide/compile?research=${encodeURIComponent(projectId)}`),
     ]).then(([nextWorkspace, compileStatus]) => {
       if (cancelled) return;
+      setWorkspace(nextWorkspace as Workspace);
       setToolchain(compileStatus.toolchain ?? {});
       setBuild(compileStatus.latest ?? null);
       if (compileStatus.latest?.success) setPreviewTab("pdf");

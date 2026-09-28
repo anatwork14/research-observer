@@ -32,6 +32,16 @@ function errorStatus(error: unknown) {
   return 422;
 }
 
+function objectBody(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function hasAnchorPosition(value: Record<string, unknown> | null): value is Record<string, unknown> & { page: number; rects: unknown[] } {
+  return Boolean(value && Number.isInteger(value.page) && (value.page as number) > 0 && Array.isArray(value.rects));
+}
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const paperPath = url.searchParams.get("paper") ?? "";
@@ -58,20 +68,14 @@ export async function POST(request: Request) {
   if (!isSameOrigin(request)) return noStore({ error: "Cross-origin annotation writes are not allowed." }, { status: 403 });
   if (!writable()) return noStore({ error: "PDF annotation writes are disabled in this environment." }, { status: 503 });
 
-  let body: {
-    action?: unknown;
-    paperPath?: unknown;
-    id?: unknown;
-    expectedRevision?: unknown;
-    annotation?: unknown;
-    patch?: unknown;
-    anchor?: unknown;
-  };
+  let parsedBody: unknown;
   try {
-    body = await request.json();
+    parsedBody = await request.json();
   } catch {
     return noStore({ error: "Request body must be valid JSON." }, { status: 400 });
   }
+  const body = objectBody(parsedBody);
+  if (!body) return noStore({ error: "Request body must be a JSON object." }, { status: 400 });
 
   const action = typeof body.action === "string" ? body.action : "";
   const paperPath = typeof body.paperPath === "string" ? body.paperPath : "";
@@ -81,10 +85,14 @@ export async function POST(request: Request) {
     : undefined;
   try {
     if (action === "create") {
+      const annotation = objectBody(body.annotation);
+      if (!hasAnchorPosition(annotation)) {
+        return noStore({ error: "Annotation must include a positive page and rectangle list." }, { status: 400 });
+      }
       const result = await createPdfAnnotation({
         paperPath,
         expectedRevision,
-        annotation: body.annotation && typeof body.annotation === "object" ? body.annotation as never : {},
+        annotation: annotation as Parameters<typeof createPdfAnnotation>[0]["annotation"],
       });
       return noStore(result, { status: 201 });
     }
@@ -98,11 +106,15 @@ export async function POST(request: Request) {
       return noStore(result);
     }
     if (action === "reanchor") {
+      const anchor = objectBody(body.anchor);
+      if (!hasAnchorPosition(anchor)) {
+        return noStore({ error: "Re-anchor must include a positive page and rectangle list." }, { status: 400 });
+      }
       const result = await reanchorPdfAnnotation({
         paperPath,
         id,
         expectedRevision,
-        anchor: body.anchor && typeof body.anchor === "object" ? body.anchor as never : {},
+        anchor: anchor as Parameters<typeof reanchorPdfAnnotation>[0]["anchor"],
       });
       return noStore(result);
     }

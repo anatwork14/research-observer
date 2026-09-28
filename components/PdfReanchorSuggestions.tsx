@@ -47,31 +47,42 @@ export function PdfReanchorSuggestions({ paperPath, src }: { paperPath: string; 
   const pagesRef = useRef<PdfReanchorPageText[] | null>(null);
   const pdfRef = useRef<PdfTextDocument | null>(null);
 
-  const loadAnnotations = useCallback(async () => {
-    setLoadingState(true);
-    try {
-      const response = await fetch(`/api/papers/annotations?paper=${encodeURIComponent(paperPath)}&includeDeleted=1`, { cache: "no-store" });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "Could not load annotation anchors.");
-      const next = (Array.isArray(payload.annotations) ? payload.annotations : [])
-        .filter((annotation: TextAnnotation) =>
-          !annotation.deletedAt &&
-          annotation.anchorKind === "text" &&
-          annotation.anchorStatus !== "current" &&
-          annotation.quote?.exact?.trim().length >= 3,
-        );
-      setAnnotations(next);
-      setError("");
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not load annotation anchors.");
-    } finally {
-      setLoadingState(false);
-    }
+  const fetchAnnotations = useCallback(async (): Promise<TextAnnotation[]> => {
+    const response = await fetch(`/api/papers/annotations?paper=${encodeURIComponent(paperPath)}&includeDeleted=1`, { cache: "no-store" });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "Could not load annotation anchors.");
+    return (Array.isArray(payload.annotations) ? payload.annotations : [])
+      .filter((annotation: TextAnnotation) =>
+        !annotation.deletedAt &&
+        annotation.anchorKind === "text" &&
+        annotation.anchorStatus !== "current" &&
+        annotation.quote?.exact?.trim().length >= 3,
+      );
   }, [paperPath]);
 
   useEffect(() => {
-    void loadAnnotations();
-  }, [loadAnnotations]);
+    let active = true;
+    fetchAnnotations().then((next) => {
+      if (!active) return;
+      setAnnotations(next);
+      setError("");
+    }).catch((requestError) => {
+      if (active) setError(requestError instanceof Error ? requestError.message : "Could not load annotation anchors.");
+    }).finally(() => {
+      if (active) setLoadingState(false);
+    });
+    return () => { active = false; };
+  }, [fetchAnnotations]);
+
+  const refreshAnnotations = () => {
+    setLoadingState(true);
+    void fetchAnnotations().then((next) => {
+      setAnnotations(next);
+      setError("");
+    }).catch((requestError) => {
+      setError(requestError instanceof Error ? requestError.message : "Could not load annotation anchors.");
+    }).finally(() => setLoadingState(false));
+  };
 
   useEffect(() => {
     return () => {
@@ -126,7 +137,7 @@ export function PdfReanchorSuggestions({ paperPath, src }: { paperPath: string; 
   return (
     <>
       {!open && (
-        <button type="button" className={styles.launcher} onClick={() => { setOpen(true); void loadAnnotations(); }}>
+        <button type="button" className={styles.launcher} onClick={() => { setOpen(true); refreshAnnotations(); }}>
           Anchor suggestions{annotations.length ? ` ${annotations.length}` : ""}
         </button>
       )}
