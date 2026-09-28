@@ -1,0 +1,51 @@
+export type LatexEngine = "pdflatex" | "xelatex" | "lualatex";
+export type LatexWorkspaceFile = {
+  path: string;
+  extension: string;
+  bytes: number;
+  editable: boolean;
+  kind: "source" | "resource";
+  hidden: boolean;
+};
+export type LatexWorkspace = {
+  project: { id: string; label: string };
+  files: LatexWorkspaceFile[];
+  mainFile: string;
+  engine: LatexEngine;
+  updatedAt: string | null;
+};
+export type LatexSource = { file: string; content: string; baseSha256: string };
+export type LatexDiagnostic = { severity: "error" | "warning"; file?: string; line?: number; message: string };
+export type LatexBuild = {
+  schemaVersion: number;
+  id: string;
+  project: string;
+  mainFile: string;
+  engine: LatexEngine;
+  success: boolean;
+  exitCode: number;
+  timedOut: boolean;
+  durationMs: number;
+  pdf: string | null;
+  synctex: string | null;
+  pdfUrl: string;
+  diagnostics: LatexDiagnostic[];
+  createdAt: string;
+  log: string;
+};
+
+export const latexEditableExtensions: string[];
+export const latexEngines: LatexEngine[];
+export function latexWritesEnabled(): boolean;
+export function latexCompileEnabled(): boolean;
+export function latexToolchainStatus(): Promise<Record<string, unknown>>;
+export function listLatexWorkspace(options?: { rootDir?: string; projectId?: string }): Promise<LatexWorkspace>;
+export function readLatexSource(options: { rootDir?: string; projectId?: string; file: string }): Promise<LatexSource>;
+export function createLatexSource(options: { rootDir?: string; projectId?: string; file: string; content?: string }): Promise<LatexSource>;
+export function saveLatexSource(options: { rootDir?: string; projectId?: string; file: string; content: string; baseSha256: string }): Promise<LatexSource>;
+export function setLatexFileHidden(options: { rootDir?: string; projectId?: string; file: string; hidden?: boolean }): Promise<LatexWorkspace>;
+export function configureLatexWorkspace(options: { rootDir?: string; projectId?: string; mainFile?: string; engine?: LatexEngine }): Promise<LatexWorkspace>;
+export function compileLatexProject(options: { rootDir?: string; projectId?: string; mainFile?: string; engine?: LatexEngine }): Promise<LatexBuild>;
+export function latestLatexBuild(options?: { rootDir?: string; projectId?: string }): Promise<LatexBuild | null>;
+export function forwardSyncLatex(options: { rootDir?: string; projectId?: string; buildId: string; file: string; line: number; column?: number }): Promise<{ page: number; x: number; y: number; width: number; height: number; raw: string }>;
+export function reverseSyncLatex(options: { rootDir?: string; projectId?: string; buildId: string; page: number; x: number; y: number }): Promise<{ file: string; line: number; column: number; raw: string }>;
