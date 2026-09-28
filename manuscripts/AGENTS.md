@@ -21,4 +21,8 @@ This directory contains durable, project-scoped manuscript source. It is intenti
 - Deduplicate bibliography records by durable identity in this order where available: DOI, source URL, local PDF, then title/year. Reuse an existing citation key instead of appending a duplicate record.
 - Generated entries currently use conservative `@misc` BibTeX rather than guessing a publication class. A future richer metadata model may deliberately choose `@article`, `@inproceedings`, and other types only from verified source metadata.
 - `.bib` writes must use the same stale-write-safe manuscript APIs as other source files. A citation action must not bypass SHA-256 conflict protection.
-- Citation insertion into the current textarea uses a temporary client adapter. When the editor migrates to CodeMirror, replace only that adapter; keep the citation service/API/data contract unchanged.
+- `lib/research/latex-bibliography.mjs` is a browser-safe source transform for explicit bibliography setup. Keep it pure and independent of Node/process/filesystem APIs.
+- Bibliography setup must preserve an existing BibTeX style. If no classic BibTeX configuration exists, the explicit setup action may add a basic `plain` style plus `\bibliography{...}`; never silently change a user's existing style.
+- When `biblatex` is detected, use `\addbibresource{...}` and `\printbibliography` instead of mixing in classic BibTeX commands.
+- If a different classic `\bibliography{...}` is already configured, do not silently rewrite it to another library; surface the conflict for explicit user editing.
+- Citation insertion and bibliography setup in the current textarea use a temporary client adapter. When the editor migrates to CodeMirror, replace only that adapter; keep the citation/bibliography service contracts unchanged.
