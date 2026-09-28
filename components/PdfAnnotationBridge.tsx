@@ -1,7 +1,7 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import styles from "./PdfAnnotationBridge.module.css";
 
 type AnnotationType = "highlight" | "comment" | "evidence" | "claim" | "question" | "limitation" | "method" | "definition" | "important";
@@ -61,6 +61,10 @@ const colors: Record<AnnotationType, string> = {
 
 function clamp(value: number) {
   return Math.max(0, Math.min(1, value));
+}
+
+function annotationStyle(color: string): CSSProperties {
+  return { "--annotation-color": color } as CSSProperties;
 }
 
 function pageNumberFor(element: HTMLElement) {
@@ -143,14 +147,18 @@ export function PdfAnnotationBridge({ paperPath }: { paperPath: string }) {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         const next = document.querySelector<HTMLElement>(".pdf-stage .react-pdf__Page");
-        setPageHost(next);
+        setPageHost((current) => current === next ? current : next);
         if (next) setPageNumber(pageNumberFor(next));
       });
     };
     refresh();
     const observer = new MutationObserver(refresh);
-    const stage = document.querySelector(".pdf-stage");
-    if (stage) observer.observe(stage, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-page-number"] });
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["data-page-number"],
+    });
     window.addEventListener("popstate", refresh);
     window.addEventListener("resize", refresh);
     return () => {
@@ -257,7 +265,7 @@ export function PdfAnnotationBridge({ paperPath }: { paperPath: string }) {
                 width: `${rect.width * 100}%`,
                 height: `${rect.height * 100}%`,
                 "--annotation-color": annotation.color,
-              } as React.CSSProperties}
+              } as CSSProperties}
             />
           )))}
         </div>,
@@ -297,7 +305,7 @@ export function PdfAnnotationBridge({ paperPath }: { paperPath: string }) {
             }}>
               <div className={styles.composerRow}>
                 <select value={type} onChange={(event) => setType(event.target.value as AnnotationType)} aria-label="Annotation type">
-                  {(state.types ?? Object.keys(labels) as AnnotationType[]).map((item) => <option key={item} value={item}>{labels[item]}</option>)}
+                  {(state.types ?? (Object.keys(labels) as AnnotationType[])).map((item) => <option key={item} value={item}>{labels[item]}</option>)}
                 </select>
                 <input type="color" value={colors[type]} readOnly aria-label="Annotation color" />
               </div>
@@ -322,7 +330,7 @@ export function PdfAnnotationBridge({ paperPath }: { paperPath: string }) {
             {visibleItems.map((annotation) => (
               <article key={annotation.id} className={styles.item} data-hidden={Boolean(annotation.deletedAt)}>
                 <div className={styles.itemMeta}>
-                  <span className={styles.typeBadge}><span className={styles.swatch} style={{ "--annotation-color": annotation.color } as React.CSSProperties} />{labels[annotation.type]}</span>
+                  <span className={styles.typeBadge}><span className={styles.swatch} style={annotationStyle(annotation.color)} />{labels[annotation.type]}</span>
                   <span>p. {annotation.page}</span>
                 </div>
                 {annotation.quote.exact && <blockquote className={styles.quote}>{annotation.quote.exact}</blockquote>}
