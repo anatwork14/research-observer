@@ -48,7 +48,7 @@ export function WorkspaceHeader({
           <span className="workspace-project-label">Current project</span>
           <WorkspaceProjectSelector />
         </div>
-        <span className="workspace-project-hint">Project context scopes notes, papers, and evidence.</span>
+        <span className="workspace-project-hint">Project context scopes notes, papers, evidence, and manuscripts.</span>
       </div>
     </Suspense>
     </>
