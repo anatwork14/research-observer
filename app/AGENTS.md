@@ -17,7 +17,7 @@ These instructions apply to application code under `app/` and complement the rep
 - Prefer Server Components for workspace collection and note pages.
 - Use Client Components only where browser state or browser APIs are required: PDF rendering/annotation geometry, keyboard interactions, local preferences, LaTeX editing/preview, Codex interactive controls.
 - Keep Node-only filesystem/process code out of Client Component dependency graphs.
-- Filesystem mutation, LaTeX processes, annotation sidecar writes, and SyncTeX calls must remain in Node-only libraries/API routes.
+- Filesystem mutation, LaTeX processes, annotation sidecar writes, citation-library writes, and SyncTeX calls must remain in Node-only libraries/API routes.
 
 ## Workbench UI
 
@@ -54,6 +54,10 @@ These instructions apply to application code under `app/` and complement the rep
 - Source↔PDF navigation must use SyncTeX and validate that reverse-resolved source files remain inside the selected manuscript project.
 - Build diagnostics should remain navigable to source when a safe project-relative filename/line is known.
 - Do not compile arbitrary user-provided filesystem paths; resolve all requested source/build identifiers through the project-scoped path guards.
+- Citation search is project-scoped and must reuse indexed `literature`/`evidence` metadata from the canonical research compiler. Do not add a parallel citation database.
+- Citation insertion must never fabricate missing bibliography metadata. Keep incomplete candidates visible for review but non-insertable until authors/year/source identity are verified.
+- `.bib` writes must reuse stale-safe manuscript APIs and deduplicate durable identities before appending. Prefer DOI, then source URL, then local PDF, then title/year.
+- The current textarea citation insertion bridge is transitional UI glue. When replacing the editor surface, preserve the citation API/service and replace only the editor insertion adapter.
 
 ## Codex UI
 
@@ -86,8 +90,9 @@ npm run check:full
 
 For PDF annotation / LaTeX IDE work, also verify at minimum:
 
-- annotation create, hide, restore, and stale-revision behavior;
+- annotation create, hide, restore, edit, promote-to-evidence, and stale-revision behavior;
 - manuscript create, save, stale-save rejection, hide, and restore;
+- citation search, incomplete-metadata refusal, BibTeX creation/deduplication, and editor cursor insertion;
 - missing-TeX-toolchain graceful degradation;
 - successful `latexmk` PDF build with shell escape disabled;
 - forward and reverse SyncTeX when the toolchain is installed;
