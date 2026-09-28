@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LatexCitationLauncher } from "@/components/LatexCitationLauncher";
+import { LatexEditorAssistant } from "@/components/LatexEditorAssistant";
 import { LatexWorkbench } from "@/components/LatexWorkbench";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
 import { getResearchWorkspace } from "@/lib/progress";
@@ -8,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "LaTeX IDE · Observaire",
-  description: "Project-scoped LaTeX authoring, research citations, compilation, PDF preview, diagnostics, and SyncTeX navigation.",
+  description: "Project-scoped LaTeX authoring, research citations, editor tools, compilation, PDF preview, diagnostics, and SyncTeX navigation.",
 };
 
 export default async function IdePage({
@@ -28,6 +29,7 @@ export default async function IdePage({
     <div className="site-shell pdf-site-shell">
       <WorkspaceHeader entries={navEntries} active="ide" />
       <LatexWorkbench projectId={projectId} />
+      <LatexEditorAssistant />
       <LatexCitationLauncher projectId={projectId} />
     </div>
   );
