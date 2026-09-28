@@ -2,34 +2,39 @@
 
 Last updated: 2026-09-28
 
-## Active checkpoint
+## Active branch
 
 ```text
 Repository: anatwork14/research-observer
 Base branch: main
 Base commit: f1ed442d4a9c914d02014df731fae4b0cb1ad472
 Feature branch: feature/pdf-annotations-latex-ide
-Branch state before this checkpoint record: 97 commits ahead of main, 0 behind
+Branch state before this progress commit: 105 commits ahead of main, 0 behind
 ```
 
-Observaire now connects PDF reading/annotation, explicit annotation → evidence promotion, revision-aware text/visual anchors, project-scoped LaTeX authoring/compilation, source ↔ PDF SyncTeX, research-aware citations/BibTeX, bibliography setup, a dependency-free LaTeX editor-assistance layer, and read-only Codex manuscript Ask/Draft context.
+Observaire now connects PDF reading and annotation, revision-aware evidence provenance, project-scoped LaTeX authoring/compilation, SyncTeX, research-aware citations/BibTeX, bibliography setup, dependency-free LaTeX editor assistance, and read-only Codex manuscript Ask/Draft context.
 
-The implementation continues to preserve the Markdown research compiler, evidence writer, PDF.js reader, existing Codex Act review boundary, and filesystem-first project model. No parallel research database has been introduced.
+The implementation deliberately preserves the canonical Markdown research compiler, evidence writer, PDF.js/React-PDF runtime, filesystem-first project model, and the existing research-only Codex Act review boundary. No parallel research database has been introduced.
 
-## Implemented — PDF annotation system
+---
 
-### Durable sidecars and editing
+## 1. PDF annotation system
 
-- Project-scoped annotation sidecars under configured `annotationDir`.
-- Annotation targets must resolve to existing indexed local PDFs.
-- Sidecar writes are atomic and protected by optimistic revision checks plus a short-lived filesystem lock.
-- Normal delete is Hide/Restore via `deletedAt`; browser actions do not physically remove records.
-- Metadata editing changes type/comment/tags/color without silently moving the source anchor.
-- Annotation drawer remains responsive on desktop/tablet/mobile.
+### Durable sidecars
 
-### Text annotations
+Implemented under configured `annotationDir`:
 
-Supported semantic types:
+- project-scoped JSON sidecars;
+- optimistic revision checks;
+- atomic writes behind a short-lived lock;
+- stable annotation IDs;
+- soft Hide/Restore through `deletedAt`;
+- no normal browser action physically deletes an annotation record;
+- annotation metadata edit without destructive anchor movement.
+
+### Supported semantic types
+
+Text-oriented:
 
 ```text
 highlight
@@ -43,19 +48,7 @@ definition
 important
 ```
 
-Text anchors retain:
-
-- page;
-- normalized page rectangles;
-- exact quote;
-- prefix/suffix context;
-- optional normalized page-text SHA-256;
-- optional page-text character index;
-- source PDF SHA-256.
-
-### Visual-region annotations — implemented in this checkpoint
-
-Added first-class types:
+Visual-region:
 
 ```text
 area
@@ -63,28 +56,51 @@ figure
 table
 ```
 
-The PDF reader now provides **Select area**. The user can drag directly over:
+### Text anchors
+
+New text annotations retain:
+
+- page number;
+- normalized page rectangles;
+- exact quote;
+- prefix/suffix context;
+- optional page-text SHA-256;
+- optional page-text character index;
+- source PDF SHA-256;
+- anchor timestamp/confidence metadata.
+
+### Visual-region annotations
+
+The reader exposes **Select area** and supports mouse/touch drag over:
 
 - figures;
 - tables;
 - equations;
 - charts;
 - diagrams;
-- scanned/image-only PDF regions;
-- any area without selectable text.
+- scanned pages;
+- other image-only areas.
 
-Region coordinates are normalized to the current PDF page, so zoom/responsive changes do not alter the stored geometry.
+Region coordinates are normalized, so zoom/responsive rendering does not alter stored geometry.
 
-Region annotations deliberately allow an empty quote. A visual rectangle is not converted into fake textual evidence.
+A visual region may intentionally have an empty textual quote. The application never fabricates quote text from the user's comment.
 
-### Document fingerprints and annotation schema v2 — implemented in this checkpoint
+---
 
-- Annotation schema is now v2.
-- Existing schema-v1 sidecars remain readable.
-- Reading a v1 sidecar does not destructively rewrite it; its old annotations surface as `legacy` anchors until an explicit mutation/re-anchor persists v2 state.
-- New anchors store the actual PDF SHA-256.
-- Current PDF bytes are fingerprinted and compared with each saved anchor.
-- Public anchor status is one of:
+## 2. PDF revision integrity and schema v2
+
+### Schema compatibility
+
+- Annotation schema is v2.
+- Schema-v1 sidecars remain readable.
+- V1 records surface as `legacy` anchors until an explicit re-anchor/mutation persists modern data.
+- Reads do not destructively migrate old sidecars merely by opening a PDF.
+
+### Document fingerprinting
+
+New anchors bind to the actual PDF SHA-256.
+
+Public anchor state is:
 
 ```text
 current
@@ -92,151 +108,246 @@ stale
 legacy
 ```
 
-- `current`: anchor was created/re-anchored against the current PDF bytes.
-- `stale`: the PDF bytes changed after the anchor was saved.
-- `legacy`: an older sidecar lacks a source-document fingerprint.
-- The annotation drawer summarizes stale/legacy counts and marks stale geometry visually.
+- `current`: bound to current PDF bytes.
+- `stale`: PDF bytes changed after the anchor was saved.
+- `legacy`: no original document fingerprint is available.
 
-This prevents an updated/replaced PDF from silently making old coordinates look verified.
+The annotation drawer surfaces stale/legacy counts and visually distinguishes old geometry.
 
-### Explicit re-anchoring — implemented in this checkpoint
+A replaced PDF therefore cannot silently make historical coordinates look verified.
 
-Text annotations expose **Re-anchor text**:
+### Explicit re-anchoring
 
-1. choose re-anchor;
-2. select replacement text in the PDF;
-3. explicitly confirm **Re-anchor here**.
+Text annotations provide **Re-anchor text**.
+Region annotations provide **Re-anchor area**.
 
-Region annotations expose **Re-anchor area**:
+Re-anchor behavior:
 
-1. choose re-anchor;
-2. drag the replacement region;
-3. the new region becomes the active anchor.
-
-Re-anchoring:
-
-- uses the current PDF SHA-256;
-- preserves previous page/quote/rectangles/fingerprint in `anchorHistory`;
-- keeps a bounded history rather than growing indefinitely;
+- explicitly initiated by the user;
+- binds to the current PDF SHA-256;
+- preserves old page/quote/rectangles/fingerprint in bounded `anchorHistory`;
 - increments the sidecar revision;
-- never deletes the old anchor silently.
+- never silently overwrites history.
 
-Future fuzzy matching may propose possible targets, but it must not auto-write guessed anchors without review.
+Automatic/fuzzy matching is not allowed to mutate an anchor. A future matcher may only propose candidates until the user confirms one.
 
-### Annotation → durable evidence
+---
 
-- Explicit **Promote to evidence** remains the only promotion path.
-- Promotion reuses the existing Markdown evidence writer.
-- Text evidence preserves PDF path, page, selected quote, annotation comment/type/tags, annotation ID, anchor kind, and document SHA-256 provenance.
-- Promotion remains idempotent.
-- Annotation types never auto-create `supports`, `contradicts`, `answers`, or other scientific graph relationships.
-- Region-only annotations with no verified quote/OCR/caption text are refused by evidence promotion; a comment is never reused as a fake source quote.
-- Hiding/editing/re-anchoring an annotation does not silently rewrite already-promoted evidence. Promoted evidence remains a provenance snapshot.
+## 3. Verified visual source text
 
-## Implemented — LaTeX IDE
+Implemented in this checkpoint.
 
-### Workspace and source safety
+Region source text is stored separately from interpretation/comments in a dedicated `sourceText` provenance object.
 
-- `/ide?research=<project-id>` shares normal Observaire project context.
-- Durable source lives under configured `manuscriptsDir`.
-- Editable source types: `.tex`, `.bib`, `.sty`, `.cls`, `.bst`.
-- `.observaire-ide.json` stores main file, engine, hidden files, and workspace timestamp.
-- Source saves use SHA-256 stale-write protection.
-- Hide/Restore never deletes manuscript bytes.
+Supported provenance kinds:
 
-### Compilation
+```text
+caption
+ocr
+transcription
+```
 
-- pdfLaTeX, XeLaTeX, LuaLaTeX selection.
-- `latexmk` orchestration.
-- unrestricted shell escape disabled.
-- bounded process/log handling.
-- parsed file/line compiler diagnostics.
-- local React-PDF/PDF.js compiled-PDF preview.
-- forward SyncTeX: source cursor → PDF position.
-- reverse SyncTeX: PDF double-click → source file/line.
-- reverse paths are validated inside the selected manuscript project.
+Saving reviewed visual source text records:
+
+- provenance kind;
+- exact reviewed text;
+- text SHA-256;
+- verification timestamp;
+- PDF SHA-256 at review time;
+- page at review time;
+- review state.
+
+`sourceTextHistory` preserves superseded/invalidated versions.
+
+### Re-anchor invalidation
+
+If a visual annotation moves to another region:
+
+- the prior source text is retained in history;
+- current source text becomes `reviewRequired: true`;
+- evidence promotion remains unavailable;
+- saving/reviewing the text again explicitly verifies it against the new region.
+
+This prevents an old table caption/OCR result from silently following new geometry.
+
+Raw OCR is not considered verified merely because it exists. The user must explicitly review/save it.
+
+---
+
+## 4. Annotation → durable evidence
+
+Promotion remains explicit and idempotent.
+
+### Text evidence
+
+A new promotion requires:
+
+- visible annotation;
+- `current` anchor;
+- real selected text.
+
+Promotion preserves:
+
+- source PDF;
+- page;
+- source quote;
+- annotation ID;
+- annotation type/tags/comment;
+- anchor kind;
+- document SHA-256.
+
+### Region evidence
+
+A visual region may be promoted only when:
+
+- its anchor is `current`;
+- reviewed `sourceText` exists;
+- `reviewRequired` is false.
+
+The evidence quote is the reviewed caption/OCR/transcription text, never the user's interpretation comment.
+
+Region promotion additionally records:
+
+- source-text provenance kind;
+- source-text SHA-256;
+- source-text verification timestamp.
+
+### Snapshot semantics
+
+Already-promoted evidence remains a provenance snapshot.
+
+Later annotation edits, hiding, PDF changes, or re-anchoring do **not** silently mutate/delete the historical evidence note.
+
+Annotation semantic labels never automatically create `supports`, `contradicts`, `answers`, or other scientific graph relationships.
+
+---
+
+## 5. LaTeX IDE
+
+### Durable project source
+
+Implemented:
+
+- `/ide?research=<project-id>`;
+- project source under configured `manuscriptsDir`;
+- `.tex`, `.bib`, `.sty`, `.cls`, `.bst` editing;
+- `.observaire-ide.json` state;
+- SHA-256 stale-write protection;
+- non-destructive Hide/Restore;
+- main-file selection;
+- pdfLaTeX / XeLaTeX / LuaLaTeX engine selection.
+
+### Compilation and preview
+
+Implemented:
+
+- local `latexmk` orchestration;
+- unrestricted shell escape disabled;
+- bounded process/log handling;
+- parsed file/line diagnostics;
+- local React-PDF/PDF.js preview;
+- forward SyncTeX source → PDF;
+- reverse SyncTeX PDF → source;
+- project-boundary validation for reverse-resolved paths.
 
 ### Build retention
 
-- Generated build IDs are pruned from both `.research-observer/latex-builds/<project>/` and `public/_research/latex/<project>/`.
-- Default retention: 12.
-- `OBSERVAIRE_LATEX_BUILD_RETENTION` is clamped to 2–100.
-- Cleanup failures are warnings, not false build failures.
-- Durable manuscript source is never pruned.
+Generated build/preview IDs are bounded in:
 
-## Implemented — research citation/BibTeX bridge
+```text
+.research-observer/latex-builds/<project>/
+public/_research/latex/<project>/
+```
 
-- Project-scoped search over canonical `literature` and `evidence` research objects.
-- Search uses title, summary, author, year, DOI, URL, and tags.
-- Results link to source note, local PDF, and external source where available.
-- Missing bibliography metadata is never fabricated.
-- Incomplete candidates remain visible but non-insertable.
-- Evidence may inherit verified bibliography metadata from the most complete literature note resolving to the same local PDF.
-- `.bib` creation/update uses normal manuscript path and stale-write guards.
-- Deduplication order:
+Default retention: 12.
+`OBSERVAIRE_LATEX_BUILD_RETENTION` is clamped to 2–100.
+Durable manuscript source is never eligible for pruning.
+
+---
+
+## 6. Research citation and bibliography bridge
+
+Implemented:
+
+- project-scoped search over canonical `literature` and `evidence` notes;
+- title/summary/author/year/DOI/URL/tag search;
+- links back to note/PDF/external source;
+- no invented bibliography metadata;
+- incomplete source remains visible but non-insertable;
+- evidence may inherit verified bibliography metadata from the strongest literature record for the same local PDF;
+- `.bib` create/update using manuscript path/stale-write guards;
+- deterministic citation keys;
+- deduplication priority:
   1. DOI
   2. source URL
   3. local PDF
   4. title + year
-- Existing keys are reused.
-- New keys are deterministic author/year/title keys with collision suffixes.
-- Generated entries use conservative `@misc` until richer publication metadata exists in the canonical research schema.
-- **Insert citation** writes/reuses the BibTeX record and inserts `\cite{key}` at the current TeX cursor.
-- Server-side bibliography mutation is not performed unless a valid `.tex` insertion target exists.
+- conservative `@misc` generation until canonical publication-type metadata exists;
+- `\cite{key}` insertion at current editor cursor.
 
-## Implemented — bibliography setup
+### Bibliography setup
 
-- Browser-safe source transform supports classic BibTeX and `biblatex`.
-- Existing bibliography style is preserved.
-- Missing classic style can be repaired conservatively with `plain`.
-- Existing bibliography library is not silently switched to a different library.
-- `biblatex` gets `\addbibresource`/`\printbibliography` only when needed.
-- Unsafe/escaping `.bib` paths are rejected.
-- Cursor offsets are preserved across source insertions.
+Implemented source transforms for:
 
-## Implemented — LaTeX editor assistance
+- classic BibTeX;
+- existing bibliography styles;
+- conservative missing-style repair;
+- `biblatex` `\addbibresource`;
+- `\printbibliography`;
+- unsafe path rejection;
+- cursor preservation.
 
-Dependency-independent editor assistance currently includes:
+---
+
+## 7. LaTeX editor assistance
+
+Dependency-independent fallback editor provides:
 
 - `Ctrl/⌘ + Shift + P` command palette;
-- `Ctrl/⌘ + /` line comment toggle;
+- `Ctrl/⌘ + /` comment toggle;
 - bold/italic/emphasis wrappers;
 - section/subsection insertion;
-- equation/align/itemize/enumerate/figure/table environment insertion;
+- equation/align/itemize/enumerate/figure/table snippets;
 - section + label outline;
-- source navigation from outline/problems;
-- mismatched/unclosed environment detection;
-- brace diagnostics;
-- duplicate-label diagnostics.
+- navigation from outline/problems;
+- environment mismatch/unclosed checks;
+- brace checks;
+- duplicate-label checks.
 
-These client diagnostics are advisory. `latexmk` remains authoritative.
+These diagnostics are advisory only. `latexmk` remains authoritative for build success/failure.
 
 ### CodeMirror status
 
-The repository commits `package-lock.json`. This environment cannot reach npm/GitHub to generate and verify a valid CodeMirror dependency/lockfile update. CodeMirror is therefore intentionally deferred rather than committing a broken `npm ci` state.
+CodeMirror has intentionally not been added yet because this environment cannot reach npm to produce and verify a matching `package-lock.json` update.
 
-When a networked checkout is available, add CodeMirror in one lockfile-safe change and keep the existing textarea/editor-assistant layer as the mobile/safe fallback.
+Do not add CodeMirror only to `package.json`: that would break `npm ci`.
 
-## Implemented — Codex manuscript Ask/Draft
+When a networked checkout is available, add CodeMirror in one lockfile-safe change and keep the current textarea assistant as mobile/safe fallback.
 
-- Dedicated IDE manuscript assistant.
-- Ask and Draft only.
-- Context may include:
-  - selected project;
-  - active `.tex` file;
-  - current unsaved selection/source snapshot;
-  - latest compiler diagnostics.
-- Manuscript source and diagnostics are explicitly wrapped as untrusted source material.
-- Ask/Draft use read-only Codex sandboxing.
-- Draft output is a proposal/copyable text only; it is not silently inserted into manuscript source.
-- Existing Codex Act remains restricted to reviewed `progress/` changes.
-- Manuscript Act is not implemented by weakening that restriction.
+---
 
-A future manuscript Act needs its own stale-safe review/apply path with project path guards, source hashes, visible diffs, and explicit approval.
+## 8. Codex manuscript Ask/Draft
 
-## Persistence/toolchain
+Implemented:
 
-Docker/Compose persists:
+- manuscript-specific Codex surface in the IDE;
+- Ask and Draft only;
+- optional current unsaved TeX selection/source;
+- latest compiler diagnostics;
+- project/file context;
+- explicit untrusted-source prompt boundaries;
+- read-only Codex sandbox;
+- copyable Draft output without automatic source insertion.
+
+Existing Codex Act remains restricted to reviewed `progress/` changes.
+
+Manuscript writing must eventually use a separate stale-safe review/apply architecture. Do not weaken the existing research-only Act path restriction.
+
+---
+
+## 9. Persistence and Docker
+
+Durable mounts:
 
 ```text
 ${OBSERVAIRE_RESEARCH_DIR:-./progress}       -> /app/progress
@@ -244,30 +355,39 @@ ${OBSERVAIRE_ANNOTATIONS_DIR:-./annotations} -> /app/annotations
 ${OBSERVAIRE_MANUSCRIPTS_DIR:-./manuscripts} -> /app/manuscripts
 ```
 
-`.research-observer/` remains transient/rebuildable state.
+`.research-observer/` is transient/rebuildable state.
 
-Docker toolchain includes `latexmk`, Biber, Ghostscript, TeX Live base/recommended/extra/science/pictures/fonts, XeTeX, and LuaTeX.
+Container toolchain includes `latexmk`, Biber, Ghostscript, TeX Live base/recommended/extra/science/pictures/fonts, XeTeX, and LuaTeX.
 
-## Tests present in the branch
+---
+
+## 10. Tests present in code
 
 ### `tests/pdf-annotations.test.mjs`
 
-Covers:
+Now covers:
 
-- text annotation creation;
-- PDF SHA-bound anchors;
+- text creation and PDF SHA-bound anchors;
 - stale revision rejection;
-- metadata edit without anchor movement;
-- Hide/Restore;
-- area/figure/table region creation without fake quote text;
-- refusal to promote a region lacking verified textual source;
-- changed PDF bytes → stale anchor status;
-- explicit region re-anchor;
-- preserved previous anchor in history;
-- schema-v1 sidecar → legacy anchor compatibility;
-- evidence promotion/provenance/idempotency.
+- metadata edits preserving source anchor;
+- soft Hide/Restore;
+- visual region creation without fabricated quotes;
+- region promotion refusal without reviewed source text;
+- reviewed caption → evidence promotion;
+- separation of evidence quote from interpretation comment;
+- source-text hash/provenance;
+- PDF-byte replacement → stale anchor;
+- refusal to promote stale anchors;
+- explicit re-anchor → current anchor;
+- anchor-history preservation;
+- region re-anchor → source-text review invalidation;
+- explicit source-text re-review;
+- source-text history;
+- v1 legacy-sidecar compatibility;
+- refusal to promote legacy anchors before re-anchoring;
+- text evidence promotion provenance/idempotency.
 
-### Other test files
+Other test files:
 
 - `tests/latex-ide.test.mjs`
 - `tests/latex-retention.test.mjs`
@@ -275,29 +395,34 @@ Covers:
 - `tests/latex-bibliography.test.mjs`
 - `tests/latex-editor-tools.test.mjs`
 
-The pure `latex-editor-tools` test set was exercised separately in an isolated Node run during the previous checkpoint. This does **not** substitute for the repository quality gate.
+The pure `latex-editor-tools` test file was run separately in an isolated Node context during an earlier checkpoint. That does **not** substitute for the repository quality gate.
 
-## Verification status
+---
+
+## 11. Verification status
 
 ### Confirmed by repository inspection
 
-- Feature branch remained directly based on `main`; it was 97 commits ahead / 0 behind before the latest contract/progress commits.
+- Branch was 105 commits ahead of `main`, 0 behind before this progress commit.
 - Durable annotation/manuscript stores remain separate from Markdown research.
-- Annotation schema v2 accepts schema v1.
-- New annotation anchors store current PDF SHA-256.
-- Stale status is based on source-document fingerprint mismatch, not UI coordinates.
-- Explicit re-anchor preserves history.
-- Region annotation does not require selectable text.
-- Region-only evidence promotion is blocked without verified source text.
+- Schema v2 is backward-readable from v1.
+- New anchors bind to source PDF SHA-256.
+- Stale state comes from document fingerprint mismatch, not UI geometry.
+- Re-anchor preserves prior anchor history.
+- Visual regions work without selectable text.
+- Region source text is separate from comments.
+- Region source-text verification is invalidated on re-anchor.
+- New evidence promotion requires a current anchor.
+- Visual evidence requires reviewed source text.
 - Hide flows remain non-destructive.
-- Citation discovery reuses canonical research metadata.
-- Manuscript source/BibTeX writes reuse path and stale-write protections.
+- Citation metadata comes from canonical research records.
+- Manuscript/BibTeX writes retain stale/path guards.
 - Manuscript Codex Ask/Draft remains read-only.
-- Existing Codex Act path restriction remains intact.
+- Existing research Codex Act restrictions remain intact.
 
-### Still requiring real checkout/browser/toolchain verification
+### Not yet full-runtime verified
 
-Do not claim the following passed yet:
+Do **not** claim these passed until executed from a real checkout/container:
 
 ```bash
 npm run doctor
@@ -308,103 +433,113 @@ npm run check
 npm run check:full
 ```
 
-Browser/toolchain matrix still needs to exercise:
+Still requiring browser/toolchain verification:
 
-- text annotation create/edit/Hide/Restore across reload and zoom;
-- desktop mouse region drag;
-- tablet/touch region drag;
-- figure/table/area overlay alignment after zoom/page navigation/reload;
-- replacing a real PDF marks old anchors stale;
-- text re-anchor against real PDF.js text-layer spans;
-- region re-anchor against a changed real PDF;
-- v1 real sidecar migration behavior;
-- promotion refusal/acceptance behavior with region annotations;
-- real classic BibTeX and `biblatex` compile flows;
-- citation insertion/dedup in browser;
+- text annotation create/edit/Hide/Restore after reload/zoom;
+- mouse + touch region drag;
+- region overlay alignment after zoom/page/reload;
+- real PDF replacement → stale state;
+- real text and region re-anchor;
+- reviewed caption/OCR/transcription UX;
+- re-anchor source-text invalidation/re-review UX;
+- v1 sidecar behavior against real existing data;
+- text/region evidence promotion in browser;
+- real BibTeX and `biblatex` compilation;
+- citation browser insertion/dedup;
 - pdfLaTeX/XeLaTeX/LuaLaTeX smoke builds;
-- diagnostics → source navigation;
+- compiler diagnostic navigation;
 - forward/reverse SyncTeX;
-- build retention after repeated real builds;
-- manuscript Codex Ask/Draft context;
-- mobile/tablet IDE panels;
+- repeated-build retention;
+- Codex manuscript Ask/Draft context;
+- mobile/tablet IDE layouts;
 - Compose recreation persistence.
 
-## Architecture rules to preserve
+---
+
+## 12. Architecture rules to preserve
 
 1. Markdown research remains canonical research knowledge.
-2. PDF annotations remain structured sidecars, never burned into source PDFs for normal operation.
-3. Hide/Restore is non-destructive.
-4. Text and visual-region anchors are separate valid source-target modes.
-5. New anchors are bound to the source PDF SHA-256.
-6. A stale anchor is a warning/review state, not permission to auto-move it.
+2. PDF annotations remain structured sidecars rather than mutations burned into source PDFs.
+3. Normal deletion remains reversible Hide/Restore.
+4. Text and visual-region anchors are both valid source targets.
+5. New anchors bind to the source PDF SHA-256.
+6. Stale/legacy anchors are review states, not permission to guess/move them automatically.
 7. Re-anchor is explicit and preserves old anchor history.
-8. Region comments are not source quotes.
-9. Evidence promotion is explicit, neutral, provenance-preserving, and idempotent.
-10. Promoted evidence is a snapshot rather than a live mirror of mutable annotations.
-11. Manuscript source is durable; build output is transient.
-12. SyncTeX is the source ↔ compiled-PDF positioning contract.
-13. Compilation is execution: preserve path/process/time/security boundaries and shell-escape restrictions.
-14. Bibliography metadata is never invented.
-15. `.bib` files are normal stale-safe manuscript files, not a hidden database.
-16. Editor-specific adapters remain replaceable.
-17. Mobile/tablet is a first-class requirement.
-18. Existing research Codex Act restrictions must not be weakened to add manuscript writing.
+8. Annotation comments are interpretation, not source quotation.
+9. Visual source text must use separate reviewed provenance (`caption` / `ocr` / `transcription`).
+10. Re-anchoring visual geometry invalidates prior source-text verification until explicitly reviewed again.
+11. New evidence promotion requires a current anchor.
+12. Evidence promotion remains explicit, neutral, provenance-preserving, and idempotent.
+13. Promoted evidence is a snapshot, not a mutable live mirror.
+14. Manuscript source is durable; build output is transient.
+15. SyncTeX is the source ↔ compiled-PDF positioning contract.
+16. Compilation is execution; preserve path/process/time/security boundaries and disabled unrestricted shell escape.
+17. Bibliography metadata is never invented.
+18. `.bib` is normal stale-safe manuscript source, not a hidden citation database.
+19. Editor-specific adapters remain replaceable.
+20. Mobile/tablet remains first-class.
+21. Existing research Codex Act restrictions must not be weakened for manuscript writing.
 
-## Next implementation targets
+---
 
-### 1. Region source-text bridge
+## 13. Next implementation targets
 
-Add an explicit optional field for region annotations where the user can attach verified:
+### A. Re-anchor candidate assistance
 
-- figure/table caption;
-- OCR result they reviewed;
-- manually transcribed source text.
+Build a non-destructive suggestion layer for stale text anchors:
 
-Store the provenance kind separately from the comment. Only this verified source text may unlock region → evidence promotion.
+- exact quote matching first;
+- prefix/suffix context ranking;
+- page-text fingerprint/index hints;
+- candidate page/snippet/location;
+- confidence score;
+- explicit user selection/confirmation before `reanchor` is called.
 
-### 2. Re-anchor candidate assistance
+Candidate search must never mutate annotation state automatically.
 
-Add a non-destructive proposal layer for stale text anchors:
-
-- exact quote search first;
-- prefix/suffix matching;
-- page-text fingerprint hints;
-- candidate page/location + confidence;
-- user confirmation before applying.
-
-Do not auto-write candidates.
-
-### 3. Citation token navigation
+### B. Citation-token navigation
 
 From a `\cite{key}` token in the editor:
 
-- resolve the key in visible project `.bib` files;
-- resolve DOI/URL/PDF identity back to canonical literature/evidence;
-- open the research note/PDF directly.
+- resolve key from visible project `.bib` files;
+- map DOI/URL/PDF identity back to canonical literature/evidence;
+- open the research note or source PDF directly.
 
-### 4. Manuscript Act/review architecture
+### C. Manuscript Act/review architecture
 
-Design a separate manuscript proposal flow with:
+Design a separate manuscript proposal/apply flow with:
 
 - project-scoped manuscript snapshot;
 - source hashes;
 - visible diff;
-- stale-source detection;
-- explicit apply;
-- no reuse of the existing research-only Act path guard.
+- stale-source rejection;
+- explicit approval/apply;
+- no weakening of the existing research-only Act path guard.
 
-### 5. Runtime verification
+### D. CodeMirror + optional TexLab
 
-As soon as a full checkout/browser/toolchain is available, run the quality gate and repair real integration defects before merge.
+When npm/network access is available:
+
+- update `package.json` + `package-lock.json` together;
+- run the full quality gate;
+- keep mobile textarea fallback;
+- preserve current editor/citation/bibliography interfaces;
+- later add optional TexLab/LSP diagnostics/completion/symbols.
+
+### E. Runtime verification
+
+As soon as a full checkout/browser/toolchain is available, prioritize integration verification and repair before merge.
+
+---
 
 ## Resume instructions
 
-1. Read root `AGENTS.md`, `app/AGENTS.md`, `annotations/AGENTS.md`, `manuscripts/AGENTS.md`.
+1. Read root `AGENTS.md`, `app/AGENTS.md`, `annotations/AGENTS.md`, and `manuscripts/AGENTS.md`.
 2. Read `docs/PDF_ANNOTATIONS_AND_LATEX_IDE.md` and this file.
-3. Continue on `feature/pdf-annotations-latex-ide` unless merged.
+3. Continue on `feature/pdf-annotations-latex-ide` unless already merged.
 4. Compare with `main` before editing.
-5. If a full runtime is available, prioritize verification before adding another large subsystem.
-6. Otherwise continue with the region source-text bridge, re-anchor candidate assistance, or citation-token navigation in that order.
+5. If a full runtime becomes available, run the quality gate before adding another large subsystem.
+6. Otherwise continue with re-anchor candidate assistance, then citation-token navigation.
 
 ## Merge-ready definition
 
@@ -412,15 +547,16 @@ This branch is not merge-ready until:
 
 - `npm run check` passes;
 - `npm run check:full` passes;
-- real text and region annotation flows survive reload/zoom/page changes;
+- real text and region annotations survive reload/zoom/page changes;
 - changed PDFs correctly surface stale anchors;
 - text/region re-anchor is browser-confirmed and preserves history;
-- annotation promotion is duplicate-safe;
+- visual source-text review/re-review is browser-confirmed;
+- annotation promotion is browser-confirmed and duplicate-safe;
 - manuscript stale-write + Hide/Restore is browser-confirmed;
 - citation/BibTeX insertion/dedup is browser-confirmed;
 - at least one real bibliography citation renders in compiled PDF;
 - real `latexmk` and SyncTeX flows pass;
-- build retention works after repeated compiles;
+- build retention works after repeated real compiles;
 - TeX absence degrades gracefully;
 - Compose recreation preserves all durable roots;
-- docs/contracts remain aligned with implementation.
+- documentation/contracts remain aligned with implementation.
