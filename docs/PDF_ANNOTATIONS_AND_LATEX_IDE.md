@@ -12,6 +12,16 @@ Three durable source domains are intentionally separate:
 
 Transient build/cache state remains under `.research-observer/`. Browser-consumable compiled PDF previews are generated under `public/_research/latex/` and are never authoritative source.
 
+The configured roots are intentionally explicit:
+
+```json
+{
+  "progressDir": "progress",
+  "annotationDir": "annotations",
+  "manuscriptsDir": "manuscripts"
+}
+```
+
 ## PDF annotation model
 
 Annotations are structured records with stable IDs and include:
@@ -34,6 +44,10 @@ Mutations use a sidecar revision number. Clients send the revision they observed
 A normal delete action never destroys annotation data. It sets `deletedAt`. The default list hides those records, while `includeDeleted=1` exposes them for recovery. Restore clears `deletedAt`.
 
 This same UX principle is used for manuscript files: the IDE stores hidden paths in `.observaire-ide.json`, leaving the actual source file intact.
+
+### Research semantics boundary
+
+Annotation labels are reading/authoring metadata, not automatic scientific graph truth. Creating an annotation of type `evidence`, `claim`, or `limitation` must not silently create a durable Markdown evidence object or a `supports`, `contradicts`, or `answers` relationship. Promotion into durable research evidence should remain an explicit reviewed action.
 
 ## LaTeX IDE model
 
@@ -87,6 +101,22 @@ The initial workbench deliberately uses a dependency-free text editor surface so
 
 The editor surface is intentionally replaceable. A future CodeMirror 6 adapter can provide LaTeX/BibTeX highlighting, completions, folding, bracket/environment helpers, and an LSP bridge without changing the storage/build APIs. Monaco should not be the default foundation because mobile-browser support is a project requirement.
 
+## Docker persistence
+
+The Compose profile must preserve every durable source domain, not only Markdown research:
+
+```text
+${OBSERVAIRE_RESEARCH_DIR:-./progress}       -> /app/progress
+${OBSERVAIRE_ANNOTATIONS_DIR:-./annotations} -> /app/annotations
+${OBSERVAIRE_MANUSCRIPTS_DIR:-./manuscripts} -> /app/manuscripts
+```
+
+`.research-observer/` remains on the existing `observaire-state` named volume because it contains transient integration/build state.
+
+`npm run observaire:start` and `npm run observaire:start:build` run `npm run observaire:prepare` first. The preflight creates the three host directories before Compose starts so Docker does not implicitly create missing bind directories with surprising ownership.
+
+Do not store the only copy of annotation/manuscript source in a container layer or under `public/_research/`.
+
 ## Integration path with the research graph
 
 The next layer should connect these primitives rather than add parallel systems:
@@ -115,5 +145,28 @@ High-value next steps after this foundation:
 - explicit CPU/memory/process isolation for untrusted shared workspaces
 - generated-PDF annotation mapping back to TeX ranges through SyncTeX
 - export/import of annotations using interoperable PDF/XFDF or W3C-inspired representations
+
+## Verification contract
+
+Automated tests in this branch cover the filesystem data model: annotation creation/stale revision/Hide/Restore, manuscript source stale-save behavior, IDE state, Hide/Restore, and separation from the Markdown compiler.
+
+Before merge/release, a checkout with Node and the TeX toolchain must also run:
+
+```bash
+npm run check
+npm run check:full
+```
+
+Browser/toolchain verification should explicitly exercise:
+
+- PDF text selection → highlight/comment → reload → anchor persists;
+- hidden annotation → Show hidden → Restore;
+- create/save/hide/restore `.tex`/`.bib` files;
+- successful pdfLaTeX, XeLaTeX, and LuaLaTeX smoke builds where supported;
+- failed build diagnostics jump to the correct source line;
+- forward and reverse SyncTeX;
+- missing-toolchain graceful degradation;
+- tablet/mobile file rail and preview recovery;
+- Compose recreation preserves `progress/`, `annotations/`, and `manuscripts/`.
 
 The architectural rule is that research knowledge remains structured and portable: PDF pixels, editor widgets, and compiler outputs are views over durable project objects, not the objects themselves.
