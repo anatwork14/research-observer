@@ -1,0 +1,229 @@
+.launcher {
+  position: fixed;
+  z-index: 87;
+  right: 14.4rem;
+  bottom: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.58rem 0.78rem;
+  background: color-mix(in srgb, var(--panel) 96%, transparent);
+  color: var(--text);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 18%);
+  cursor: pointer;
+  backdrop-filter: blur(16px);
+}
+
+.drawer {
+  position: fixed;
+  z-index: 94;
+  top: 5.1rem;
+  right: 1rem;
+  bottom: 1rem;
+  width: min(460px, calc(100vw - 2rem));
+  display: grid;
+  grid-template-rows: auto auto auto auto auto auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--panel) 98%, transparent);
+  box-shadow: 0 20px 64px rgb(0 0 0 / 26%);
+  backdrop-filter: blur(22px);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.8rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.header strong,
+.header small,
+.modes strong,
+.modes small,
+.context strong,
+.context small {
+  display: block;
+}
+
+.header small,
+.modes small,
+.context,
+.context small,
+.answer p,
+.footer {
+  color: var(--muted);
+}
+
+.header button,
+.modes button,
+.quickPrompts button,
+.composer button,
+.answer button,
+.composer textarea {
+  font: inherit;
+}
+
+.header button,
+.quickPrompts button,
+.composer button,
+.answer button {
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--panel-strong, var(--panel));
+  color: var(--text);
+  cursor: pointer;
+}
+
+.header button {
+  width: 2rem;
+  height: 2rem;
+}
+
+.modes {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  border-bottom: 1px solid var(--border);
+}
+
+.modes button {
+  min-height: 3.2rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.modes button[data-active="true"] {
+  border-bottom-color: var(--accent);
+  color: var(--text);
+}
+
+.context {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.72rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.82rem;
+}
+
+.notice,
+.error {
+  margin: 0;
+  padding: 0.58rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.82rem;
+}
+
+.notice {
+  color: var(--muted);
+}
+
+.error {
+  color: #c94b55;
+}
+
+.quickPrompts {
+  display: grid;
+  gap: 0.42rem;
+  padding: 0.72rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.quickPrompts button {
+  padding: 0.52rem 0.6rem;
+  text-align: left;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.composer {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.72rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.composer textarea {
+  width: 100%;
+  min-height: 92px;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.62rem 0.68rem;
+  background: var(--surface, var(--panel));
+  color: var(--text);
+}
+
+.composer button,
+.answer button {
+  justify-self: start;
+  padding: 0.48rem 0.68rem;
+}
+
+.composer .primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-contrast, #111);
+}
+
+.composer button:disabled,
+.quickPrompts button:disabled,
+.modes button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.answer {
+  min-height: 0;
+  overflow: auto;
+  padding: 0.8rem 0.9rem;
+}
+
+.answer pre {
+  margin: 0 0 0.65rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font: inherit;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.answer p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.55rem 0.9rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.72rem;
+}
+
+@media (max-width: 760px) {
+  .launcher {
+    right: auto;
+    left: 6.6rem;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
+  }
+
+  .drawer {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    max-height: 82vh;
+    border-radius: 18px 18px 0 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .footer {
+    flex-direction: column;
+  }
+}
