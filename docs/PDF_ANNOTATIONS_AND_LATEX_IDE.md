@@ -45,9 +45,34 @@ A normal delete action never destroys annotation data. It sets `deletedAt`. The 
 
 This same UX principle is used for manuscript files: the IDE stores hidden paths in `.observaire-ide.json`, leaving the actual source file intact.
 
+### Annotation editing
+
+The PDF annotation drawer supports in-place changes to semantic type, comment, tags, and display color. These edits deliberately preserve the source anchor: page, exact quote context, and normalized rectangles are not rewritten when interpretation metadata changes.
+
+If an annotation was already promoted to durable evidence, later annotation edits do not silently rewrite that evidence note. Promotion creates a reviewable research snapshot; annotation editing remains a reading-layer operation.
+
 ### Research semantics boundary
 
-Annotation labels are reading/authoring metadata, not automatic scientific graph truth. Creating an annotation of type `evidence`, `claim`, or `limitation` must not silently create a durable Markdown evidence object or a `supports`, `contradicts`, or `answers` relationship. Promotion into durable research evidence should remain an explicit reviewed action.
+Annotation labels are reading/authoring metadata, not automatic scientific graph truth. Creating an annotation of type `evidence`, `claim`, or `limitation` does not silently create a durable Markdown evidence object or a `supports`, `contradicts`, or `answers` relationship.
+
+Promotion into durable research evidence is explicit. It also remains neutral: the promotion operation never guesses a semantic relationship from the annotation type.
+
+### Annotation → evidence promotion
+
+A saved visible annotation with a sufficiently long exact text excerpt can be promoted through the annotation API/UI.
+
+Promotion:
+
+1. verifies the annotation revision and visibility;
+2. checks a freshly compiled research workspace for an existing promotion;
+3. reuses the canonical `createEvidenceNote` writer;
+4. stores the PDF path, page, exact excerpt, annotation comment, type, and tags in the resulting evidence note;
+5. records a human-readable `Observaire source annotation` marker containing the stable annotation ID;
+6. re-lists the compiled workspace so the annotation UI can expose the evidence slug/title/filename.
+
+The annotation ID acts as the bridge back to the richer sidecar anchor, including normalized rectangles and quote prefix/suffix context. Repeated promotion calls are idempotent: if the existing evidence note still carries the source-annotation marker, the existing evidence object is returned instead of creating a duplicate.
+
+Hiding an annotation does not delete previously promoted evidence. Annotation visibility and research evidence lifecycle are separate decisions.
 
 ## LaTeX IDE model
 
@@ -72,6 +97,19 @@ The local compiler provider uses `latexmk` because it handles repeated TeX passe
 7. copy only successful PDF/SyncTeX preview artifacts into `public/_research/latex/<project>/<build-id>/`
 
 Production compilation remains opt-in with `RESEARCH_OBSERVER_LATEX=1`; normal research-file writes retain the existing `RESEARCH_OBSERVER_WRITES=1` production opt-in.
+
+### Build retention
+
+Generated LaTeX builds are intentionally bounded. After a browser compile, `lib/research/latex-retention.mjs` prunes older build IDs from both:
+
+```text
+.research-observer/latex-builds/<project>/
+public/_research/latex/<project>/
+```
+
+The default is 12 build IDs per project. `OBSERVAIRE_LATEX_BUILD_RETENTION` can change this and is clamped to 2–100. Cleanup only affects rebuildable build/preview directories. Manuscript source under `manuscripts/` is never eligible for retention cleanup.
+
+Cleanup failure is surfaced as a warning but does not turn a valid compiled PDF into a failed build.
 
 ### Source ↔ PDF navigation
 
@@ -119,10 +157,10 @@ Do not store the only copy of annotation/manuscript source in a container layer 
 
 ## Integration path with the research graph
 
-The next layer should connect these primitives rather than add parallel systems:
+These primitives should continue to connect through canonical objects rather than parallel systems:
 
-1. **Annotation → evidence**: promote a semantic PDF annotation into an existing durable `type: evidence` note while retaining the annotation ID and exact page anchor.
-2. **Evidence → manuscript citation**: from the IDE, search project evidence/papers, insert a citation key, and update a selected `.bib` file.
+1. **Annotation → evidence — implemented foundation**: explicit idempotent promotion creates the normal durable `type: evidence` note and retains the annotation ID/PDF/page/excerpt provenance bridge.
+2. **Evidence → manuscript citation — next target**: from the IDE, search project evidence/papers, insert a citation key, and update a selected `.bib` file.
 3. **Manuscript citation → paper**: clicking a citation in source opens the corresponding local paper/evidence record.
 4. **Compiled manuscript annotation → source**: annotate the generated PDF, then use SyncTeX to associate the comment with the originating TeX line/range.
 5. **Codex context**: extend the existing Codex panel context with current manuscript file, selection, build diagnostics, related annotations, and cited evidence. Codex changes should continue to use review/apply rather than silently writing source.
@@ -133,10 +171,10 @@ The next layer should connect these primitives rather than add parallel systems:
 
 High-value next steps after this foundation:
 
-- annotation editing plus threaded replies/@mentions
+- threaded annotation replies/@mentions
 - area/figure/table annotations for non-text regions and scanned papers
 - document hashing and PDF-version re-anchoring with confidence scores
-- promote/demote annotation ↔ evidence with explicit provenance
+- optional first-class compiler schema field for annotation provenance after an intentional source-schema version update
 - citation-key management and BibTeX import/deduplication
 - CodeMirror 6 editor adapter with a mobile-safe configuration
 - TexLab/LSP process adapter for diagnostics, completion, hover, references, and document symbols
@@ -148,7 +186,12 @@ High-value next steps after this foundation:
 
 ## Verification contract
 
-Automated tests in this branch cover the filesystem data model: annotation creation/stale revision/Hide/Restore, manuscript source stale-save behavior, IDE state, Hide/Restore, and separation from the Markdown compiler.
+Automated tests in this branch cover the filesystem/data-model layer for:
+
+- annotation creation, stale revision rejection, metadata editing, Hide/Restore;
+- annotation → evidence promotion, provenance discovery, and repeated-promotion idempotency;
+- manuscript source stale-save behavior, IDE state, Hide/Restore, and separation from the Markdown compiler;
+- LaTeX build-retention clamping and transient/public pruning behavior.
 
 Before merge/release, a checkout with Node and the TeX toolchain must also run:
 
@@ -160,13 +203,17 @@ npm run check:full
 Browser/toolchain verification should explicitly exercise:
 
 - PDF text selection → highlight/comment → reload → anchor persists;
+- annotation edit → reload → anchor remains unchanged;
+- Promote to evidence → Open evidence → reload → promotion state remains linked;
+- repeated/concurrent promotion attempts do not duplicate evidence;
 - hidden annotation → Show hidden → Restore;
 - create/save/hide/restore `.tex`/`.bib` files;
 - successful pdfLaTeX, XeLaTeX, and LuaLaTeX smoke builds where supported;
 - failed build diagnostics jump to the correct source line;
 - forward and reverse SyncTeX;
+- repeated builds prune old transient/public build directories without losing the latest preview;
 - missing-toolchain graceful degradation;
-- tablet/mobile file rail and preview recovery;
+- tablet/mobile file rail, annotation editor, and preview recovery;
 - Compose recreation preserves `progress/`, `annotations/`, and `manuscripts/`.
 
 The architectural rule is that research knowledge remains structured and portable: PDF pixels, editor widgets, and compiler outputs are views over durable project objects, not the objects themselves.
