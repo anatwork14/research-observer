@@ -14,6 +14,7 @@ export type PdfAnnotationType =
 
 export type PdfAnnotationAnchorKind = "text" | "region";
 export type PdfAnnotationAnchorStatus = "current" | "stale" | "legacy";
+export type PdfAnnotationSourceTextKind = "caption" | "ocr" | "transcription";
 export type PdfAnnotationRect = { x: number; y: number; width: number; height: number };
 export type PdfAnnotationQuote = { exact: string; prefix?: string; suffix?: string };
 export type PdfAnnotationEvidenceLink = { slug: string; title: string; filename: string };
@@ -33,6 +34,18 @@ export type PdfAnnotationAnchorHistory = {
   anchor: PdfAnnotationAnchor | null;
   recordedAt: string;
 };
+export type PdfAnnotationSourceText = {
+  kind: PdfAnnotationSourceTextKind;
+  text: string;
+  sha256: string;
+  verifiedAt: string;
+  anchorDocumentSha256: string;
+  anchorPage: number;
+  reviewRequired: boolean;
+  reviewReason?: string;
+  invalidatedAt?: string;
+};
+export type PdfAnnotationSourceTextHistory = PdfAnnotationSourceText & { supersededAt: string };
 export type PdfAnnotation = {
   id: string;
   type: PdfAnnotationType;
@@ -43,6 +56,8 @@ export type PdfAnnotation = {
   anchor: PdfAnnotationAnchor | null;
   anchorHistory: PdfAnnotationAnchorHistory[];
   anchorStatus?: PdfAnnotationAnchorStatus;
+  sourceText: PdfAnnotationSourceText | null;
+  sourceTextHistory: PdfAnnotationSourceTextHistory[];
   comment: string;
   tags: string[];
   color: string;
@@ -72,10 +87,12 @@ type PdfAnchorInput = {
   pageTextIndex?: number;
 };
 
+type PdfSourceTextInput = { kind: PdfAnnotationSourceTextKind; text: string } | null;
+
 export const pdfAnnotationTypes: PdfAnnotationType[];
 export function listPdfAnnotations(options: { rootDir?: string; paperPath: string; includeDeleted?: boolean }): Promise<PdfAnnotationState>;
-export function createPdfAnnotation(options: { rootDir?: string; paperPath: string; expectedRevision?: number; annotation: Partial<PdfAnnotation> & PdfAnchorInput }): Promise<PdfAnnotationState & { annotation: PdfAnnotation }>;
-export function updatePdfAnnotation(options: { rootDir?: string; paperPath: string; id: string; expectedRevision?: number; patch: Partial<Pick<PdfAnnotation, "type" | "comment" | "tags" | "color">> }): Promise<PdfAnnotationState & { annotation: PdfAnnotation }>;
+export function createPdfAnnotation(options: { rootDir?: string; paperPath: string; expectedRevision?: number; annotation: Partial<PdfAnnotation> & PdfAnchorInput & { sourceText?: PdfSourceTextInput } }): Promise<PdfAnnotationState & { annotation: PdfAnnotation }>;
+export function updatePdfAnnotation(options: { rootDir?: string; paperPath: string; id: string; expectedRevision?: number; patch: Partial<Pick<PdfAnnotation, "type" | "comment" | "tags" | "color">> & { sourceText?: PdfSourceTextInput } }): Promise<PdfAnnotationState & { annotation: PdfAnnotation }>;
 export function reanchorPdfAnnotation(options: { rootDir?: string; paperPath: string; id: string; expectedRevision?: number; anchor: PdfAnchorInput }): Promise<PdfAnnotationState & { annotation: PdfAnnotation }>;
 export function softDeletePdfAnnotation(options: { rootDir?: string; paperPath: string; id: string; expectedRevision?: number }): Promise<PdfAnnotationState & { annotation: PdfAnnotation }>;
 export function restorePdfAnnotation(options: { rootDir?: string; paperPath: string; id: string; expectedRevision?: number }): Promise<PdfAnnotationState & { annotation: PdfAnnotation }>;
