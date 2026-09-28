@@ -6,6 +6,7 @@ import styles from "./PdfAnnotationBridge.module.css";
 
 type AnnotationType = "highlight" | "comment" | "evidence" | "claim" | "question" | "limitation" | "method" | "definition" | "important";
 type Rect = { x: number; y: number; width: number; height: number };
+type EvidenceLink = { slug: string; title: string; filename: string };
 type Annotation = {
   id: string;
   type: AnnotationType;
@@ -18,6 +19,7 @@ type Annotation = {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+  evidence?: EvidenceLink | null;
 };
 type AnnotationState = {
   revision: number;
@@ -203,7 +205,7 @@ export function PdfAnnotationBridge({ paperPath }: { paperPath: string }) {
         throw new Error(payload.error || "Annotation update failed.");
       }
       setState((current) => ({ ...current, ...payload }));
-      return payload as AnnotationState;
+      return payload as AnnotationState & { evidence?: EvidenceLink; existing?: boolean };
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Annotation update failed.");
       return null;
@@ -234,6 +236,14 @@ export function PdfAnnotationBridge({ paperPath }: { paperPath: string }) {
     setTags("");
     window.getSelection()?.removeAllRanges();
   }, [capture, mutate]);
+
+  const promote = useCallback(async (annotation: Annotation) => {
+    const result = await mutate({ action: "promote", id: annotation.id });
+    if (!result?.evidence) return;
+    setMessage(result.existing
+      ? `This annotation is already linked to ${result.evidence.title}.`
+      : `Promoted to durable evidence: ${result.evidence.title}.`);
+  }, [mutate]);
 
   const annotationsOnPage = useMemo(
     () => state.annotations.filter((annotation) => annotation.page === pageNumber && !annotation.deletedAt),
@@ -336,7 +346,13 @@ export function PdfAnnotationBridge({ paperPath }: { paperPath: string }) {
                 {annotation.quote.exact && <blockquote className={styles.quote}>{annotation.quote.exact}</blockquote>}
                 {annotation.comment && <p className={styles.comment}>{annotation.comment}</p>}
                 {annotation.tags.length > 0 && <p className={styles.message}>{annotation.tags.map((tag) => `#${tag}`).join(" · ")}</p>}
+                {annotation.evidence && <p className={styles.promotionStatus}>Durable evidence created · {annotation.evidence.title}</p>}
                 <div className={styles.itemActions}>
+                  {annotation.evidence ? (
+                    <a className={styles.actionLink} href={`/progress/${encodeURIComponent(annotation.evidence.slug)}`}>Open evidence</a>
+                  ) : !annotation.deletedAt && annotation.quote.exact.trim().length >= 3 ? (
+                    <button type="button" className={styles.primary} disabled={saving} onClick={() => void promote(annotation)}>Promote to evidence</button>
+                  ) : null}
                   {annotation.deletedAt ? (
                     <button type="button" disabled={saving} onClick={() => void mutate({ action: "restore", id: annotation.id })}>Restore</button>
                   ) : (
