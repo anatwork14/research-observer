@@ -9,6 +9,7 @@ import {
   promotePdfAnnotationToEvidence,
   restorePdfAnnotation,
   softDeletePdfAnnotation,
+  updatePdfAnnotation,
 } from "../lib/research/pdf-annotations.mjs";
 
 async function fixture() {
@@ -95,6 +96,47 @@ test("annotation mutations reject stale revisions", async (t) => {
     }),
     (error) => error?.code === "ANNOTATION_STALE",
   );
+});
+
+test("annotation metadata edits preserve the original source anchor", async (t) => {
+  const root = await fixture();
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+
+  const created = await createPdfAnnotation({
+    rootDir: root,
+    paperPath: "papers/sample.pdf",
+    expectedRevision: 0,
+    annotation: {
+      type: "highlight",
+      page: 3,
+      quote: { exact: "Anchored source text", prefix: "before", suffix: "after" },
+      rects: [rect],
+      comment: "Initial note",
+      tags: ["draft"],
+      color: "#f4c95d",
+    },
+  });
+
+  const updated = await updatePdfAnnotation({
+    rootDir: root,
+    paperPath: "papers/sample.pdf",
+    id: created.annotation.id,
+    expectedRevision: 1,
+    patch: {
+      type: "question",
+      comment: "Does this generalize to the validation cohort?",
+      tags: ["follow-up", "validation"],
+      color: "#65a8ff",
+    },
+  });
+
+  assert.equal(updated.revision, 2);
+  assert.equal(updated.annotation.type, "question");
+  assert.equal(updated.annotation.comment, "Does this generalize to the validation cohort?");
+  assert.deepEqual(updated.annotation.tags, ["follow-up", "validation"]);
+  assert.deepEqual(updated.annotation.quote, created.annotation.quote);
+  assert.deepEqual(updated.annotation.rects, created.annotation.rects);
+  assert.equal(updated.annotation.page, created.annotation.page);
 });
 
 test("annotation promotion creates one durable evidence note and remains idempotent", async (t) => {
