@@ -33,6 +33,17 @@ test("existing BibTeX style is preserved and duplicate setup is not inserted", (
   assert.equal(repeated.mode, "bibtex-existing");
 });
 
+test("existing selected BibTeX library receives a style only when one is missing", () => {
+  const source = basic.replace("\\end{document}", "\\bibliography{references}\n\\end{document}");
+  const result = configureLatexBibliographySource(source, "references.bib");
+  assert.equal(result.mode, "bibtex-existing");
+  assert.equal(result.changed, true);
+  assert.match(result.content, /\\bibliographystyle\{plain\}\n\\bibliography\{references\}/);
+
+  const repeated = configureLatexBibliographySource(result.content, "references.bib");
+  assert.equal(repeated.changed, false);
+});
+
 test("biblatex setup adds selected resource and printbibliography without adding BibTeX commands", () => {
   const source = `\\documentclass{article}
 \\usepackage[backend=biber]{biblatex}
