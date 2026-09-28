@@ -1,0 +1,249 @@
+.launcher {
+  position: fixed;
+  z-index: 88;
+  right: 7.7rem;
+  bottom: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.58rem 0.78rem;
+  background: color-mix(in srgb, var(--panel) 96%, transparent);
+  color: var(--text);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 18%);
+  cursor: pointer;
+  backdrop-filter: blur(16px);
+}
+
+.launcher span {
+  min-width: 1.35rem;
+  height: 1.35rem;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, #c94b55 16%, transparent);
+  color: #c94b55;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.drawer {
+  position: fixed;
+  z-index: 92;
+  top: 5.1rem;
+  right: 1rem;
+  bottom: 1rem;
+  width: min(430px, calc(100vw - 2rem));
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--panel) 98%, transparent);
+  box-shadow: 0 20px 64px rgb(0 0 0 / 26%);
+  backdrop-filter: blur(22px);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.8rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.header strong,
+.header small {
+  display: block;
+}
+
+.header small,
+.footer,
+.command small,
+.outlineItem small,
+.problem small,
+.empty {
+  color: var(--muted);
+}
+
+.header button,
+.tabs button,
+.command,
+.outlineItem,
+.problem,
+.search {
+  font: inherit;
+}
+
+.header button,
+.tabs button,
+.command,
+.outlineItem,
+.problem {
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.header button {
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-bottom: 1px solid var(--border);
+}
+
+.tabs button {
+  min-height: 2.7rem;
+  padding: 0.55rem 0.45rem;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+}
+
+.tabs button[data-active="true"] {
+  border-bottom-color: var(--accent);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.error {
+  margin: 0;
+  padding: 0.55rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+  color: #c94b55;
+  font-size: 0.82rem;
+}
+
+.body {
+  min-height: 0;
+  overflow: auto;
+  padding: 0.65rem;
+}
+
+.search {
+  width: 100%;
+  margin-bottom: 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.58rem 0.65rem;
+  background: var(--surface, var(--panel));
+  color: var(--text);
+}
+
+.list {
+  display: grid;
+  gap: 0.36rem;
+}
+
+.command,
+.outlineItem,
+.problem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  padding: 0.66rem 0.72rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-align: left;
+  background: color-mix(in srgb, var(--panel-strong, var(--panel)) 82%, transparent);
+}
+
+.command:hover,
+.outlineItem:hover,
+.problem:hover {
+  border-color: var(--accent);
+}
+
+.command span,
+.outlineItem span:last-child,
+.problem span {
+  min-width: 0;
+}
+
+.command strong,
+.command small,
+.outlineItem strong,
+.outlineItem small,
+.problem strong,
+.problem small {
+  display: block;
+}
+
+.command kbd {
+  flex: 0 0 auto;
+  padding: 0.2rem 0.38rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-family: inherit;
+}
+
+.outlineItem {
+  justify-content: flex-start;
+}
+
+.outlineItem > span:first-child {
+  flex: 0 0 1.1rem;
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.problem[data-severity="error"] {
+  border-left: 3px solid #c94b55;
+}
+
+.problem[data-severity="warning"] {
+  border-left: 3px solid #d99a34;
+}
+
+.problem[data-severity="info"] {
+  border-left: 3px solid var(--accent);
+}
+
+.empty {
+  margin: 0;
+  padding: 0.95rem;
+  line-height: 1.55;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.55rem 0.9rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.72rem;
+}
+
+@media (max-width: 760px) {
+  .launcher {
+    right: auto;
+    left: 1rem;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
+  }
+
+  .drawer {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    max-height: 78vh;
+    border-radius: 18px 18px 0 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .footer {
+    flex-direction: column;
+  }
+}
