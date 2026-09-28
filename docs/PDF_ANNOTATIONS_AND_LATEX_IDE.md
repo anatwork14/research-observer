@@ -1,6 +1,6 @@
 # PDF annotations + LaTeX IDE architecture
 
-Research Observer now treats papers, annotations, manuscript source, compiled PDFs, research notes, and evidence as parts of one project-scoped research workspace.
+Research Observer treats papers, annotations, manuscript source, compiled PDFs, research notes, evidence, citations, and read-only AI assistance as parts of one project-scoped research workspace.
 
 ## Storage boundaries
 
@@ -12,7 +12,7 @@ Three durable source domains are intentionally separate:
 
 Transient build/cache state remains under `.research-observer/`. Browser-consumable compiled PDF previews are generated under `public/_research/latex/` and are never authoritative source.
 
-The configured roots are intentionally explicit:
+The configured roots are explicit:
 
 ```json
 {
@@ -35,7 +35,7 @@ Annotations are structured records with stable IDs and include:
 - created/updated timestamps
 - `deletedAt` soft-delete marker
 
-Normalized rectangles make rendering independent of the current zoom level. Quote context gives us a second anchor for later re-anchoring when a PDF revision changes.
+Normalized rectangles make rendering independent of zoom. Quote context gives a second anchor for future document-version re-anchoring.
 
 Mutations use a sidecar revision number. Clients send the revision they observed; stale writes fail rather than overwriting another edit. Sidecars are written atomically behind a short-lived filesystem lock.
 
@@ -43,11 +43,11 @@ Mutations use a sidecar revision number. Clients send the revision they observed
 
 A normal delete action never destroys annotation data. It sets `deletedAt`. The default list hides those records, while `includeDeleted=1` exposes them for recovery. Restore clears `deletedAt`.
 
-This same UX principle is used for manuscript files: the IDE stores hidden paths in `.observaire-ide.json`, leaving the actual source file intact.
+The same UX principle is used for manuscript files: the IDE stores hidden paths in `.observaire-ide.json`, leaving the physical source intact.
 
 ### Annotation editing
 
-The PDF annotation drawer supports in-place changes to semantic type, comment, tags, and display color. These edits deliberately preserve the source anchor: page, exact quote context, and normalized rectangles are not rewritten when interpretation metadata changes.
+The annotation drawer supports in-place changes to semantic type, comment, tags, and display color while preserving the original page/quote/rectangle anchor.
 
 If an annotation was already promoted to durable evidence, later annotation edits do not silently rewrite that evidence note. Promotion creates a reviewable research snapshot; annotation editing remains a reading-layer operation.
 
@@ -55,93 +55,152 @@ If an annotation was already promoted to durable evidence, later annotation edit
 
 Annotation labels are reading/authoring metadata, not automatic scientific graph truth. Creating an annotation of type `evidence`, `claim`, or `limitation` does not silently create a durable Markdown evidence object or a `supports`, `contradicts`, or `answers` relationship.
 
-Promotion into durable research evidence is explicit. It also remains neutral: the promotion operation never guesses a semantic relationship from the annotation type.
-
 ### Annotation → evidence promotion
 
-A saved visible annotation with a sufficiently long exact text excerpt can be promoted through the annotation API/UI.
+A saved visible text annotation can be explicitly promoted.
 
 Promotion:
 
-1. verifies the annotation revision and visibility;
-2. checks a freshly compiled research workspace for an existing promotion;
+1. verifies revision and visibility;
+2. checks a freshly compiled workspace for an existing promotion;
 3. reuses the canonical `createEvidenceNote` writer;
-4. stores the PDF path, page, exact excerpt, annotation comment, type, and tags in the resulting evidence note;
-5. records a human-readable `Observaire source annotation` marker containing the stable annotation ID;
-6. re-lists the compiled workspace so the annotation UI can expose the evidence slug/title/filename.
+4. stores PDF path, page, exact excerpt, comment, annotation type, and tags;
+5. records the stable annotation ID as provenance;
+6. re-lists the research workspace so the annotation UI can expose the evidence slug/title/filename.
 
-The annotation ID acts as the bridge back to the richer sidecar anchor, including normalized rectangles and quote prefix/suffix context. Repeated promotion calls are idempotent: if the existing evidence note still carries the source-annotation marker, the existing evidence object is returned instead of creating a duplicate.
-
-Hiding an annotation does not delete previously promoted evidence. Annotation visibility and research evidence lifecycle are separate decisions.
+Repeated promotion is idempotent. Hiding the source annotation does not delete previously promoted evidence.
 
 ## LaTeX IDE model
 
 The `/ide` route shares the existing research project selector. Each project has one manuscript root and IDE state containing:
 
 - main TeX file
-- selected engine (`pdflatex`, `xelatex`, or `lualatex`)
+- selected engine (`pdflatex`, `xelatex`, `lualatex`)
 - soft-hidden files
 
-Browser source saves include the SHA-256 of the version originally opened. A save is rejected if the file changed externally after opening, matching the stale-write philosophy of Direct Edit.
+Browser saves include the SHA-256 of the version originally opened. A save is rejected if the file changed externally after opening.
 
 ### Compilation
 
-The local compiler provider uses `latexmk` because it handles repeated TeX passes and bibliography/index dependencies. Builds:
+The local provider uses `latexmk` to handle repeated TeX passes and bibliography/index dependencies. Builds:
 
-1. resolve a visible `.tex` main file
-2. run with a bounded process timeout and bounded captured logs
-3. keep unrestricted shell escape disabled
-4. enable SyncTeX
-5. direct generated files into `.research-observer/latex-builds/<project>/<build-id>/`
-6. parse file/line diagnostics from the compiler log
-7. copy only successful PDF/SyncTeX preview artifacts into `public/_research/latex/<project>/<build-id>/`
+1. resolve a visible `.tex` main file;
+2. run with bounded process timeout and captured logs;
+3. keep unrestricted shell escape disabled;
+4. enable SyncTeX;
+5. direct generated files into `.research-observer/latex-builds/<project>/<build-id>/`;
+6. parse file/line diagnostics;
+7. copy successful PDF/SyncTeX preview artifacts into `public/_research/latex/<project>/<build-id>/`.
 
-Production compilation remains opt-in with `RESEARCH_OBSERVER_LATEX=1`; normal research-file writes retain the existing `RESEARCH_OBSERVER_WRITES=1` production opt-in.
+Production compilation remains opt-in with `RESEARCH_OBSERVER_LATEX=1`.
 
 ### Build retention
 
-Generated LaTeX builds are intentionally bounded. After a browser compile, `lib/research/latex-retention.mjs` prunes older build IDs from both:
+Generated builds are bounded. After a browser compile, `lib/research/latex-retention.mjs` prunes older IDs from both:
 
 ```text
 .research-observer/latex-builds/<project>/
 public/_research/latex/<project>/
 ```
 
-The default is 12 build IDs per project. `OBSERVAIRE_LATEX_BUILD_RETENTION` can change this and is clamped to 2–100. Cleanup only affects rebuildable build/preview directories. Manuscript source under `manuscripts/` is never eligible for retention cleanup.
-
-Cleanup failure is surfaced as a warning but does not turn a valid compiled PDF into a failed build.
+The default is 12 builds per project. `OBSERVAIRE_LATEX_BUILD_RETENTION` is clamped to 2–100. Cleanup affects rebuildable output only, never manuscript source.
 
 ### Source ↔ PDF navigation
 
-Successful builds retain `.synctex.gz`. The workbench exposes both directions:
+Successful builds retain `.synctex.gz`. The workbench supports:
 
 - editor cursor → `synctex view` → PDF page/position
 - PDF double-click → `synctex edit` → source file/line
 
-This is the key connection that makes the PDF preview part of the IDE rather than a passive iframe.
+SyncTeX is the canonical source/PDF positioning contract.
 
-## Current workbench UX
+## Research citation bridge
 
-The initial workbench deliberately uses a dependency-free text editor surface so the feature does not introduce an unreviewed editor package or lockfile change. It already provides:
+The IDE now connects canonical research objects to manuscript bibliography source.
 
-- project-scoped file tree
-- source creation
-- soft hide/restore
-- stale-safe save
-- main-file and engine selection
-- keyboard save
-- line-number gutter
-- compile action
-- parsed diagnostics with source jumps
-- PDF preview through the same local PDF.js/React-PDF runtime used by the Papers reader
-- forward/reverse SyncTeX
-- responsive tablet/mobile panels
+### Citation candidates
 
-The editor surface is intentionally replaceable. A future CodeMirror 6 adapter can provide LaTeX/BibTeX highlighting, completions, folding, bracket/environment helpers, and an LSP bridge without changing the storage/build APIs. Monaco should not be the default foundation because mobile-browser support is a project requirement.
+`lib/research/latex-citations.mjs` searches only the selected project’s indexed `literature` and `evidence` records.
+
+Citation metadata is conservative:
+
+- missing authors/year/source identity are never guessed;
+- incomplete records remain visible but non-insertable;
+- evidence may inherit bibliography metadata from the most complete literature record resolving to the same local PDF;
+- reviewed Consensus evidence uses metadata already persisted into the research object.
+
+### BibTeX identity and writes
+
+The service can create `references.bib` or use an existing visible project `.bib` file. Writes reuse manuscript path guards and SHA-256 stale-write protection.
+
+Deduplication priority is:
+
+1. DOI
+2. source URL
+3. local PDF path
+4. title + year
+
+Existing records reuse their existing citation key. New records use deterministic author/year/title keys with collision suffixes. Generated records currently use conservative `@misc` rather than guessing publication classes not represented in verified metadata.
+
+### Citation UX
+
+The responsive citation drawer provides:
+
+- project search;
+- `.bib` selection/creation;
+- inherited/missing metadata indicators;
+- links to the research note, local PDF, and source URL;
+- **Insert citation** → `\cite{key}` at the active TeX cursor.
+
+Insertion validates that a `.tex` target is actually open before server-side `.bib` mutation.
+
+## Bibliography setup
+
+`lib/research/latex-bibliography.mjs` provides an explicit browser-safe source transform.
+
+For classic BibTeX it preserves existing style choices, connects the selected library, adds `plain` only when a basic style is missing, and refuses to silently replace a different existing bibliography library.
+
+For `biblatex` it uses `\addbibresource` and `\printbibliography` without introducing classic BibTeX commands.
+
+Cursor/selection offsets are mapped through inserted configuration text so editor position remains stable.
+
+## Editor assistance and future CodeMirror adapter
+
+The initial workbench remains dependency-free/touch-compatible, but now has a replaceable editor-assistance layer in `lib/research/latex-editor-tools.mjs` and `LatexEditorAssistant`.
+
+It provides:
+
+- `Ctrl/⌘ + Shift + P` command palette;
+- `Ctrl/⌘ + /` line-comment toggle;
+- bold/italic/emphasis wrappers;
+- section/subsection insertion;
+- equation/align/itemize/enumerate/figure/table snippets;
+- current-file outline from sections and labels;
+- source navigation from outline items;
+- advisory structural diagnostics for environments, braces, duplicate labels, and document boundaries.
+
+These client diagnostics never determine build success; `latexmk` remains authoritative.
+
+A CodeMirror adapter remains desirable for syntax highlighting, folding, search, richer completion, and language integration. The repository uses a committed npm lockfile, so CodeMirror must be introduced only when `package.json` and `package-lock.json` can be updated and verified together. The current textarea assistant remains the mobile/safe fallback.
+
+## Codex manuscript context
+
+The IDE now has a dedicated manuscript Codex surface for **Ask** and **Draft** only.
+
+It may supply:
+
+- selected project ID;
+- active `.tex` filename;
+- current unsaved selection or source snapshot;
+- latest compiler diagnostics.
+
+All supplied manuscript source and compiler messages are explicitly marked as untrusted source material. Codex Ask/Draft runs read-only and cannot mutate files.
+
+Existing Codex **Act** remains restricted to reviewed `progress/` changes. It is deliberately not extended to manuscripts by weakening path restrictions. A future manuscript Act flow must have its own stale-safe review/apply contract using manuscript hashes, project path guards, visible diffs, and explicit user approval.
 
 ## Docker persistence
 
-The Compose profile must preserve every durable source domain, not only Markdown research:
+Compose preserves every durable source domain:
 
 ```text
 ${OBSERVAIRE_RESEARCH_DIR:-./progress}       -> /app/progress
@@ -149,71 +208,63 @@ ${OBSERVAIRE_ANNOTATIONS_DIR:-./annotations} -> /app/annotations
 ${OBSERVAIRE_MANUSCRIPTS_DIR:-./manuscripts} -> /app/manuscripts
 ```
 
-`.research-observer/` remains on the existing `observaire-state` named volume because it contains transient integration/build state.
+`.research-observer/` remains on the existing named state volume because it contains transient integration/build state.
 
-`npm run observaire:start` and `npm run observaire:start:build` run `npm run observaire:prepare` first. The preflight creates the three host directories before Compose starts so Docker does not implicitly create missing bind directories with surprising ownership.
-
-Do not store the only copy of annotation/manuscript source in a container layer or under `public/_research/`.
+`npm run observaire:start` and `npm run observaire:start:build` run the host-directory preflight before Compose starts.
 
 ## Integration path with the research graph
 
-These primitives should continue to connect through canonical objects rather than parallel systems:
+The workspace should continue connecting canonical objects rather than creating parallel stores:
 
-1. **Annotation → evidence — implemented foundation**: explicit idempotent promotion creates the normal durable `type: evidence` note and retains the annotation ID/PDF/page/excerpt provenance bridge.
-2. **Evidence → manuscript citation — next target**: from the IDE, search project evidence/papers, insert a citation key, and update a selected `.bib` file.
-3. **Manuscript citation → paper**: clicking a citation in source opens the corresponding local paper/evidence record.
-4. **Compiled manuscript annotation → source**: annotate the generated PDF, then use SyncTeX to associate the comment with the originating TeX line/range.
-5. **Codex context**: extend the existing Codex panel context with current manuscript file, selection, build diagnostics, related annotations, and cited evidence. Codex changes should continue to use review/apply rather than silently writing source.
-6. **Consensus → manuscript**: reviewed Consensus evidence can create/resolve a citation record, then be inserted into the manuscript with provenance intact.
-7. **Graph/timeline**: expose manuscript versions, annotations, and evidence links as graph/timeline events without turning generated build artifacts into durable graph nodes.
+1. **Annotation → evidence — implemented**: explicit idempotent promotion creates the normal durable evidence note.
+2. **Evidence → manuscript citation — implemented**: verified research metadata can create/reuse a `.bib` record and insert `\cite{...}`.
+3. **Bibliography → TeX — implemented**: the selected library can be explicitly configured in classic BibTeX or `biblatex` source.
+4. **Manuscript Codex Ask/Draft — implemented**: unsaved source and compiler diagnostics can be passed read-only.
+5. **Manuscript citation → paper — partial**: citation discovery links to source note/PDF; direct click-navigation from parsed source tokens remains future work.
+6. **Compiled manuscript annotation → source — future**: annotate generated PDF and associate comments with TeX positions through SyncTeX.
+7. **Codex manuscript Act — future**: separate stale-safe review/apply path; never bypass manuscript save guards.
+8. **Graph/timeline — future**: expose manuscript/evidence/citation events without turning generated build artifacts into durable graph nodes.
 
 ## Robustness roadmap
 
-High-value next steps after this foundation:
+High-value next steps:
 
-- threaded annotation replies/@mentions
-- area/figure/table annotations for non-text regions and scanned papers
-- document hashing and PDF-version re-anchoring with confidence scores
-- optional first-class compiler schema field for annotation provenance after an intentional source-schema version update
-- citation-key management and BibTeX import/deduplication
-- CodeMirror 6 editor adapter with a mobile-safe configuration
-- TexLab/LSP process adapter for diagnostics, completion, hover, references, and document symbols
-- configurable compile providers: local `latexmk`, isolated container worker, and an optional Tectonic provider
-- build cancellation and queued per-project builds for multi-user deployments
-- explicit CPU/memory/process isolation for untrusted shared workspaces
-- generated-PDF annotation mapping back to TeX ranges through SyncTeX
-- export/import of annotations using interoperable PDF/XFDF or W3C-inspired representations
+- area/figure/table annotations for non-text/scanned PDFs;
+- document hashing and PDF-version re-anchoring with confidence scores;
+- threaded annotation replies/@mentions;
+- legitimate lockfile-safe CodeMirror 6 integration;
+- optional TexLab/LSP process adapter for symbols/hover/references/completion;
+- direct citation-token navigation from source;
+- generated-PDF annotation mapping back to TeX through SyncTeX;
+- manuscript Act review/apply using stale hashes and project-scoped diffs;
+- configurable compile providers and stronger process isolation for shared/untrusted deployments;
+- annotation export/import using PDF/XFDF or W3C-inspired mappings after internal schema stabilization.
 
 ## Verification contract
 
-Automated tests in this branch cover the filesystem/data-model layer for:
+Automated tests in the branch cover the data-model/pure-transform layer for annotations, promotion, manuscript source state, build retention, citations, bibliography setup, and editor structure/transforms.
 
-- annotation creation, stale revision rejection, metadata editing, Hide/Restore;
-- annotation → evidence promotion, provenance discovery, and repeated-promotion idempotency;
-- manuscript source stale-save behavior, IDE state, Hide/Restore, and separation from the Markdown compiler;
-- LaTeX build-retention clamping and transient/public pruning behavior.
-
-Before merge/release, a checkout with Node and the TeX toolchain must also run:
+Before merge/release, a checkout with Node and TeX must run:
 
 ```bash
 npm run check
 npm run check:full
 ```
 
-Browser/toolchain verification should explicitly exercise:
+Browser/toolchain verification should exercise:
 
-- PDF text selection → highlight/comment → reload → anchor persists;
-- annotation edit → reload → anchor remains unchanged;
-- Promote to evidence → Open evidence → reload → promotion state remains linked;
-- repeated/concurrent promotion attempts do not duplicate evidence;
-- hidden annotation → Show hidden → Restore;
-- create/save/hide/restore `.tex`/`.bib` files;
-- successful pdfLaTeX, XeLaTeX, and LuaLaTeX smoke builds where supported;
-- failed build diagnostics jump to the correct source line;
-- forward and reverse SyncTeX;
-- repeated builds prune old transient/public build directories without losing the latest preview;
+- PDF annotation create/edit/Hide/Restore across reload/page/zoom;
+- promotion retry/idempotency;
+- manuscript create/save/hide/restore;
+- editor command palette/comment toggle/outline/problems;
+- citation search/dedup/insertion;
+- classic BibTeX and `biblatex` real builds;
+- Codex manuscript Ask/Draft context and read-only behavior;
+- pdfLaTeX/XeLaTeX/LuaLaTeX smoke builds;
+- diagnostics → source jumps;
+- forward/reverse SyncTeX;
+- repeated-build pruning;
 - missing-toolchain graceful degradation;
-- tablet/mobile file rail, annotation editor, and preview recovery;
-- Compose recreation preserves `progress/`, `annotations/`, and `manuscripts/`.
+- tablet/mobile recovery and Compose persistence.
 
-The architectural rule is that research knowledge remains structured and portable: PDF pixels, editor widgets, and compiler outputs are views over durable project objects, not the objects themselves.
+The architectural rule remains: PDF pixels, editor widgets, AI responses, and compiler outputs are views or derived artifacts around durable structured project objects, not replacements for those objects.
