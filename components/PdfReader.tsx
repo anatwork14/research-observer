@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { PdfAnnotationBridge } from "@/components/PdfAnnotationBridge";
+import { PdfReanchorSuggestions } from "@/components/PdfReanchorSuggestions";
 
 const PdfReaderInner = dynamic(() => import("@/components/PdfReaderInner"), {
   ssr: false,
@@ -23,6 +24,7 @@ export function PdfReader(props: {
     <>
       <PdfReaderInner {...props} />
       <PdfAnnotationBridge paperPath={props.path} />
+      <PdfReanchorSuggestions paperPath={props.path} src={props.src} />
     </>
   );
 }
