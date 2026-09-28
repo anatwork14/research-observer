@@ -147,7 +147,7 @@ test("annotation metadata edits preserve the original source anchor", async (t) 
   assert.equal(updated.annotation.page, created.annotation.page);
 });
 
-test("region annotations support figure/table areas without fabricated quote text", async (t) => {
+test("region annotations do not fabricate source text and require reviewed provenance before promotion", async (t) => {
   const root = await fixture();
   t.after(() => fs.rm(root, { recursive: true, force: true }));
 
@@ -168,6 +168,7 @@ test("region annotations support figure/table areas without fabricated quote tex
 
   assert.equal(created.annotation.anchorKind, "region");
   assert.equal(created.annotation.quote.exact, "");
+  assert.equal(created.annotation.sourceText, null);
   assert.equal(created.annotation.anchorStatus, "current");
   assert.equal(created.annotation.type, "figure");
 
@@ -178,8 +179,48 @@ test("region annotations support figure/table areas without fabricated quote tex
       id: created.annotation.id,
       expectedRevision: 1,
     }),
-    /quoted\/OCR text/,
+    /reviewed caption\/OCR\/transcription text/,
   );
+});
+
+test("reviewed region caption can become evidence without using the comment as the quote", async (t) => {
+  const root = await fixture();
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+
+  const caption = "Figure 3. Treatment improved response accuracy across all measured sessions.";
+  const created = await createPdfAnnotation({
+    rootDir: root,
+    paperPath: "papers/sample.pdf",
+    expectedRevision: 0,
+    annotation: {
+      type: "figure",
+      page: 5,
+      anchorKind: "region",
+      quote: { exact: "" },
+      rects: [{ x: 0.16, y: 0.22, width: 0.64, height: 0.42 }],
+      sourceText: { kind: "caption", text: caption },
+      comment: "My interpretation: compare the interaction term with the replication paper.",
+      tags: ["figure", "interaction"],
+    },
+  });
+
+  assert.equal(created.annotation.sourceText.kind, "caption");
+  assert.equal(created.annotation.sourceText.text, caption);
+  assert.equal(created.annotation.sourceText.reviewRequired, false);
+  assert.match(created.annotation.sourceText.sha256, /^[0-9a-f]{64}$/);
+
+  const promoted = await promotePdfAnnotationToEvidence({
+    rootDir: root,
+    paperPath: "papers/sample.pdf",
+    id: created.annotation.id,
+    expectedRevision: 1,
+  });
+  const notePath = path.join(root, "progress", ...promoted.evidence.filename.split("/"));
+  const note = await fs.readFile(notePath, "utf8");
+  assert.match(note, /Treatment improved response accuracy across all measured sessions/);
+  assert.doesNotMatch(note, /Evidence:\s*My interpretation:/);
+  assert.match(note, /Region source text kind:\*\* caption/);
+  assert.match(note, /Region source text SHA-256:\*\* [0-9a-f]{64}/);
 });
 
 test("changed PDFs mark anchors stale and explicit reanchoring preserves anchor history", async (t) => {
@@ -197,18 +238,28 @@ test("changed PDFs mark anchors stale and explicit reanchoring preserves anchor 
       anchorKind: "region",
       quote: { exact: "" },
       rects: [{ x: 0.12, y: 0.3, width: 0.7, height: 0.24 }],
+      sourceText: { kind: "transcription", text: "Table 2. Primary endpoint was 18.4 ± 2.1 in the intervention arm." },
       comment: "Original table position.",
     },
   });
   const originalHash = created.annotation.anchor.documentSha256;
 
-  await new Promise((resolve) => setTimeout(resolve, 5));
-  await fs.writeFile(pdf, "%PDF-1.4\n% revised document bytes\n%%EOF\n", "utf8");
+  await fs.writeFile(pdf, "%PDF-1.4\n% revised document bytes and page layout\n%%EOF\n", "utf8");
 
   const stale = await listPdfAnnotations({ rootDir: root, paperPath: "papers/sample.pdf" });
   assert.equal(stale.annotations[0].anchorStatus, "stale");
   assert.equal(stale.document.staleCount, 1);
   assert.notEqual(stale.document.sha256, originalHash);
+
+  await assert.rejects(
+    promotePdfAnnotationToEvidence({
+      rootDir: root,
+      paperPath: "papers/sample.pdf",
+      id: created.annotation.id,
+      expectedRevision: 1,
+    }),
+    /Re-anchor this stale annotation/,
+  );
 
   const moved = await reanchorPdfAnnotation({
     rootDir: root,
@@ -230,9 +281,44 @@ test("changed PDFs mark anchors stale and explicit reanchoring preserves anchor 
   assert.equal(moved.annotation.anchorHistory[0].page, 2);
   assert.equal(moved.annotation.anchorHistory[0].anchor.documentSha256, originalHash);
   assert.equal(moved.annotation.anchor.documentSha256, stale.document.sha256);
+  assert.equal(moved.annotation.sourceText.reviewRequired, true);
+  assert.equal(moved.annotation.sourceTextHistory.length, 1);
+
+  await assert.rejects(
+    promotePdfAnnotationToEvidence({
+      rootDir: root,
+      paperPath: "papers/sample.pdf",
+      id: created.annotation.id,
+      expectedRevision: 2,
+    }),
+    /reviewed caption\/OCR\/transcription text/,
+  );
+
+  const reviewed = await updatePdfAnnotation({
+    rootDir: root,
+    paperPath: "papers/sample.pdf",
+    id: created.annotation.id,
+    expectedRevision: 2,
+    patch: {
+      sourceText: { kind: "transcription", text: moved.annotation.sourceText.text },
+    },
+  });
+  assert.equal(reviewed.revision, 3);
+  assert.equal(reviewed.annotation.sourceText.reviewRequired, false);
+  assert.equal(reviewed.annotation.sourceText.anchorPage, 3);
+  assert.equal(reviewed.annotation.sourceText.anchorDocumentSha256, stale.document.sha256);
+  assert.equal(reviewed.annotation.sourceTextHistory.length, 2);
+
+  const promoted = await promotePdfAnnotationToEvidence({
+    rootDir: root,
+    paperPath: "papers/sample.pdf",
+    id: created.annotation.id,
+    expectedRevision: 3,
+  });
+  assert.equal(promoted.existing, false);
 });
 
-test("schema-v1 sidecars remain readable as legacy anchors", async (t) => {
+test("schema-v1 sidecars remain readable as legacy anchors and cannot create new evidence until reanchored", async (t) => {
   const root = await fixture();
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const sidecarDir = path.join(root, "annotations", "default");
@@ -264,6 +350,16 @@ test("schema-v1 sidecars remain readable as legacy anchors", async (t) => {
   assert.equal(listed.annotations[0].anchorKind, "text");
   assert.equal(listed.annotations[0].anchorStatus, "legacy");
   assert.equal(listed.document.legacyCount, 1);
+
+  await assert.rejects(
+    promotePdfAnnotationToEvidence({
+      rootDir: root,
+      paperPath: "papers/sample.pdf",
+      id: "ann-legacy",
+      expectedRevision: 4,
+    }),
+    /Re-anchor this legacy annotation/,
+  );
 });
 
 test("annotation promotion creates one durable evidence note and remains idempotent", async (t) => {
