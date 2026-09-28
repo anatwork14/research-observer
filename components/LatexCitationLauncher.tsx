@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { configureLatexBibliographySource, mapLatexOffsetThroughInsertions } from "@/lib/research/latex-bibliography.mjs";
 import { LatexCitationDrawer } from "./LatexCitationDrawer";
 import styles from "./LatexCitationLauncher.module.css";
 
@@ -40,6 +41,23 @@ export function LatexCitationLauncher({ projectId }: { projectId: string }) {
     });
   };
 
+  const configureBibliography = (bibFile: string) => {
+    const editor = validateLatexTarget();
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    const result = configureLatexBibliographySource(editor.value, bibFile);
+    if (!result.changed) return result.message;
+
+    replaceTextareaValue(editor, result.content);
+    const mappedStart = mapLatexOffsetThroughInsertions(start, result.edits);
+    const mappedEnd = mapLatexOffsetThroughInsertions(end, result.edits);
+    requestAnimationFrame(() => {
+      editor.focus();
+      editor.setSelectionRange(mappedStart, mappedEnd);
+    });
+    return result.message;
+  };
+
   return (
     <>
       {!open && (
@@ -53,6 +71,7 @@ export function LatexCitationLauncher({ projectId }: { projectId: string }) {
         onClose={() => setOpen(false)}
         validateInsert={() => { validateLatexTarget(); }}
         onInsert={(key) => insertCitation(key)}
+        onConfigureBibliography={configureBibliography}
         onLibraryChanged={() => undefined}
       />
     </>
