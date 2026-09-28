@@ -11,6 +11,7 @@ export type PdfAnnotationType =
 
 export type PdfAnnotationRect = { x: number; y: number; width: number; height: number };
 export type PdfAnnotationQuote = { exact: string; prefix?: string; suffix?: string };
+export type PdfAnnotationEvidenceLink = { slug: string; title: string; filename: string };
 export type PdfAnnotation = {
   id: string;
   type: PdfAnnotationType;
@@ -23,6 +24,7 @@ export type PdfAnnotation = {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+  evidence?: PdfAnnotationEvidenceLink | null;
 };
 
 export type PdfAnnotationState = {
@@ -41,3 +43,4 @@ export function createPdfAnnotation(options: { rootDir?: string; paperPath: stri
 export function updatePdfAnnotation(options: { rootDir?: string; paperPath: string; id: string; expectedRevision?: number; patch: Partial<Pick<PdfAnnotation, "type" | "comment" | "tags" | "color">> }): Promise<PdfAnnotationState & { annotation: PdfAnnotation }>;
 export function softDeletePdfAnnotation(options: { rootDir?: string; paperPath: string; id: string; expectedRevision?: number }): Promise<PdfAnnotationState & { annotation: PdfAnnotation }>;
 export function restorePdfAnnotation(options: { rootDir?: string; paperPath: string; id: string; expectedRevision?: number }): Promise<PdfAnnotationState & { annotation: PdfAnnotation }>;
+export function promotePdfAnnotationToEvidence(options: { rootDir?: string; paperPath: string; id: string; expectedRevision?: number }): Promise<PdfAnnotationState & { evidence: PdfAnnotationEvidenceLink; existing: boolean }>;
