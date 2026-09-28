@@ -47,6 +47,7 @@
 .header button,
 .actions button,
 .actions a,
+.controls button,
 .controls input,
 .controls select {
   font: inherit;
@@ -54,7 +55,8 @@
 
 .header button,
 .actions button,
-.actions a {
+.actions a,
+.setupButton {
   border: 1px solid var(--border);
   border-radius: 9px;
   background: var(--panel-strong, var(--panel));
@@ -64,13 +66,15 @@
 }
 
 .header button,
-.actions button {
+.actions button,
+.setupButton {
   cursor: pointer;
 }
 
 .header button:hover,
 .actions button:hover:not(:disabled),
-.actions a:hover {
+.actions a:hover,
+.setupButton:hover:not(:disabled) {
   border-color: var(--accent);
 }
 
@@ -80,7 +84,8 @@
   color: var(--accent-contrast, #111);
 }
 
-.actions button:disabled {
+.actions button:disabled,
+.setupButton:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
@@ -107,6 +112,11 @@
   align-items: center;
   gap: 0.6rem;
   font-size: 0.84rem;
+}
+
+.setupButton {
+  width: 100%;
+  text-align: left;
 }
 
 .hint,
