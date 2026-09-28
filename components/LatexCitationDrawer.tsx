@@ -49,12 +49,14 @@ export function LatexCitationDrawer({
   projectId,
   open,
   onClose,
+  validateInsert,
   onInsert,
   onLibraryChanged,
 }: {
   projectId: string;
   open: boolean;
   onClose: () => void;
+  validateInsert: () => void;
   onInsert: (key: string, bibFile: string) => void;
   onLibraryChanged: () => void | Promise<void>;
 }) {
@@ -105,9 +107,16 @@ export function LatexCitationDrawer({
 
   const insert = async (candidate: CitationCandidate) => {
     if (!candidate.citationReady || writing) return;
-    setWriting(candidate.slug);
     setError("");
     setMessage("");
+    try {
+      validateInsert();
+    } catch (validationError) {
+      setError(validationError instanceof Error ? validationError.message : "Open a .tex source before inserting a citation.");
+      return;
+    }
+
+    setWriting(candidate.slug);
     try {
       const result = await requestJson("/api/ide/citations", {
         method: "POST",
