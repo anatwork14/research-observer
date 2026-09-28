@@ -5,6 +5,7 @@ import {
   listPdfAnnotations,
   pdfAnnotationTypes,
   promotePdfAnnotationToEvidence,
+  reanchorPdfAnnotation,
   restorePdfAnnotation,
   softDeletePdfAnnotation,
   updatePdfAnnotation,
@@ -45,7 +46,7 @@ export async function GET(request: Request) {
       enabled: writable(),
       types: pdfAnnotationTypes,
       reason: writable()
-        ? "PDF annotations are stored as durable sidecars; delete actions only hide records and promotion to evidence is explicit."
+        ? "PDF annotations are stored as durable sidecars; area/figure/table regions are supported, delete actions only hide records, re-anchoring is explicit, and promotion to evidence remains reviewed."
         : "PDF annotation writes are disabled in production unless RESEARCH_OBSERVER_WRITES=1 is configured.",
     });
   } catch (error) {
@@ -64,6 +65,7 @@ export async function POST(request: Request) {
     expectedRevision?: unknown;
     annotation?: unknown;
     patch?: unknown;
+    anchor?: unknown;
   };
   try {
     body = await request.json();
@@ -92,6 +94,15 @@ export async function POST(request: Request) {
         id,
         expectedRevision,
         patch: body.patch && typeof body.patch === "object" ? body.patch as never : {},
+      });
+      return noStore(result);
+    }
+    if (action === "reanchor") {
+      const result = await reanchorPdfAnnotation({
+        paperPath,
+        id,
+        expectedRevision,
+        anchor: body.anchor && typeof body.anchor === "object" ? body.anchor as never : {},
       });
       return noStore(result);
     }
