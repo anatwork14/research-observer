@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { PdfAnnotationBridge } from "@/components/PdfAnnotationBridge";
 
 const PdfReaderInner = dynamic(() => import("@/components/PdfReaderInner"), {
   ssr: false,
@@ -18,5 +19,10 @@ export function PdfReader(props: {
   relationshipTypes: string[];
   relationshipTargets: Array<{ slug: string; title: string; type?: string }>;
 }) {
-  return <PdfReaderInner {...props} />;
+  return (
+    <>
+      <PdfReaderInner {...props} />
+      <PdfAnnotationBridge paperPath={props.path} />
+    </>
+  );
 }
