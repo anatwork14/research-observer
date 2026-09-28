@@ -8,7 +8,7 @@ import { WorkspaceNavigation } from "@/components/WorkspaceNavigation";
 import { WorkspaceProjectSelector } from "@/components/WorkspaceProjectSelector";
 
 type NavEntry = { slug: string; order: number; title: string; status?: string };
-type Section = "overview" | "projects" | "insights" | "new-research" | "notes" | "papers" | "evidence" | "graph" | "collections" | "health" | "instruction" | "settings";
+type Section = "overview" | "projects" | "insights" | "new-research" | "notes" | "papers" | "ide" | "evidence" | "graph" | "collections" | "health" | "instruction" | "settings";
 
 export function WorkspaceHeader({
   entries,
