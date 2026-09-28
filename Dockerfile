@@ -16,7 +16,7 @@ RUN npm ci
 
 COPY . .
 RUN mkdir -p /app/progress /app/.research-observer /app/.next /app/public/_research \
-  && chown -R node:node /app \
+  && chown -R 1001:1001 /app \
   && chmod 0777 /app/.research-observer /app/.next /app/public/_research
 
 USER node

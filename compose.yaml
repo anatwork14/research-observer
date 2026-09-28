@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
     init: true
-    user: "${OBSERVAIRE_UID:-1000}:${OBSERVAIRE_GID:-1000}"
+    user: "${OBSERVAIRE_UID:-1001}:${OBSERVAIRE_GID:-1001}"
     environment:
       NEXT_TELEMETRY_DISABLED: "1"
       RESEARCH_OBSERVER_WRITES: "1"
@@ -25,3 +25,5 @@ services:
 
 volumes:
   observaire-state:
+    external: true
+    name: observaire-profile
