@@ -39,12 +39,14 @@
 .drawer button,
 .drawer select,
 .drawer input,
-.drawer textarea {
+.drawer textarea,
+.actionLink {
   font: inherit;
 }
 
 .selectionToolbar button,
-.drawer button {
+.drawer button,
+.actionLink {
   border: 1px solid var(--border);
   border-radius: 9px;
   background: var(--panel-strong, var(--panel));
@@ -53,8 +55,15 @@
   cursor: pointer;
 }
 
+.actionLink {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
 .selectionToolbar button:hover,
-.drawer button:hover {
+.drawer button:hover,
+.actionLink:hover {
   border-color: var(--accent);
 }
 
@@ -197,6 +206,16 @@
   color: var(--muted);
   font-size: 0.88rem;
   white-space: pre-wrap;
+}
+
+.promotionStatus {
+  margin: 0;
+  padding: 0.42rem 0.52rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
 }
 
 .itemActions {
