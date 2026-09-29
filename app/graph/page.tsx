@@ -54,25 +54,32 @@ export default async function GraphPage({
     ...baseResearchEvolution,
     lineages: orderVersionLineages(baseResearchEvolution.lineages, baseResearchEvolution.edges, baseResearchEvolution.nodes),
   };
-  const versionComparisons = buildResearchVersionComparisons(workspace, { projectId });
-  const [citationResult, historyResult] = await Promise.allSettled([
-    loadManuscriptCitationProjection({ projectId }),
-    listManuscriptRevisions({ projectId }),
-  ]);
+  const versionComparisons = view === "timeline" ? buildResearchVersionComparisons(workspace, { projectId }) : [];
 
-  const manuscript: ManuscriptCitationProjection = citationResult.status === "fulfilled"
-    ? citationResult.value
-    : {
-        projectId,
-        nodes: [],
-        edges: [],
-        unresolved: [],
-        stats: { manuscriptFiles: 0, citations: 0, resolved: 0, ambiguous: 0, missing: 0 },
-      };
-  const manuscriptHistory = historyResult.status === "fulfilled"
-    ? historyResult.value
-    : { projectId, projectPath: "", revisions: [], dirtyFiles: [], available: false };
-  const revisions = buildManuscriptRevisionProjection({ projectId, history: manuscriptHistory });
+  let manuscript: ManuscriptCitationProjection = {
+    projectId,
+    nodes: [],
+    edges: [],
+    unresolved: [],
+    stats: { manuscriptFiles: 0, citations: 0, resolved: 0, ambiguous: 0, missing: 0 },
+  };
+  let revisions = buildManuscriptRevisionProjection({
+    projectId,
+    history: { projectId, projectPath: "", revisions: [], dirtyFiles: [], available: false },
+  });
+
+  if (view !== "research") {
+    const [citationResult, historyResult] = await Promise.allSettled([
+      loadManuscriptCitationProjection({ projectId }),
+      listManuscriptRevisions({ projectId }),
+    ]);
+    if (citationResult.status === "fulfilled") manuscript = citationResult.value;
+    const manuscriptHistory = historyResult.status === "fulfilled"
+      ? historyResult.value
+      : { projectId, projectPath: "", revisions: [], dirtyFiles: [], available: false };
+    revisions = buildManuscriptRevisionProjection({ projectId, history: manuscriptHistory });
+  }
+
   const evolution = mergeEvolutionLayers(researchEvolution, manuscript, revisions);
 
   return (
