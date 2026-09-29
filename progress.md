@@ -824,3 +824,43 @@ Next.js 16's development server also inserted its generated agent-rules block in
 ### Merge decision
 
 **Merge-ready: yes.** The local and full merge gates, isolated persistence verification, all three TeX engines, BibTeX/Biber, forward/reverse SyncTeX, 390 px layouts, both tablet viewport orientations, generated-`.bbl` browser click, live Codex Ask/Draft/Act Apply/Discard, and the real-PDF narrow regression passed. Remaining warnings are the non-reproduced development-only Turbopack message, existing lint/build warnings, and the two user containers left exited after Docker Desktop restarted. Branch remains unmerged from `main`.
+
+## 2026-09-29 runtime verification checkpoint — research graph and timeline
+
+Repository: `https://github.com/anatwork14/research-observer.git`
+
+Branch: `feature/research-graph-timeline`
+
+Starting SHA: `004592239e881c8bca79c5917e9b10cee9db4247` (clean; 0 behind `origin/main`). Implementation SHA before this documentation checkpoint: `9cc89dc12bb8b7c3aa5ec05c68b9de1957448387`. The documentation checkpoint is committed separately. Nothing was merged to `main`.
+
+### Fixes committed
+
+- `86a8176` — `fix: type research evolution projections`; replaced unsafe declaration types with concrete projection types.
+- `06c31be` — `fix: mark absent manuscript layers unavailable`; a project without manuscripts no longer reports a zero citation scan or zero Git history as available.
+- `13e15d3` — `fix: stabilize research graph hydration layout`; deterministic layout coordinates now avoid server/client hydration drift.
+- `9cc89dc` — `fix: select graph nodes with Enter`; Enter and Space select focused graph nodes while double-click opens them; the accessible label reflects the behavior.
+
+### Automated verification
+
+- Node `v22.23.2`, npm `10.9.8`; `npm ci` passed (0 vulnerabilities).
+- All eight focused evolution test files passed, 23 tests total. Additional graph/layout/evolution focused checks passed, 14 tests total.
+- Final `npm run verify:merge-local` passed after this checkpoint was written, including 151 unit tests, typecheck, lint, production build, and workflow acceptance (2/2). `git diff --check` passed. Next.js generated edits to `next-env.d.ts` and `tsconfig.json` were restored because they were not part of the fix.
+- Lint had 0 errors and 2 pre-existing warnings (`app/api/codex/ask/route.ts:63`, `lib/research/latex-editor-tools.mjs:30`). The production build emitted existing Turbopack dynamic filesystem tracing warnings.
+- `npm run check:full` was not run.
+
+### Runtime and browser verification
+
+- Research graph loaded in browser; drag, pin/unpin, pan, toolbar zoom, local neighborhood, typed/reference filters, relation query, and project switching worked. The research view issued project-list requests but did not perform manuscript citation or Git-history scans. Header showed typed/reference/node counts without false citation/revision zeros.
+- Keyboard Enter and Space selected graph nodes and updated the inspector without navigating. The direct inspector/trace distinction, citation-layer trace boundary, visible citation restore, full local PDF chain, and version comparison were exercised.
+- Disposable Alpha/Beta projects with the same `papers/source.pdf` path remained distinct. Synthetic local PDF provenance traversed Paper → Annotation → Evidence → Citation → Manuscript → Revision. These are disposable software fixtures, not research claims.
+- A unique citation resolved; ambiguous and missing keys remained visible in health with no guessed research edge. Consensus was not run: there was no verified saved Consensus evidence in the fixture and no provider credential was available.
+- Hiding a TeX source removed its live citation occurrences while the source hash remained unchanged; Restore brought the occurrences back. Committed edits, bibliography update, a path containing spaces, and rename were represented in history. A dirty `paper draft.tex` was reported as working changes rather than a revision. No-HEAD behavior passed its focused service regression test.
+- Timeline Research, Runs, and Manuscript filters each removed their corresponding events. Date-only `2026-09-01` remained Sep 01 in the available browser timezone; west-of-UTC timezone emulation was unavailable. Explicit `supersedes` topology ordered v1 → v2 → v3 despite misleading dates; a cycle was visibly detected. Version compare displayed titles, status/date where available, word delta, heading and bounded line changes, canonical links, and truncation context.
+- Large disposable projection contained 203 matching/connected nodes; the UI reported 181 shown and the implementation keeps a 90-node-per-lane budget. Search and per-lane bounded rendering were available. Selected-trace displacement/priority in an over-budget lane was not verified to completion because the large dev-browser render stalled during the final interaction. No claim is made that trace priority passed in the browser.
+- Responsive browser checks at 390×844, 768×1024, 1024×768, and 1280px desktop showed document `scrollWidth === clientWidth` in all three graph views. A separate west timezone context and physical tablet hardware were not available. Clear-selection button was not independently exercised.
+- After the layout fix, a fresh browser tab showed no new console errors or hydration warnings. Research view transition requests were ~0.16–0.87 s in the local dev server; provenance/timeline requests were ~0.67–2.9 s on the large synthetic fixture. This is local fixture timing, not production performance evidence.
+- Optional manuscript layers were absent in Alpha Study: Research graph remained available and UI reported citation scan and Git history unavailable rather than zero. No server crash occurred.
+
+### Merge status
+
+**Not merge-ready.** Selected-trace priority under the >90-node visual budget, west-of-UTC browser date emulation, provider-backed Consensus provenance, and a dedicated clear-selection browser action remain unverified. `check:full` was not run. The feature branch is to be pushed without merging to `main`.
