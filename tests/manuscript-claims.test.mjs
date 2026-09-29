@@ -17,9 +17,10 @@ const source = [
   "The evaluation protocol can be reproduced from the saved configuration.",
 ].join("\n");
 
-test("claim IDs require bounded lowercase kebab-case", () => {
+test("claim IDs require bounded lowercase kebab-case and reject the editor placeholder", () => {
   assert.equal(isValidManuscriptClaimId("robustness-under-drift"), true);
   assert.equal(isValidManuscriptClaimId("claim2"), true);
+  assert.equal(isValidManuscriptClaimId("claim-id"), false);
   assert.equal(isValidManuscriptClaimId("Claim-Two"), false);
   assert.equal(isValidManuscriptClaimId("claim_two"), false);
   assert.equal(isValidManuscriptClaimId("two words"), false);
@@ -62,6 +63,9 @@ test("stacked explicit claim markers may deliberately share one passage", () => 
 
 test("invalid and orphan claim anchors surface issues without invented targets", () => {
   const content = [
+    "% observaire:claim claim-id",
+    "Placeholder prose.",
+    "",
     "% observaire:claim Not-Valid",
     "Some prose.",
     "",
@@ -72,7 +76,7 @@ test("invalid and orphan claim anchors surface issues without invented targets",
   ].join("\n");
   const result = parseManuscriptClaimAnchors(content);
   assert.equal(result.claims.length, 0);
-  assert.deepEqual(result.issues.map((issue) => issue.type), ["invalid-id", "invalid-id", "orphan"]);
+  assert.deepEqual(result.issues.map((issue) => issue.type), ["invalid-id", "invalid-id", "invalid-id", "orphan"]);
 });
 
 test("claim node identity is stable within project and explicit ID", () => {
