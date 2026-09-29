@@ -48,6 +48,24 @@ test("validation recovery falls back to the exact snapshot when reverse patch fa
   assert.equal(result.rollback.stderr, "reverse patch conflict");
 });
 
+test("validation recovery preserves successful snapshot restore even when snapshot cleanup fails", async () => {
+  const result = await recoverAppliedManuscript({
+    reversePatch: async () => ({ code: 1, stdout: "", stderr: "reverse patch conflict" }),
+    restoreSnapshot: async () => ({
+      ok: true,
+      restored: ["manuscripts/default/main.tex"],
+      cleanupError: "snapshot directory is busy",
+    }),
+    deleteSnapshot: async () => undefined,
+  });
+
+  assert.equal(result.recovered, true);
+  assert.equal(result.method, "snapshot");
+  assert.deepEqual(result.restored, ["manuscripts/default/main.tex"]);
+  assert.equal(result.snapshotRetained, true);
+  assert.match(result.cleanupError, /snapshot directory is busy/);
+});
+
 test("validation recovery reports cleanup failure after successful reverse patch without claiming source loss", async () => {
   const result = await recoverAppliedManuscript({
     reversePatch: async () => ({ code: 0, stdout: "", stderr: "" }),
