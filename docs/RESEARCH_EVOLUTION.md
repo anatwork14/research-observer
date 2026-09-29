@@ -2,13 +2,15 @@
 
 Observaire's research-evolution views are **derived projections** over existing durable sources. They do not introduce a new research database and must never become a second source of truth.
 
+For the explicit manuscript Claim syntax and validation rules, also read `docs/MANUSCRIPT_CLAIMS.md`.
+
 ## Durable sources
 
 The projection may read from four existing durable domains:
 
 1. `progress/` — canonical research Markdown, typed relationships, dates, paper paths, experiment definitions and results.
 2. `annotations/` — annotation sidecars. The evolution projection does not scan private sidecars directly for semantic graph edges; promoted evidence carries the durable annotation snapshot marker needed for public provenance.
-3. `manuscripts/` — current saved LaTeX/BibTeX manuscript source used to resolve visible citation tokens and literal passage context.
+3. `manuscripts/` — current saved LaTeX/BibTeX manuscript source used to resolve visible citation tokens, literal passage context, and explicit manuscript Claim anchors.
 4. Git history — optional committed manuscript revision history. Git commits are read-only history; they are not a replacement for manuscript source.
 
 Generated `.research-observer/` and `public/_research/` data are never authoritative evolution sources.
@@ -67,7 +69,7 @@ This is provenance only. Saving or displaying an external paper must never manuf
 
 Each visible `.tex` source is a manuscript node. Each citation token is an occurrence node rather than a global bibliography-key node because the same key may appear in several files or positions.
 
-A manuscript passage is a **derived literal saved-source block** around one or more citation occurrences. It is not durable state and is never a semantic claim. The passage projection may expose only structural/source facts such as:
+A manuscript passage is a **derived literal saved-source block** around one or more citation occurrences or an explicit Claim anchor. It is not durable state and is never automatically a semantic claim. The passage projection may expose only structural/source facts such as:
 
 - source file;
 - source start/end offsets;
@@ -75,7 +77,7 @@ A manuscript passage is a **derived literal saved-source block** around one or m
 - nearest explicit LaTeX heading;
 - a bounded literal excerpt from the saved `.tex` block.
 
-Comment-only lines and a preceding heading command are excluded from the prose excerpt when the citation is on a later line; the heading remains separate metadata. Multiple citations in the same saved paragraph/block deduplicate to one Passage node.
+Comment-only lines and a preceding heading command are excluded from the prose excerpt when the target prose is on a later line; the heading remains separate metadata. Multiple citations in the same saved paragraph/block deduplicate to one Passage node.
 
 ```text
 Research object
@@ -97,17 +99,58 @@ Manuscript file
 
 A research-to-citation edge is created **only** when the existing citation resolver returns exactly one canonical choice. `ambiguous` and `missing` citations may still have literal passage/file/line context, but they never gain a guessed research edge.
 
-Passage extraction must not infer that nearby prose supports, contradicts, proves, answers, or otherwise semantically relates to the cited research object. If semantic claim-level links are added in the future, they require an explicit durable user-authored contract separate from passage extraction.
+Passage extraction must not infer that nearby prose supports, contradicts, proves, answers, or otherwise semantically relates to the cited research object.
 
 Hidden manuscript files are excluded from live citation and passage projection.
 
+### Explicit manuscript Claim layer
+
+A manuscript Claim exists only when the author writes a valid unique comment in saved visible editable `.tex` source:
+
+```tex
+% observaire:claim robustness-under-drift
+Our method remains stable under distribution shift \cite{smith2025}.
+```
+
+The comment is compile-safe. The Claim ID is the author's durable semantic handle while its Passage location is re-derived from current saved source.
+
+The structural projection is:
+
+```text
+Manuscript passage
+  → anchors_claim
+Explicit Claim
+  → part_of
+Manuscript file
+```
+
+When the same Passage also contains a uniquely resolved citation, the combined provenance can be:
+
+```text
+Research object
+  → cited_as
+Citation
+  → located_in
+Passage
+  → anchors_claim
+Explicit Claim
+  → part_of
+Manuscript
+```
+
+Claim identity does **not** create a Claim↔Evidence semantic relationship. Citation proximity does not mean support, contradiction, confirmation, proof, or evidence use. If those semantics are added later, they require a separate explicit user-authored relationship contract.
+
+Duplicate, malformed, reserved-placeholder, and orphan anchors remain health issues and do not produce guessed Claim nodes. Claim scanning is project-scoped and limited to visible editable `.tex` sources.
+
 ### Manuscript deep links
 
-Citation and Passage nodes may link to:
+Citation, Passage, and Claim nodes may link to:
 
 ```text
 /ide?research=<project>&file=<saved-source>&line=<positive-line>
 ```
+
+Passage/Citation links target the relevant prose/citation line. Claim links target the explicit Claim marker line so the researcher can edit the Claim identity directly.
 
 The IDE may honor the location only when the requested file is present in the selected manuscript workspace, editable, and not hidden. Invalid, hidden, missing, or resource-file requests fall back to the normal manuscript entry file rather than bypassing workspace path/visibility rules.
 
@@ -188,7 +231,7 @@ Large comparisons stay bounded to 240 source lines per side. The UI must disclos
 
 ## Provenance trace interaction
 
-Selecting a node in the provenance graph highlights a bounded neighborhood over the currently enabled layers. The UI uses six hops, sufficient for the passage-aware intended chain:
+Selecting a node in the provenance graph highlights a bounded neighborhood over the currently enabled layers. The UI uses seven hops, sufficient for the explicit-Claim-aware intended chain:
 
 ```text
 Paper/source
@@ -196,29 +239,30 @@ Paper/source
   → Evidence/research object
   → Citation occurrence
   → Manuscript passage
+  → Explicit Claim
   → Manuscript file
   → Revision
 ```
 
 Traversal is cycle-safe and treats a provenance path as navigational context, not as a new semantic assertion. Disabling a layer removes those edges from the selected trace.
 
-The inspector lists direct visible connections while canvas emphasis may extend across the bounded multi-hop trace. Passage inspectors may show the literal bounded excerpt and source location; they must not relabel the excerpt as a claim.
+The inspector lists direct visible connections while canvas emphasis may extend across the bounded multi-hop trace. Passage and Claim inspectors may show the literal bounded excerpt and source location; they must not manufacture Claim↔Evidence meaning from that text.
 
 ## UI behavior
 
 `/graph` has three complementary views:
 
 1. **Research graph** — existing force-directed canonical research relationships.
-2. **Provenance** — stable-lane source → annotation → research → citation → passage → manuscript → revision trace.
+2. **Provenance** — stable-lane source → annotation → research → citation → passage → explicit Claim → manuscript → revision trace.
 3. **Timeline & versions** — explicit dated events, semantic version lineages, manuscript commit events, and explicit version-pair content comparison.
 
 The existing research graph remains first-class. The provenance graph must not replace or mutate it.
 
-The default Research graph view does not scan manuscript citations or Git history merely to render its header. Optional manuscript/Git layers are loaded only when a view needs them. If one of those scans fails, the UI says that it is unavailable rather than reporting a factual zero.
+The default Research graph view does not scan manuscript citations, Claims, or Git history merely to render its header. Claim scanning is Provenance-only. Optional manuscript/Git layers are loaded only when a view needs them. If one of those scans fails, the UI says that it is unavailable rather than reporting a factual zero.
 
 The provenance SVG may be wider than a phone viewport, but horizontal scrolling must stay inside its component. It must not create document-level horizontal overflow.
 
-Large projections use a visual working-set budget of 90 rendered nodes per lane. The underlying derived projection stays complete. Selected-trace nodes, direct search matches, and high-connectivity nodes receive display priority, and lane labels disclose shown/total counts. Search is the way to narrow a large complete projection rather than removing the safety bound.
+Large projections use a visual working-set budget of 90 rendered nodes per lane, including the Explicit claims lane. The underlying derived projection stays complete. Selected-trace nodes, direct search matches, and high-connectivity nodes receive display priority, and lane labels disclose shown/total counts. Search is the way to narrow a large complete projection rather than removing the safety bound.
 
 ## Project scoping
 
@@ -226,20 +270,21 @@ All evolution views are scoped by the selected stable research project ID.
 
 - Research nodes must belong to the selected project.
 - Semantic/reference edges whose endpoint leaves the selected project are excluded from the scoped evolution projection.
-- Citation and passage resolution use the same selected project.
+- Citation, passage, and Claim resolution use the same selected project.
 - Manuscript history is path-confined to that project's configured manuscript root.
 - Local paper identity retains the canonical project-folder asset path.
 
-Never silently merge similarly named objects, manuscript paths, or note-relative assets from different research projects.
+Never silently merge similarly named objects, Claim IDs, manuscript paths, or note-relative assets from different research projects.
 
 ## Performance and safety bounds
 
 - Manuscript Git history is bounded to 80 revisions.
 - Research version source comparison is bounded to 240 lines per side.
 - Citation resolution reuses the existing project-scoped citation service and scans visible editable `.tex` files only.
-- Passage excerpts are bounded literal strings derived from the same saved `.tex` snapshot used for citation resolution.
+- Claim scanning is project-scoped to visible editable `.tex` files and runs only for Provenance.
+- Passage excerpts are bounded literal strings derived from saved `.tex` source.
 - Provenance rendering is bounded to 90 nodes per lane.
-- Selected UI trace traversal is bounded to six hops; the reusable helper clamps callers to at most 12.
+- Selected UI trace traversal is bounded to seven hops; the reusable helper clamps callers to at most 12.
 - Provenance scrolling has a bounded viewport even when the SVG working set is tall.
 - No graph/timeline view writes Git history, research Markdown, manuscript source, annotations, or generated evidence.
 - A missing optional projection source must degrade that layer only; it must not break the canonical research graph.
@@ -254,7 +299,12 @@ node --test tests/research-evolution-consensus.test.mjs
 node --test tests/research-evolution-trace.test.mjs
 node --test tests/research-evolution-layout.test.mjs
 node --test tests/research-evolution-passages.test.mjs
+node --test tests/research-evolution-claims.test.mjs
+node --test tests/research-evolution-claim-loading.test.mjs
 node --test tests/manuscript-passages.test.mjs
+node --test tests/manuscript-claims.test.mjs
+node --test tests/manuscript-claim-projection.test.mjs
+node --test tests/latex-claim-anchor-ui.test.mjs
 node --test tests/latex-provenance-navigation.test.mjs
 node --test tests/research-version-lineage.test.mjs
 node --test tests/research-version-compare.test.mjs
@@ -274,8 +324,14 @@ Browser verification should exercise `/graph` in all three modes on desktop, tab
 - uniquely resolved citations connect to literal manuscript passage context and manuscript files;
 - multiple citations in one saved paragraph deduplicate to one Passage node;
 - ambiguous/missing citations retain literal location context but do not gain guessed research edges;
-- Passage inspector text is a literal bounded saved-source excerpt, not an AI summary or claim;
-- Passage/Citation `Open manuscript location` opens the requested visible editable `.tex` source at the requested line in both CodeMirror and plain-editor modes;
+- explicit Claim anchors create Claim identity only after saved source contains a valid unique user-authored ID;
+- duplicate, invalid, reserved-placeholder, and orphan Claim anchors remain health issues;
+- uncited Claims remain visible without a fabricated research/evidence edge;
+- Citation and Claim layers converge on the same Passage node when they target the same saved block;
+- the full Paper→Annotation→Evidence→Citation→Passage→Claim→Manuscript→Revision path can be traced with seven hops;
+- disabling the Explicit claims layer removes Claim edges from the selected trace;
+- Claim `Open manuscript location` opens the explicit marker line while Passage navigation opens prose;
+- Passage/Claim inspector text is literal bounded saved-source text, not an AI summary or inferred relation;
 - hidden manuscript sources do not become reachable through provenance deep links;
 - manuscript commits appear only when real history exists;
 - dirty manuscript files are not presented as revisions, including a Git repository before its first commit;
@@ -283,6 +339,5 @@ Browser verification should exercise `/graph` in all three modes on desktop, tab
 - `supersedes` chains read oldest → newest from edge direction even when dates are missing or misleading;
 - date-only research events do not shift calendar day with timezone;
 - version diff selects only explicit same-project version pairs;
-- selected source/evidence nodes highlight the complete enabled passage-aware provenance trace;
 - large synthetic projections disclose the render budget and remain searchable;
 - graph scrollers do not create page-level horizontal overflow.
