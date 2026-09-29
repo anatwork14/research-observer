@@ -11,7 +11,9 @@ This directory contains durable, project-scoped manuscript source. It is intenti
 - LaTeX builds must keep unrestricted shell escape disabled. Treat compilation as execution of potentially complex input and preserve resource/time bounds.
 - SyncTeX is the canonical source↔PDF positioning mechanism. Keep `-synctex=1` enabled for supported engines.
 - Do not commit ordinary TeX intermediate files such as `.aux`, `.log`, `.fls`, `.fdb_latexmk`, `.out`, `.toc`, or `.synctex.gz` inside manuscript source directories.
-- `npm run verify:latex` is the isolated real-toolchain smoke command. Run it in an environment containing the project TeX toolchain (the Docker image includes latexmk, Biber, pdfLaTeX, XeLaTeX, LuaLaTeX, and SyncTeX). It must not use or mutate real manuscript/research data.
+- `npm run verify:latex` is the isolated application-service toolchain smoke command. It executes the same `compileLatexProject`/SyncTeX service used by the IDE and therefore requires Node plus the TeX toolchain.
+- `npm run verify:latex:container` is a verification-only fallback that avoids building the Observaire runtime image. It runs `scripts/verify-latex-toolchain.sh` in a digest-pinned prebuilt TeX Live container, mounts the repository read-only, and validates pdfLaTeX, XeLaTeX, LuaLaTeX, classic BibTeX, Biber/biblatex, SyncTeX, and disabled unrestricted shell escape. Passing it proves the external TeX toolchain contract, not the Node service integration; `verify:latex` remains the service-level check.
+- Keep the default verification container image digest-pinned. `OBSERVAIRE_LATEX_VERIFY_IMAGE` and `OBSERVAIRE_LATEX_VERIFY_PLATFORM` may override it deliberately for another trusted test environment.
 
 ## Citations and bibliography
 
