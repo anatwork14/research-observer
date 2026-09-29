@@ -6,25 +6,38 @@ For graph/timeline/version work, also read `docs/RESEARCH_EVOLUTION.md`.
 
 ## Canonical-data boundary
 
-- `progress/` remains the canonical indexed research source. Never create a second hand-maintained graph, timeline, citation, or version database.
+- `progress/` remains the canonical indexed research source. Never create a second hand-maintained graph, timeline, citation, passage, or version database.
 - Evolution/provenance/timeline data are derived projections and must remain rebuildable from canonical research/manuscript/Git sources.
 - Generated `.research-observer/` and `public/_research/` data are never authoritative.
 
 ## Graph semantics
 
 - Preserve the compiler distinction between explicit typed relationships and implicit Markdown references.
-- Never infer `supports`, `contradicts`, `answers`, `based_on`, `supersedes`, or other semantic relationships from proximity, citation occurrence, annotation type, metric direction, dates, or AI interpretation.
+- Never infer `supports`, `contradicts`, `answers`, `based_on`, `supersedes`, or other semantic relationships from proximity, citation occurrence, manuscript passage text, annotation type, metric direction, dates, or AI interpretation.
 - Promoted annotation provenance may be reconstructed only from the durable promotion snapshot stored in canonical evidence content plus canonical evidence `source` metadata.
 - Private annotation-sidecar changes after promotion must not silently rewrite historical evidence provenance.
 - Canonical local PDF identity must use the compiler-visible asset path, including folder-backed project context. Two projects with `papers/source.pdf` must never collapse into one source node.
 - Reviewed Consensus/external scholarly evidence may create a source-provenance node from already stored canonical identifiers only. Identity precedence is normalized DOI, then provider paper ID, then canonical HTTPS URL. Do not invent a paper identity or upgrade external evidence into a semantic relationship.
 
-## Citation projection
+## Citation and passage projection
 
 - Reuse `resolveLatexCitationTokens`; do not implement another bibliography-key resolver.
 - Only one uniquely resolved canonical citation choice may create a research→citation graph edge.
-- Ambiguous or missing citations remain unresolved. Never guess by key text, title similarity, or author/year heuristics outside the existing canonical resolver.
-- Hidden manuscript sources stay out of the live citation projection.
+- Ambiguous or missing citations remain unresolved. Never guess by key text, title similarity, nearby prose, or author/year heuristics outside the existing canonical resolver.
+- Hidden manuscript sources stay out of the live citation and passage projection.
+- Passage nodes are deterministic derived views over the same saved `.tex` content used for citation resolution. They are not durable manuscript entities and not semantic claims.
+- Passage extraction may expose only source facts: file, offsets, line span, nearest explicit heading, and a bounded literal excerpt.
+- Keep heading metadata separate from prose passage text when the heading precedes the cited paragraph. Ignore comment-only headings.
+- Multiple citation occurrences in the same saved passage should deduplicate to one Passage node.
+- Never summarize, paraphrase, classify, score, or semantically interpret passage text as part of this projection.
+
+## Manuscript navigation
+
+- Citation/Passage deep links may request a file and positive line in `/ide`.
+- The IDE must honor a requested file only if the selected workspace reports it as editable and visible.
+- Hidden, missing, resource, traversal, or unrelated-project paths must not be opened through provenance navigation.
+- Reuse the workbench `openFile`/cursor mechanism already used by diagnostics and SyncTeX; do not automate DOM clicks or bypass stale-safe source reads.
+- Cursor navigation must work after either textarea or CodeMirror adapters finish mounting.
 
 ## Semantic research versions
 
@@ -57,6 +70,7 @@ Keep expensive derived work bounded. Current contracts include:
 - manuscript Git history: maximum 80 revisions;
 - research source diff: maximum 240 lines per side;
 - project-scoped citation scanning: visible editable `.tex` files only;
+- passage excerpt: bounded literal source text only;
 - provenance UI: maximum 90 rendered nodes per lane before search/focus prioritization;
 - selected provenance trace: maximum 6 hops in the UI (service helper accepts a bounded maximum of 12).
 
@@ -71,6 +85,9 @@ node --test tests/research-evolution.test.mjs
 node --test tests/research-evolution-consensus.test.mjs
 node --test tests/research-evolution-trace.test.mjs
 node --test tests/research-evolution-layout.test.mjs
+node --test tests/research-evolution-passages.test.mjs
+node --test tests/manuscript-passages.test.mjs
+node --test tests/latex-provenance-navigation.test.mjs
 node --test tests/research-version-lineage.test.mjs
 node --test tests/research-version-compare.test.mjs
 node --test tests/manuscript-evolution.test.mjs
