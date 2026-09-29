@@ -47,12 +47,17 @@ function monthKey(value: string) {
 function readableDate(value: string) {
   const date = new Date(value);
   const dateOnly = value.endsWith("T00:00:00.000Z");
-  return new Intl.DateTimeFormat(undefined, {
+  const options: Intl.DateTimeFormatOptions = {
     year: "numeric",
     month: "short",
     day: "2-digit",
-    ...(dateOnly ? { timeZone: "UTC" } : { hour: "2-digit", minute: "2-digit" }),
-  }).format(date);
+  };
+  if (dateOnly) options.timeZone = "UTC";
+  else {
+    options.hour = "2-digit";
+    options.minute = "2-digit";
+  }
+  return new Intl.DateTimeFormat(undefined, options).format(date);
 }
 
 function eventLabel(event: TimelineEvent) {
