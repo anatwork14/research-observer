@@ -1,16 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Document, Page, pdfjs } from "react-pdf";
+import dynamic from "next/dynamic";
+import { LatexCitationReferences } from "@/components/LatexCitationReferences";
+import { activeLatexEditor, notifyLatexEditorChange, setActiveLatexEditor, type LatexEditorAdapter } from "@/components/latex-editor-adapter";
 import styles from "./LatexWorkbench.module.css";
 
-pdfjs.GlobalWorkerOptions.workerSrc = "/_research/pdfjs/pdf.worker.min.mjs";
-const documentOptions = {
-  cMapUrl: "/_research/pdfjs/cmaps/",
-  cMapPacked: true,
-  standardFontDataUrl: "/_research/pdfjs/standard_fonts/",
-  wasmUrl: "/_research/pdfjs/wasm/",
-};
+const LatexPdfPreview = dynamic(() => import("@/components/LatexPdfPreview"), {
+  ssr: false,
+  loading: () => <p className={styles.previewHint}>Loading PDF preview…</p>,
+});
+const LatexCodeEditor = dynamic(() => import("@/components/LatexCodeEditor").then((module) => module.LatexCodeEditor), { ssr: false });
 
 type Engine = "pdflatex" | "xelatex" | "lualatex";
 type WorkspaceFile = {
@@ -128,10 +128,50 @@ export function LatexWorkbench({ projectId }: { projectId: string }) {
   const [error, setError] = useState("");
   const [mobileFiles, setMobileFiles] = useState(false);
   const [mobilePreview, setMobilePreview] = useState(false);
+  const [editorMode, setEditorMode] = useState<"textarea" | "codemirror">("textarea");
 
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const lineRef = useRef<HTMLPreElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 761px)");
+    const updateMode = () => setEditorMode(media.matches ? "codemirror" : "textarea");
+    updateMode();
+    media.addEventListener("change", updateMode);
+    return () => media.removeEventListener("change", updateMode);
+  }, []);
+
+  const onCodeMirrorAdapter = useCallback((adapter: LatexEditorAdapter | null) => {
+    if (editorMode === "codemirror") setActiveLatexEditor(adapter);
+  }, [editorMode]);
+
+  const updateEditorContent = useCallback((next: string) => {
+    setContent(next);
+    setDirty(next !== source?.content);
+    notifyLatexEditorChange();
+  }, [source?.content]);
+
+  useEffect(() => {
+    if (editorMode !== "textarea" || !source || !editorRef.current) return;
+    const textarea = editorRef.current;
+    const adapter: LatexEditorAdapter = {
+      file: source.file,
+      value: () => textarea.value,
+      selection: () => ({ start: textarea.selectionStart, end: textarea.selectionEnd }),
+      setValue: (next, start, end = start) => {
+        const descriptor = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value");
+        descriptor?.set?.call(textarea, next);
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+        if (start !== undefined) textarea.setSelectionRange(start, end ?? start);
+      },
+      setSelection: (start, end) => textarea.setSelectionRange(start, end),
+      focus: () => textarea.focus(),
+      domTarget: textarea,
+    };
+    setActiveLatexEditor(adapter);
+    return () => { if (activeLatexEditor() === adapter) setActiveLatexEditor(null); };
+  }, [editorMode, source]);
 
   const refreshWorkspace = useCallback(async () => {
     const payload = await jsonRequest(`/api/ide/files?research=${encodeURIComponent(projectId)}`);
@@ -177,15 +217,22 @@ export function LatexWorkbench({ projectId }: { projectId: string }) {
   }, [openFile, projectId, refreshWorkspace]);
 
   useEffect(() => {
-    if (!pendingCursor || !editorRef.current) return;
-    const offset = offsetAtLineColumn(content, pendingCursor.line, pendingCursor.column);
-    editorRef.current.focus();
-    editorRef.current.setSelectionRange(offset, offset);
-    const lineHeight = 21.9;
-    editorRef.current.scrollTop = Math.max(0, (pendingCursor.line - 4) * lineHeight);
-    if (lineRef.current) lineRef.current.scrollTop = editorRef.current.scrollTop;
-    setPendingCursor(null);
-  }, [content, pendingCursor]);
+    if (!pendingCursor) return;
+    const frame = window.requestAnimationFrame(() => {
+      const editor = activeLatexEditor();
+      if (!editor) return;
+      const offset = offsetAtLineColumn(content, pendingCursor.line, pendingCursor.column);
+      editor.focus();
+      editor.setSelection(offset, offset, true);
+      if (lineRef.current && editorRef.current) {
+        const lineHeight = 21.9;
+        editorRef.current.scrollTop = Math.max(0, (pendingCursor.line - 4) * lineHeight);
+        lineRef.current.scrollTop = editorRef.current.scrollTop;
+      }
+      setPendingCursor(null);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [content, editorMode, pendingCursor]);
 
   useEffect(() => {
     const target = previewRef.current;
@@ -331,14 +378,15 @@ export function LatexWorkbench({ projectId }: { projectId: string }) {
   };
 
   const forwardSync = async () => {
-    if (!build?.success || !source || !editorRef.current) return;
+    const editor = activeLatexEditor();
+    if (!build?.success || !source || !editor) return;
     setError("");
     try {
       if (dirty) {
         const saved = await save();
         if (!saved) return;
       }
-      const cursor = lineColumnAt(content, editorRef.current.selectionStart);
+      const cursor = lineColumnAt(content, editor.selection().start);
       const result = await jsonRequest("/api/ide/synctex", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -467,35 +515,42 @@ export function LatexWorkbench({ projectId }: { projectId: string }) {
           <div className={styles.editorHeader}>
             <strong>{source?.file ?? "No source open"}</strong>
             <span className={styles.fileMeta}>{loadingFile ? "Loading…" : source ? `${content.split("\n").length} lines` : "Create or open a source file"}</span>
+            {source && <div className={styles.editorModes} role="group" aria-label="Editor mode">
+              <button type="button" aria-pressed={editorMode === "codemirror"} onClick={() => setEditorMode("codemirror")}>CodeMirror</button>
+              <button type="button" aria-pressed={editorMode === "textarea"} onClick={() => setEditorMode("textarea")}>Plain editor</button>
+            </div>}
           </div>
-          <div className={styles.editorWrap}>
+          <div className={styles.editorWrap} data-editor-mode={editorMode}>
             {source ? (
-              <>
-                <pre ref={lineRef} className={styles.lineNumbers} aria-hidden="true">{lineNumbers}</pre>
-                <textarea
-                  ref={editorRef}
-                  className={styles.editor}
-                  value={content}
-                  spellCheck={false}
-                  autoCapitalize="off"
-                  autoCorrect="off"
-                  onChange={(event) => { setContent(event.target.value); setDirty(event.target.value !== source.content); }}
-                  onScroll={(event) => { if (lineRef.current) lineRef.current.scrollTop = event.currentTarget.scrollTop; }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Tab") {
-                      event.preventDefault();
-                      const target = event.currentTarget;
-                      const start = target.selectionStart;
-                      const end = target.selectionEnd;
-                      const next = `${content.slice(0, start)}  ${content.slice(end)}`;
-                      setContent(next);
-                      setDirty(next !== source.content);
-                      requestAnimationFrame(() => target.setSelectionRange(start + 2, start + 2));
-                    }
-                  }}
-                  aria-label={`Edit ${source.file}`}
-                />
-              </>
+              editorMode === "codemirror" ? (
+                <LatexCodeEditor file={source.file} value={content} onChange={updateEditorContent} onAdapter={onCodeMirrorAdapter} />
+              ) : (
+                <>
+                  <pre ref={lineRef} className={styles.lineNumbers} aria-hidden="true">{lineNumbers}</pre>
+                  <textarea
+                    ref={editorRef}
+                    className={styles.editor}
+                    value={content}
+                    spellCheck={false}
+                    autoCapitalize="off"
+                    autoCorrect="off"
+                    onChange={(event) => updateEditorContent(event.target.value)}
+                    onScroll={(event) => { if (lineRef.current) lineRef.current.scrollTop = event.currentTarget.scrollTop; }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Tab") {
+                        event.preventDefault();
+                        const target = event.currentTarget;
+                        const start = target.selectionStart;
+                        const end = target.selectionEnd;
+                        const next = `${content.slice(0, start)}  ${content.slice(end)}`;
+                        updateEditorContent(next);
+                        requestAnimationFrame(() => target.setSelectionRange(start + 2, start + 2));
+                      }
+                    }}
+                    aria-label={`Edit ${source.file}`}
+                  />
+                </>
+              )
             ) : (
               <div className={styles.emptyEditor}>
                 <div>
@@ -505,6 +560,7 @@ export function LatexWorkbench({ projectId }: { projectId: string }) {
               </div>
             )}
           </div>
+          {source && <LatexCitationReferences projectId={projectId} file={source.file} content={content} revision={source.baseSha256} />}
         </section>
 
         <aside className={styles.previewPane} data-mobile-hidden={!mobilePreview}>
@@ -518,33 +574,25 @@ export function LatexWorkbench({ projectId }: { projectId: string }) {
           <div className={styles.previewBody} ref={previewRef}>
             {previewTab === "pdf" ? (
               build?.success && build.pdfUrl ? (
-                <Document
-                  key={build.pdfUrl}
-                  file={build.pdfUrl}
-                  options={documentOptions}
-                  onLoadSuccess={(document) => { setPdfPages(document.numPages); setPdfPage((page) => Math.min(Math.max(1, page), document.numPages)); }}
-                  loading={<p className={styles.previewHint}>Loading compiled PDF…</p>}
-                  error={<p className={`${styles.previewHint} ${styles.error}`}>Could not render the compiled PDF.</p>}
-                >
+                <>
                   <div className={styles.pdfControls}>
                     <button type="button" disabled={pdfPage <= 1} onClick={() => { setSyncMark(null); setPdfPage((page) => Math.max(1, page - 1)); }}>←</button>
                     <span>Page {pdfPage} / {pdfPages || "—"}</span>
                     <button type="button" disabled={!pdfPages || pdfPage >= pdfPages} onClick={() => { setSyncMark(null); setPdfPage((page) => Math.min(pdfPages, page + 1)); }}>→</button>
                   </div>
-                  <div className={styles.pdfCanvas} onDoubleClick={(event) => void reverseSync(event)} title={toolchain.synctex?.available ? "Double-click to jump back to LaTeX source" : undefined}>
-                    <Page
-                      pageNumber={pdfPage}
-                      width={pdfWidth}
-                      renderTextLayer
-                      renderAnnotationLayer
-                      onLoadSuccess={(page) => {
-                        const viewport = page.getViewport({ scale: 1 });
-                        setPdfViewport({ width: viewport.width, height: viewport.height });
-                      }}
-                    />
+                  <LatexPdfPreview
+                    file={build.pdfUrl}
+                    pageNumber={pdfPage}
+                    width={pdfWidth}
+                    className={styles.pdfCanvas}
+                    title={toolchain.synctex?.available ? "Double-click to jump back to LaTeX source" : undefined}
+                    onDoubleClick={(event) => void reverseSync(event)}
+                    onDocumentLoad={(pages) => { setPdfPages(pages); setPdfPage((page) => Math.min(Math.max(1, page), pages)); }}
+                    onPageLoad={(width, height) => setPdfViewport({ width, height })}
+                  >
                     {syncStyle && <span className={styles.syncMark} style={syncStyle} />}
-                  </div>
-                </Document>
+                  </LatexPdfPreview>
+                </>
               ) : (
                 <p className={styles.previewHint}>Build the selected main TeX file to generate a PDF preview. After a successful build, <strong>Sync PDF</strong> jumps from the editor cursor to the PDF; double-clicking the PDF performs reverse SyncTeX.</p>
               )

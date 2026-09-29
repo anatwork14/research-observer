@@ -41,7 +41,11 @@
     "react-pdf": "11.0.0",
     "pdfjs-dist": "6.3.289",
     "@openai/codex-sdk": "0.155.1",
-    "@openai/codex": "0.155.1"
+    "@openai/codex": "0.155.1",
+    "@codemirror/language": "^6.12.4",
+    "@codemirror/view": "^6.43.13",
+    "@codemirror/legacy-modes": "^6.5.4",
+    "@uiw/react-codemirror": "^4.25.12"
   },
   "devDependencies": {
     "eslint": "9.39.5",

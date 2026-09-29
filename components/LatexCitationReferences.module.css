@@ -1,0 +1,27 @@
+.panel {
+  max-height: 11rem;
+  overflow: auto;
+  border-top: 1px solid var(--border);
+  background: var(--panel);
+  padding: 0.55rem 0.8rem;
+  color: var(--text);
+  font-size: 0.78rem;
+}
+
+.panel header,
+.reference {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.7rem;
+}
+
+.panel header { margin-bottom: 0.35rem; }
+.panel header span,
+.reference small { color: var(--muted); }
+.reference { padding: 0.22rem 0; border-top: 1px solid var(--border); }
+.reference code { font-weight: 700; }
+.status[data-status="ambiguous"] { color: #a65e00; }
+.status[data-status="missing"] { color: var(--danger, #b42318); }
+.reference nav { display: flex; flex-wrap: wrap; gap: 0.25rem 0.6rem; }
+.reference a { color: var(--accent); }

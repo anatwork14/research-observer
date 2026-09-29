@@ -17,6 +17,16 @@ export type LatexCitationCandidate = {
   paperHref: string | null;
 };
 
+export type LatexCitationReference = {
+  key: string;
+  file: string;
+  start: number;
+  end: number;
+  bibFiles: string[];
+  status: "resolved" | "ambiguous" | "missing";
+  choices: LatexCitationCandidate[];
+};
+
 export function listLatexCitationCandidates(options?: {
   rootDir?: string;
   projectId?: string;
@@ -27,6 +37,13 @@ export function listLatexCitationCandidates(options?: {
   bibFiles: string[];
   defaultBibFile: string;
 }>;
+
+export function resolveLatexCitationTokens(options: {
+  rootDir?: string;
+  projectId?: string;
+  file: string;
+  content?: string;
+}): Promise<{ file: string; citations: LatexCitationReference[] }>;
 
 export function ensureLatexCitation(options: {
   rootDir?: string;

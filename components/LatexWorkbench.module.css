@@ -123,6 +123,18 @@
   border-bottom: 1px solid var(--border);
 }
 
+.editorModes { display: flex; gap: 0.25rem; flex-shrink: 0; }
+.editorModes button {
+  min-height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--text);
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+}
+.editorModes button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+
 .sidebarHeader strong,
 .previewHeader strong,
 .editorHeader strong {
@@ -236,6 +248,8 @@
   overflow: hidden;
   background: color-mix(in srgb, var(--background) 96%, var(--panel));
 }
+
+.editorWrap[data-editor-mode="codemirror"] { display: block; }
 
 .lineNumbers {
   min-width: 3.1rem;

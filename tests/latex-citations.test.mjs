@@ -6,6 +6,7 @@ import test from "node:test";
 import {
   ensureLatexCitation,
   listLatexCitationCandidates,
+  resolveLatexCitationTokens,
 } from "../lib/research/latex-citations.mjs";
 
 async function fixture() {
@@ -116,4 +117,57 @@ pdf: papers/sample.pdf
     ensureLatexCitation({ rootDir: root, projectId: "default", slug: "incomplete-source" }),
     /Citation metadata is incomplete/,
   );
+});
+
+test("citation token resolution searches visible project libraries and surfaces ambiguous or missing identities", async (t) => {
+  const root = await fixture();
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  await fs.writeFile(path.join(root, "progress", "papers", "unique.pdf"), "%PDF-1.4\n%%EOF\n", "utf8");
+  await fs.writeFile(path.join(root, "progress", "02_unique.md"), `---
+id: unique-source
+title: Unique Source Study
+type: literature
+status: complete
+authors:
+  - Sam Lee
+year: 2025
+pdf: papers/unique.pdf
+---
+
+# Unique Source Study
+`, "utf8");
+  await fs.mkdir(path.join(root, "manuscripts", "default", "refs"), { recursive: true });
+  await fs.writeFile(path.join(root, "manuscripts", "default", "main.tex"), "\\documentclass{article}\n\\begin{document}\n\\cite{unique2025source, shared2026source, absent}\n\\end{document}\n", "utf8");
+  await fs.writeFile(path.join(root, "manuscripts", "default", "references.bib"), `@misc{shared2026source,
+  doi = {10.1234/verified.2026},
+  title = {Verified Retrieval Study},
+  year = {2026}
+}
+`, "utf8");
+  await fs.writeFile(path.join(root, "manuscripts", "default", "refs", "local.bib"), `@misc{unique2025source,
+  file = {papers/unique.pdf},
+  title = {Unique Source Study},
+  year = {2025}
+}
+`, "utf8");
+
+  const result = await resolveLatexCitationTokens({ rootDir: root, projectId: "default", file: "main.tex" });
+  assert.deepEqual(result.citations.map(({ key, status }) => [key, status]), [
+    ["unique2025source", "resolved"],
+    ["shared2026source", "ambiguous"],
+    ["absent", "missing"],
+  ]);
+  assert.equal(result.citations[0].choices[0].slug, "unique-source");
+  assert.deepEqual(result.citations[0].bibFiles, ["refs/local.bib"]);
+  assert.deepEqual(new Set(result.citations[1].choices.map(({ slug }) => slug)), new Set(["verified-paper", "promoted-evidence"]));
+  assert.deepEqual(result.citations[2].choices, []);
+  assert.equal(result.citations[0].end - result.citations[0].start, "unique2025source".length);
+
+  const draft = await resolveLatexCitationTokens({
+    rootDir: root,
+    projectId: "default",
+    file: "main.tex",
+    content: "\\cite{unique2025source}",
+  });
+  assert.deepEqual(draft.citations.map(({ key, status }) => [key, status]), [["unique2025source", "resolved"]]);
 });

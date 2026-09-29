@@ -609,3 +609,30 @@ Executed results:
 Still not verified at this checkpoint: browser interaction, real-PDF annotation/revision/re-anchor flows, evidence promotion in-browser, real TeX engines/latexmk/SyncTeX, citations in compiled PDF, responsive tablet/touch behavior, production smoke, and Docker recreation persistence. No claim of merge readiness is made.
 
 Follow-up on 2026-09-29: the annotation route also rejects a non-object JSON body with HTTP 400, and its service inputs now use declared TypeScript parameter types instead of unchecked `never` casts. Citation insert failures no longer update a closed drawer. A repeated full test command initially hit the host's global SSH commit-signing configuration and stalled a fixture commit; rerunning once with `GIT_CONFIG_GLOBAL=/dev/null` passed all 102 tests, typecheck, and lint. This environment-only override was scoped to the check process and did not change repository or global configuration. Docker Compose configuration validation passed. An existing Compose stack from the original checkout is running and binds that checkout's folders, so it was left untouched; branch-isolated container persistence remains untested. Local tool discovery found pdfLaTeX, XeLaTeX, LuaLaTeX, BibTeX, Biber, and SyncTeX, but no `latexmk`; direct feature-path compilation is therefore blocked until an isolated latexmk environment is available.
+
+## 2026-09-29 checkpoint — citation navigation, CodeMirror, and browser hardening
+
+This update supersedes the earlier “Next implementation targets” status for citation-token navigation and the rich editor: both are now implemented on `feature/pdf-annotations-latex-ide`. Current source checkpoint before the commits below was `8a897c01d56c78efbe92f74efe7906271004ae16`, 115 commits ahead of `main` (`f1ed442d4a9c914d02014df731fae4b0cb1ad472`), 0 behind. The work remains in the isolated worktree. No merge to `main` was performed.
+
+### Implemented and hardened
+
+- Added reusable citation-token resolution for unsaved TeX snapshots, searching all visible project BibTeX files and resolving verified DOI, URL, local-PDF, or title/year identity to canonical literature/evidence objects. Ambiguous results offer choices; missing matches remain visible without a guessed destination. The endpoint is read-only.
+- Added citation-token UI navigation to the canonical note or source PDF. Added tests for nested/multiple BibTeX files, unique PDF identity, ambiguity, missing keys, and unsaved source snapshots.
+- Added CodeMirror 6 with LaTeX `stex` and BibTeX modes, line numbers, folding, and bracket matching. The shared editor adapter preserves citation insertion, editor helpers, Codex source snapshots, and SyncTeX cursor/navigation. The plain textarea remains available and is selected at narrow viewport widths.
+- Made the React-PDF preview client-only after browser runtime exposed `document is not defined` during server rendering.
+- Fixed annotation soft-delete default-root handling after the browser Hide action returned a 422 for an absent configured root. This source fix is pending its own commit.
+- Updated the PDF/LaTeX architecture document and `app/AGENTS.md` to describe the shipped citation resolver/editor adapter contracts.
+
+### Verification executed
+
+- Node `v22.23.2` / npm `10.9.8`: `npm ci` passed (513 packages added, 514 audited, 0 vulnerabilities; existing ESLint deprecation notice).
+- `npm run check:full` passed: doctor reported 0 errors and the existing ignored-`AGENTS.md` warning; all 103 tests passed; typecheck and lint passed; optimized production build passed. Lint retained 2 existing unused-variable warnings. Next emitted 20 dynamic-filesystem tracing warnings; deployment size/runtime implications remain unverified.
+- `git diff --check` passed. Build-generated changes to `next-env.d.ts` and `tsconfig.json` were restored.
+- Browser IDE smoke: CodeMirror loaded, source edits tracked/saved, command-palette helper targeted CodeMirror, and switching to the textarea preserved content. The citation panel showed a missing token gracefully. Token resolution edge cases were verified by unit tests; a real citation insert-and-compile flow was not verified.
+- With a temporary synthetic two-page PDF only, browser checks covered text annotation create/edit/tag/reload, zoom anchoring, region creation, reviewed caption and promotion, PDF replacement/stale marking, explicit text and region re-anchor with history/re-review, and Hide/Show hidden/Restore after the root fix. Temporary PDF, notes, sidecars, and manuscript fixtures were removed. This does not verify behavior on real research PDFs, touch/tablet, resize/page-navigation alignment, or OCR/transcription.
+- Compose configuration validation passed. The already-running Compose app was bound to the original checkout and was left untouched; isolated container recreation/persistence remains untested.
+- Installed host tools include pdfLaTeX, XeLaTeX, LuaLaTeX, BibTeX, Biber, and SyncTeX. `latexmk` is absent, so IDE compilation, bibliography rendering, diagnostics, and actual forward/reverse SyncTeX remain unverified. Direct pdfLaTeX was used only to create the temporary browser fixture.
+
+### Remaining verification and merge status
+
+This branch is **not merge-ready**. Tablet/touch and narrow responsive layouts need browser verification; real-PDF annotation behavior, all three TeX engine paths, `latexmk`, BibTeX and Biber output, compiled citation navigation, SyncTeX, build retention, production runtime, and Compose recreation need isolated integration checks. Manuscript stale-save/Hide/Restore browser coverage also remains outstanding. The existing Codex Act boundary remains scoped to `progress/`.

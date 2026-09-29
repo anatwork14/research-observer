@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import styles from "./LatexCodexAssistant.module.css";
+import { activeLatexEditor } from "./latex-editor-adapter";
 
 type Mode = "ask" | "draft";
 type Status = { enabled: boolean; reason?: string };
@@ -28,9 +29,9 @@ const quickPrompts: Record<Mode, string[]> = {
 };
 
 function activeTexEditor() {
-  const editor = document.querySelector<HTMLTextAreaElement>('textarea[aria-label^="Edit "]');
+  const editor = activeLatexEditor();
   if (!editor) return null;
-  const file = editor.getAttribute("aria-label")?.replace(/^Edit\s+/, "") ?? "";
+  const file = editor.file;
   if (!file.toLowerCase().endsWith(".tex")) return null;
   return { editor, file };
 }
@@ -64,7 +65,8 @@ export function LatexCodexAssistant({ projectId }: { projectId: string }) {
       setOpen(true);
       return;
     }
-    const selected = current.editor.value.slice(current.editor.selectionStart, current.editor.selectionEnd).trim();
+    const selection = current.editor.selection();
+    const selected = current.editor.value().slice(selection.start, selection.end).trim();
     setContextLabel(selected ? `${current.file} · selection` : current.file);
     setOpen(true);
   };
@@ -91,8 +93,8 @@ export function LatexCodexAssistant({ projectId }: { projectId: string }) {
       const manuscript = current ? {
         project: projectId,
         file: current.file,
-        selection: current.editor.value.slice(current.editor.selectionStart, current.editor.selectionEnd).trim(),
-        source: current.editor.value,
+        selection: current.editor.value().slice(current.editor.selection().start, current.editor.selection().end).trim(),
+        source: current.editor.value(),
         diagnostics: build.latest?.diagnostics ?? [],
       } : {
         project: projectId,

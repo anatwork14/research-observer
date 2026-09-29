@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { isSameOrigin } from "@/lib/http/same-origin";
-import { ensureLatexCitation, listLatexCitationCandidates } from "@/lib/research/latex-citations.mjs";
+import { ensureLatexCitation, listLatexCitationCandidates, resolveLatexCitationTokens } from "@/lib/research/latex-citations.mjs";
 import { latexWritesEnabled } from "@/lib/research/latex-ide.mjs";
 
 export const runtime = "nodejs";
@@ -32,17 +32,29 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (!isSameOrigin(request)) return noStore({ error: "Cross-origin citation writes are not allowed." }, { status: 403 });
-  if (!latexWritesEnabled()) return noStore({ error: "Citation writes are disabled in this environment." }, { status: 503 });
+  if (!isSameOrigin(request)) return noStore({ error: "Cross-origin citation requests are not allowed." }, { status: 403 });
 
-  let body: { action?: unknown; research?: unknown; slug?: unknown; bibFile?: unknown };
+  let body: { action?: unknown; research?: unknown; slug?: unknown; bibFile?: unknown; file?: unknown; content?: unknown };
   try {
     body = await request.json();
   } catch {
     return noStore({ error: "Request body must be valid JSON." }, { status: 400 });
   }
 
+  if (body.action === "resolve") {
+    try {
+      const result = await resolveLatexCitationTokens({
+        projectId: typeof body.research === "string" && body.research ? body.research : "default",
+        file: typeof body.file === "string" ? body.file : "",
+        content: typeof body.content === "string" ? body.content : undefined,
+      });
+      return noStore(result);
+    } catch (error) {
+      return noStore({ error: error instanceof Error ? error.message : "Could not resolve citation references." }, { status: 422 });
+    }
+  }
   if (body.action !== "ensure") return noStore({ error: "Unsupported citation action." }, { status: 400 });
+  if (!latexWritesEnabled()) return noStore({ error: "Citation writes are disabled in this environment." }, { status: 503 });
 
   try {
     const result = await ensureLatexCitation({

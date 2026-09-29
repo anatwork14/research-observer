@@ -312,6 +312,12 @@ Generated records currently use conservative `@misc` until richer canonical publ
 
 `.bib` writes use normal manuscript path guards and stale-write protection.
 
+### Citation-token navigation
+
+The editor can resolve `\\cite{key}` tokens from an unsaved source snapshot against all visible project `.bib` files. Resolution maps verified DOI, URL, local PDF, or title/year identity back to canonical compiler `literature` and `evidence` records; it does not create another bibliography store.
+
+Resolved sources link to their research note or local PDF. When a key maps to multiple canonical records, the UI presents the available choices. Missing or incomplete matches remain visible with no guessed destination. This lookup is read-only.
+
 ## Bibliography source configuration
 
 The IDE can explicitly connect the selected `.bib` to the active TeX source.
@@ -331,7 +337,9 @@ Classic BibTeX:
 
 ## Editor assistance
 
-The dependency-independent editor fallback currently provides:
+The desktop editor uses CodeMirror 6 with the LaTeX `stex` mode and a lightweight BibTeX mode. A shared editor adapter keeps citation insertion, editor helpers, Codex snapshots, and cursor-based SyncTeX independent of the editor widget. A plain textarea remains available as a fallback and is selected automatically at narrow viewport widths.
+
+The editor assistance provides:
 
 - command palette;
 - line-comment toggle;
@@ -343,11 +351,7 @@ The dependency-independent editor fallback currently provides:
 
 These diagnostics are advisory only. Compiler output remains authoritative.
 
-### Rich editor dependency boundary
-
-CodeMirror is a planned adapter, not a storage/build dependency.
-
-Because the repository commits `package-lock.json`, editor packages must be added only in a lockfile-safe change with the quality gate run. The current textarea/editor-assistance surface remains the mobile/safe fallback.
+CodeMirror is a UI dependency only; manuscript source remains plain files with the existing path and stale-write protections. The textarea fallback remains available for smaller viewports and safe plain-text editing. Editor diagnostics are advisory; compiler output remains authoritative.
 
 ## Codex manuscript context
 

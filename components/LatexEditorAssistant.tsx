@@ -12,6 +12,7 @@ import {
   type LatexOutlineItem,
 } from "@/lib/research/latex-editor-tools.mjs";
 import styles from "./LatexEditorAssistant.module.css";
+import { activeLatexEditor, notifyLatexEditorChange } from "./latex-editor-adapter";
 
 type Tab = "commands" | "outline" | "problems";
 type Transform = { content: string; selectionStart: number; selectionEnd: number };
@@ -24,11 +25,11 @@ type Snapshot = {
 };
 
 function activeEditor() {
-  return document.querySelector<HTMLTextAreaElement>('textarea[aria-label^="Edit "]');
+  return activeLatexEditor();
 }
 
-function editorFile(editor: HTMLTextAreaElement) {
-  return editor.getAttribute("aria-label")?.replace(/^Edit\s+/, "") ?? "";
+function editorFile(editor: NonNullable<ReturnType<typeof activeEditor>>) {
+  return editor.file;
 }
 
 function requireTexEditor() {
@@ -39,19 +40,10 @@ function requireTexEditor() {
   return { editor, file };
 }
 
-function replaceTextareaValue(textarea: HTMLTextAreaElement, value: string) {
-  const descriptor = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value");
-  if (!descriptor?.set) throw new Error("The current editor does not expose a writable text adapter.");
-  descriptor.set.call(textarea, value);
-  textarea.dispatchEvent(new Event("input", { bubbles: true }));
-}
-
-function applyTransform(editor: HTMLTextAreaElement, transform: Transform) {
-  replaceTextareaValue(editor, transform.content);
-  requestAnimationFrame(() => {
-    editor.focus();
-    editor.setSelectionRange(transform.selectionStart, transform.selectionEnd);
-  });
+function applyTransform(editor: NonNullable<ReturnType<typeof activeEditor>>, transform: Transform) {
+  editor.setValue(transform.content, transform.selectionStart, transform.selectionEnd);
+  editor.focus();
+  notifyLatexEditorChange();
 }
 
 function offsetForLine(content: string, line: number, column = 1) {
@@ -62,11 +54,12 @@ function offsetForLine(content: string, line: number, column = 1) {
   return Math.min(content.length, offset + Math.max(0, Math.trunc(column) - 1));
 }
 
-function snapshotFromEditor(editor: HTMLTextAreaElement): Snapshot {
-  const analysis = analyzeLatexDocument(editor.value);
+function snapshotFromEditor(editor: NonNullable<ReturnType<typeof activeEditor>>): Snapshot {
+  const content = editor.value();
+  const analysis = analyzeLatexDocument(content);
   return {
     file: editorFile(editor),
-    content: editor.value,
+    content,
     outline: analysis.outline,
     diagnostics: analysis.diagnostics,
   };
@@ -97,20 +90,8 @@ export function LatexEditorAssistant() {
       }
       setSnapshot(snapshotFromEditor(editor));
     };
-
-    let bound: HTMLTextAreaElement | null = null;
-    const bind = () => {
-      const next = activeEditor();
-      if (bound === next) return;
-      if (bound) bound.removeEventListener("input", refresh);
-      bound = next;
-      if (bound) bound.addEventListener("input", refresh);
-      refresh();
-    };
-
-    bind();
-    const observer = new MutationObserver(bind);
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["aria-label"] });
+    window.addEventListener("latex-editor-change", refresh);
+    refresh();
 
     const keydown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === "p") {
@@ -120,11 +101,12 @@ export function LatexEditorAssistant() {
         setTab("commands");
         return;
       }
-      if ((event.metaKey || event.ctrlKey) && event.key === "/" && event.target === activeEditor()) {
+      if ((event.metaKey || event.ctrlKey) && event.key === "/" && event.target === activeEditor()?.domTarget) {
         event.preventDefault();
         try {
           const { editor } = requireTexEditor();
-          applyTransform(editor, toggleLatexLineComments(editor.value, editor.selectionStart, editor.selectionEnd));
+          const selection = editor.selection();
+          applyTransform(editor, toggleLatexLineComments(editor.value(), selection.start, selection.end));
           setError("");
         } catch (requestError) {
           setError(requestError instanceof Error ? requestError.message : "Could not toggle comments.");
@@ -135,8 +117,7 @@ export function LatexEditorAssistant() {
     };
     window.addEventListener("keydown", keydown);
     return () => {
-      observer.disconnect();
-      if (bound) bound.removeEventListener("input", refresh);
+      window.removeEventListener("latex-editor-change", refresh);
       window.removeEventListener("keydown", keydown);
     };
   }, []);
@@ -146,12 +127,14 @@ export function LatexEditorAssistant() {
     try {
       const { editor } = requireTexEditor();
       let transform: Transform;
-      if (id === "toggle-comment") transform = toggleLatexLineComments(editor.value, editor.selectionStart, editor.selectionEnd);
-      else if (id === "bold") transform = wrapLatexSelection(editor.value, editor.selectionStart, editor.selectionEnd, "textbf");
-      else if (id === "italic") transform = wrapLatexSelection(editor.value, editor.selectionStart, editor.selectionEnd, "textit");
-      else if (id === "emphasis") transform = wrapLatexSelection(editor.value, editor.selectionStart, editor.selectionEnd, "emph");
-      else if (id === "section" || id === "subsection") transform = insertLatexSection(editor.value, editor.selectionStart, editor.selectionEnd, id);
-      else if (["equation", "align", "itemize", "enumerate", "figure", "table"].includes(id)) transform = insertLatexEnvironment(editor.value, editor.selectionStart, editor.selectionEnd, id);
+      const value = editor.value();
+      const selection = editor.selection();
+      if (id === "toggle-comment") transform = toggleLatexLineComments(value, selection.start, selection.end);
+      else if (id === "bold") transform = wrapLatexSelection(value, selection.start, selection.end, "textbf");
+      else if (id === "italic") transform = wrapLatexSelection(value, selection.start, selection.end, "textit");
+      else if (id === "emphasis") transform = wrapLatexSelection(value, selection.start, selection.end, "emph");
+      else if (id === "section" || id === "subsection") transform = insertLatexSection(value, selection.start, selection.end, id);
+      else if (["equation", "align", "itemize", "enumerate", "figure", "table"].includes(id)) transform = insertLatexEnvironment(value, selection.start, selection.end, id);
       else throw new Error("Unknown editor command.");
       applyTransform(editor, transform);
       setOpen(false);
@@ -164,11 +147,9 @@ export function LatexEditorAssistant() {
     setError("");
     try {
       const { editor } = requireTexEditor();
-      const offset = offsetForLine(editor.value, line, column);
+      const offset = offsetForLine(editor.value(), line, column);
       editor.focus();
-      editor.setSelectionRange(offset, offset);
-      const lineHeight = 21.9;
-      editor.scrollTop = Math.max(0, (line - 4) * lineHeight);
+      editor.setSelection(offset, offset, true);
       setOpen(false);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Could not navigate to source.");

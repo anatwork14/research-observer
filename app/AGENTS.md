@@ -65,9 +65,9 @@ These instructions apply to application code under `app/` and complement the rep
 - Citation search is project-scoped and must reuse indexed `literature`/`evidence` metadata from the canonical research compiler. Do not add a parallel citation database.
 - Citation insertion must never fabricate missing bibliography metadata. Keep incomplete candidates visible for review but non-insertable until authors/year/source identity are verified.
 - `.bib` writes must reuse stale-safe manuscript APIs and deduplicate durable identities before appending. Prefer DOI, then source URL, then local PDF, then title/year.
-- The current textarea citation/editor insertion bridge is transitional UI glue. When replacing the editor surface, preserve citation/bibliography/editor service contracts and replace only the editor adapter.
+- The editor widget is replaceable through the shared editor adapter. Preserve citation insertion, bibliography transforms, editor helpers, unsaved Codex snapshots, and cursor-based SyncTeX when changing it.
 - Lightweight client-side structural diagnostics (environment/braces/labels) are advisory only. Compiler diagnostics remain authoritative for build success/failure.
-- Do not add CodeMirror or another editor dependency without updating `package-lock.json` in the same change and running the quality gate. Keep the textarea/mobile fallback functional even after a richer editor lands.
+- Keep editor dependencies synchronized in `package.json` and `package-lock.json`, and run the quality gate after changes. Keep the plain-textarea fallback functional for narrow viewports and safe plain-text editing.
 
 ## Codex UI
 

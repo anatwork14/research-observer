@@ -1,0 +1,16 @@
+.host {
+  min-width: 0;
+  min-height: 420px;
+  height: 100%;
+  overflow: auto;
+  background: color-mix(in srgb, var(--background) 96%, var(--panel));
+}
+
+.editor {
+  min-height: 100%;
+  color: var(--text);
+  font: 13.5px/1.62 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.editor :global(.cm-scroller) { font-family: inherit; }
+.editor :global(.cm-content) { min-height: 420px; padding-bottom: 4rem; }
