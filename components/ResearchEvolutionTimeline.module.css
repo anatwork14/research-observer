@@ -234,6 +234,11 @@
   background: #6f7fcf;
 }
 
+.event[data-kind="manuscript"] .dot {
+  background: #8d63c7;
+  box-shadow: 0 0 0 1px color-mix(in srgb, #8d63c7 48%, var(--line));
+}
+
 .lineages {
   align-self: start;
   display: grid;
