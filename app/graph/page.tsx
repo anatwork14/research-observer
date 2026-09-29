@@ -5,12 +5,14 @@ import { ResearchGraph } from "@/components/ResearchGraph";
 import { ResearchVersionCompare } from "@/components/ResearchVersionCompare";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
 import { getResearchWorkspace } from "@/lib/progress";
+import { mergeEvolutionLayers } from "@/lib/research/evolution-merge.mjs";
 import {
   buildResearchEvolutionProjection,
   loadManuscriptCitationProjection,
-  mergeEvolutionProjections,
   type ManuscriptCitationProjection,
 } from "@/lib/research/evolution.mjs";
+import { buildManuscriptRevisionProjection } from "@/lib/research/manuscript-evolution.mjs";
+import { listManuscriptRevisions } from "@/lib/research/manuscript-history.mjs";
 import { buildResearchVersionComparisons } from "@/lib/research/version-compare.mjs";
 
 type GraphView = "research" | "provenance" | "timeline";
@@ -45,24 +47,28 @@ export default async function GraphPage({
     : projectGraphNodes;
   const entriesBySlug = new Map(workspace.entries.map((entry) => [entry.slug, entry]));
   const navEntries = workspace.entries.map(({ slug, order, title, status }) => ({ slug, order, title, status }));
-  const typedCount = projectGraphEdges.filter((edge) => edge.explicit).length;
-  const referenceCount = projectGraphEdges.length - typedCount;
 
   const researchEvolution = buildResearchEvolutionProjection(workspace, { projectId });
   const versionComparisons = buildResearchVersionComparisons(workspace, { projectId });
-  let manuscript: ManuscriptCitationProjection = {
-    projectId,
-    nodes: [],
-    edges: [],
-    unresolved: [],
-    stats: { manuscriptFiles: 0, citations: 0, resolved: 0, ambiguous: 0, missing: 0 },
-  };
-  try {
-    manuscript = await loadManuscriptCitationProjection({ projectId });
-  } catch {
-    // The graph remains useful before a manuscript workspace exists or when local manuscript files are unavailable.
-  }
-  const evolution = mergeEvolutionProjections(researchEvolution, manuscript);
+  const [citationResult, historyResult] = await Promise.allSettled([
+    loadManuscriptCitationProjection({ projectId }),
+    listManuscriptRevisions({ projectId }),
+  ]);
+
+  const manuscript: ManuscriptCitationProjection = citationResult.status === "fulfilled"
+    ? citationResult.value
+    : {
+        projectId,
+        nodes: [],
+        edges: [],
+        unresolved: [],
+        stats: { manuscriptFiles: 0, citations: 0, resolved: 0, ambiguous: 0, missing: 0 },
+      };
+  const manuscriptHistory = historyResult.status === "fulfilled"
+    ? historyResult.value
+    : { projectId, projectPath: "", revisions: [], dirtyFiles: [], available: false };
+  const revisions = buildManuscriptRevisionProjection({ projectId, history: manuscriptHistory });
+  const evolution = mergeEvolutionLayers(researchEvolution, manuscript, revisions);
 
   return (
     <div className="site-shell">
@@ -71,14 +77,14 @@ export default async function GraphPage({
         <header className="collection-heading">
           <div>
             <p className="eyebrow">Research evolution</p>
-            <h1>Trace how sources become evidence, claims, citations, and manuscript text.</h1>
+            <h1>Trace how sources become evidence, claims, citations, manuscript text, and revisions.</h1>
             <p>
               Keep the force-directed semantic graph for research relationships, switch to provenance to follow source-to-manuscript paths,
-              or use the timeline to compare dated research and explicit semantic versions. No graph layer invents relationships that are not already stored or resolved.
+              or use the timeline to compare dated research, explicit semantic versions, and real committed manuscript revisions. No graph layer invents relationships or revision history.
             </p>
           </div>
           <span className="collection-count">
-            {evolution.stats.researchNodes} research · {evolution.stats.annotationNodes} annotations · {evolution.stats.citationNodes} citations · {evolution.stats.timelineEvents} dated events
+            {evolution.stats.researchNodes} research · {evolution.stats.annotationNodes} annotations · {evolution.stats.citationNodes} citations · {evolution.stats.revisionNodes} revisions · {evolution.stats.timelineEvents} dated events
           </span>
         </header>
 
@@ -129,12 +135,14 @@ export default async function GraphPage({
             <EvolutionGraph nodes={evolution.nodes} edges={evolution.edges} />
             <section className="graph-index panel">
               <div className="dashboard-card-heading">
-                <div><span className="kicker">Trace health</span><h2>Manuscript citation resolution</h2></div>
+                <div><span className="kicker">Trace health</span><h2>Manuscript linkage and revision state</h2></div>
               </div>
               <div className="relationship-index">
                 <div className="relationship-index-row"><span>Resolved</span><strong>{manuscript.stats.resolved}</strong><span>citation links</span></div>
                 <div className="relationship-index-row"><span>Ambiguous</span><strong>{manuscript.stats.ambiguous}</strong><span>require explicit choice</span></div>
                 <div className="relationship-index-row"><span>Missing</span><strong>{manuscript.stats.missing}</strong><span>not linked</span></div>
+                <div className="relationship-index-row"><span>Committed revisions</span><strong>{revisions.stats.revisions}</strong><span>{revisions.available ? "Git history" : "Git history unavailable"}</span></div>
+                <div className="relationship-index-row"><span>Working changes</span><strong>{revisions.stats.dirtyFiles}</strong><span>not presented as revisions</span></div>
                 {manuscript.unresolved.slice(0, 12).map((item) => (
                   <div className="relationship-index-row" key={`${item.file}-${item.key}-${item.status}`}>
                     <span>{item.file}</span><strong>{item.key}</strong><span>{item.status}</span>
