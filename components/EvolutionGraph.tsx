@@ -33,7 +33,13 @@ type EvolutionEdge = {
   explicit: boolean;
 };
 
+type NodePosition = { x: number; y: number; width: number; height: number };
+
 const LANE_ORDER = ["paper", "annotation", "research", "citation", "manuscript", "revision"] as const;
+const LANE_WIDTH = 244;
+const LANE_GAP = 18;
+const NODE_WIDTH = 210;
+const NODE_HEIGHT = 52;
 const LANE_LABELS: Record<string, string> = {
   paper: "Papers",
   annotation: "Annotations",
@@ -54,6 +60,25 @@ function short(value: string, max = 30) {
   return value.length > max ? `${value.slice(0, max - 1)}…` : value;
 }
 
+function edgePath(source: NodePosition, target: NodePosition) {
+  const sourceRight = source.x + source.width;
+  const sourceY = source.y + source.height / 2;
+  const targetY = target.y + target.height / 2;
+
+  if (source.x === target.x) {
+    const targetRight = target.x + target.width;
+    const railX = Math.max(sourceRight, targetRight) + Math.min(86, Math.max(34, Math.abs(targetY - sourceY) * 0.2));
+    return `M ${sourceRight} ${sourceY} C ${railX} ${sourceY}, ${railX} ${targetY}, ${targetRight} ${targetY}`;
+  }
+
+  const targetLeft = target.x;
+  const horizontal = targetLeft - sourceRight;
+  const bend = Math.max(28, Math.abs(horizontal) * 0.45);
+  const sourceControl = horizontal >= 0 ? sourceRight + bend : sourceRight - bend;
+  const targetControl = horizontal >= 0 ? targetLeft - bend : targetLeft + bend;
+  return `M ${sourceRight} ${sourceY} C ${sourceControl} ${sourceY}, ${targetControl} ${targetY}, ${targetLeft} ${targetY}`;
+}
+
 export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges: EvolutionEdge[] }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -66,13 +91,14 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
   const filteredNodes = useMemo(() => {
     const needle = query.trim().toLowerCase();
     if (!needle) return nodes;
-    const direct = new Set(nodes.filter((node) => [node.label, node.kind, node.role || "", node.type || "", node.status || "", node.shortCommit || "", node.author || ""]
+    const matches = new Set(nodes.filter((node) => [node.label, node.kind, node.role || "", node.type || "", node.status || "", node.shortCommit || "", node.author || ""]
       .some((value) => value.toLowerCase().includes(needle))).map((node) => node.id));
+    const expanded = new Set(matches);
     for (const edge of edges) {
-      if (direct.has(edge.source)) direct.add(edge.target);
-      if (direct.has(edge.target)) direct.add(edge.source);
+      if (matches.has(edge.source)) expanded.add(edge.target);
+      if (matches.has(edge.target)) expanded.add(edge.source);
     }
-    return nodes.filter((node) => direct.has(node.id));
+    return nodes.filter((node) => expanded.has(node.id));
   }, [edges, nodes, query]);
 
   const visibleIds = useMemo(() => new Set(filteredNodes.map((node) => node.id)), [filteredNodes]);
@@ -98,29 +124,25 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
   }, [filteredNodes]);
 
   const layout = useMemo(() => {
-    const laneWidth = 244;
-    const laneGap = 18;
     const top = 82;
     const rowHeight = 72;
-    const nodeWidth = 210;
-    const nodeHeight = 52;
-    const positions = new Map<string, { x: number; y: number; width: number; height: number }>();
+    const positions = new Map<string, NodePosition>();
     let maxRows = 1;
     LANE_ORDER.forEach((lane, laneIndex) => {
       const items = lanes.get(lane) || [];
       maxRows = Math.max(maxRows, items.length);
       items.forEach((node, rowIndex) => {
         positions.set(node.id, {
-          x: 24 + laneIndex * (laneWidth + laneGap),
+          x: 24 + laneIndex * (LANE_WIDTH + LANE_GAP),
           y: top + rowIndex * rowHeight,
-          width: nodeWidth,
-          height: nodeHeight,
+          width: NODE_WIDTH,
+          height: NODE_HEIGHT,
         });
       });
     });
     return {
       positions,
-      width: 24 + LANE_ORDER.length * laneWidth + (LANE_ORDER.length - 1) * laneGap + 24,
+      width: 24 + LANE_ORDER.length * LANE_WIDTH + (LANE_ORDER.length - 1) * LANE_GAP + 24,
       height: Math.max(560, top + maxRows * rowHeight + 70),
     };
   }, [lanes]);
@@ -181,7 +203,7 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
           </defs>
 
           {LANE_ORDER.map((lane, index) => {
-            const x = 24 + index * (244 + 18);
+            const x = 24 + index * (LANE_WIDTH + LANE_GAP);
             return (
               <g key={lane}>
                 <rect x={x - 8} y={18} width={226} height={layout.height - 36} rx={14} className={styles.lane} />
@@ -195,17 +217,11 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
             const source = layout.positions.get(edge.source);
             const target = layout.positions.get(edge.target);
             if (!source || !target) return null;
-            const x1 = source.x + source.width;
-            const y1 = source.y + source.height / 2;
-            const x2 = target.x;
-            const y2 = target.y + target.height / 2;
-            const bend = Math.max(28, Math.abs(x2 - x1) * 0.45);
-            const d = `M ${x1} ${y1} C ${x1 + bend} ${y1}, ${x2 - bend} ${y2}, ${x2} ${y2}`;
             const active = !selected || edge.source === selected || edge.target === selected;
             return (
               <path
                 key={edge.id}
-                d={d}
+                d={edgePath(source, target)}
                 className={`${styles.edge} ${styles[`layer_${edge.layer}`]} ${active ? "" : styles.dim}`}
                 markerEnd="url(#evolution-arrow)"
               />
