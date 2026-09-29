@@ -40,6 +40,7 @@ const LANE_WIDTH = 244;
 const LANE_GAP = 18;
 const NODE_WIDTH = 210;
 const NODE_HEIGHT = 52;
+const MAX_VISIBLE_PER_LANE = 90;
 const LANE_LABELS: Record<string, string> = {
   paper: "Papers",
   annotation: "Annotations",
@@ -79,6 +80,14 @@ function edgePath(source: NodePosition, target: NodePosition) {
   return `M ${sourceRight} ${sourceY} C ${sourceControl} ${sourceY}, ${targetControl} ${targetY}, ${targetLeft} ${targetY}`;
 }
 
+function visualNodeCompare(a: EvolutionNode, b: EvolutionNode) {
+  if (a.kind === "research" && b.kind === "research") {
+    return (a.role || "").localeCompare(b.role || "") || a.label.localeCompare(b.label);
+  }
+  if (a.kind === "revision" && b.kind === "revision") return (a.date || "").localeCompare(b.date || "");
+  return a.label.localeCompare(b.label);
+}
+
 export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges: EvolutionEdge[] }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -88,20 +97,60 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
   );
 
   const nodeById = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
-  const filteredNodes = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    if (!needle) return nodes;
-    const matches = new Set(nodes.filter((node) => [node.label, node.kind, node.role || "", node.type || "", node.status || "", node.shortCommit || "", node.author || ""]
-      .some((value) => value.toLowerCase().includes(needle))).map((node) => node.id));
-    const expanded = new Set(matches);
+  const degree = useMemo(() => {
+    const counts = new Map<string, number>();
     for (const edge of edges) {
-      if (matches.has(edge.source)) expanded.add(edge.target);
-      if (matches.has(edge.target)) expanded.add(edge.source);
+      counts.set(edge.source, (counts.get(edge.source) || 0) + 1);
+      counts.set(edge.target, (counts.get(edge.target) || 0) + 1);
+    }
+    return counts;
+  }, [edges]);
+  const needle = query.trim().toLowerCase();
+  const matchIds = useMemo(() => {
+    if (!needle) return new Set<string>();
+    return new Set(nodes
+      .filter((node) => [node.label, node.kind, node.role || "", node.type || "", node.status || "", node.shortCommit || "", node.author || ""]
+        .some((value) => value.toLowerCase().includes(needle)))
+      .map((node) => node.id));
+  }, [needle, nodes]);
+  const filteredNodes = useMemo(() => {
+    if (!needle) return nodes;
+    const expanded = new Set(matchIds);
+    for (const edge of edges) {
+      if (matchIds.has(edge.source)) expanded.add(edge.target);
+      if (matchIds.has(edge.target)) expanded.add(edge.source);
     }
     return nodes.filter((node) => expanded.has(node.id));
-  }, [edges, nodes, query]);
+  }, [edges, matchIds, needle, nodes]);
 
-  const visibleIds = useMemo(() => new Set(filteredNodes.map((node) => node.id)), [filteredNodes]);
+  const fullLaneCounts = useMemo(() => {
+    const counts = new Map<string, number>(LANE_ORDER.map((lane) => [lane, 0]));
+    for (const node of filteredNodes) counts.set(node.kind, (counts.get(node.kind) || 0) + 1);
+    return counts;
+  }, [filteredNodes]);
+
+  const displayNodes = useMemo(() => {
+    const grouped = new Map<string, EvolutionNode[]>(LANE_ORDER.map((lane) => [lane, []]));
+    for (const node of filteredNodes) grouped.get(node.kind)?.push(node);
+    const visible: EvolutionNode[] = [];
+    for (const lane of LANE_ORDER) {
+      const items = grouped.get(lane) || [];
+      items.sort((a, b) => {
+        if (a.id === selected) return -1;
+        if (b.id === selected) return 1;
+        const aMatch = matchIds.has(a.id);
+        const bMatch = matchIds.has(b.id);
+        if (aMatch !== bMatch) return aMatch ? -1 : 1;
+        const degreeDelta = (degree.get(b.id) || 0) - (degree.get(a.id) || 0);
+        return degreeDelta || visualNodeCompare(a, b);
+      });
+      visible.push(...items.slice(0, MAX_VISIBLE_PER_LANE));
+    }
+    return visible;
+  }, [degree, filteredNodes, matchIds, selected]);
+
+  const hiddenNodeCount = filteredNodes.length - displayNodes.length;
+  const visibleIds = useMemo(() => new Set(displayNodes.map((node) => node.id)), [displayNodes]);
   const visibleEdges = useMemo(
     () => edges.filter((edge) => layers.has(edge.layer) && visibleIds.has(edge.source) && visibleIds.has(edge.target)),
     [edges, layers, visibleIds],
@@ -110,18 +159,10 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
   const lanes = useMemo(() => {
     const grouped = new Map<string, EvolutionNode[]>();
     for (const lane of LANE_ORDER) grouped.set(lane, []);
-    for (const node of filteredNodes) grouped.get(node.kind)?.push(node);
-    for (const items of grouped.values()) {
-      items.sort((a, b) => {
-        if (a.kind === "research" && b.kind === "research") {
-          return (a.role || "").localeCompare(b.role || "") || a.label.localeCompare(b.label);
-        }
-        if (a.kind === "revision" && b.kind === "revision") return (a.date || "").localeCompare(b.date || "");
-        return a.label.localeCompare(b.label);
-      });
-    }
+    for (const node of displayNodes) grouped.get(node.kind)?.push(node);
+    for (const items of grouped.values()) items.sort(visualNodeCompare);
     return grouped;
-  }, [filteredNodes]);
+  }, [displayNodes]);
 
   const layout = useMemo(() => {
     const top = 82;
@@ -177,6 +218,11 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
         <div>
           <span className={styles.kicker}>Provenance graph</span>
           <strong>Trace research into the manuscript and its committed revisions</strong>
+          <small className={styles.scopeNote} aria-live="polite">
+            {hiddenNodeCount > 0
+              ? `Showing ${displayNodes.length} of ${filteredNodes.length} matching/connected nodes. Search narrows the complete projection.`
+              : `${displayNodes.length} nodes · ${visibleEdges.length} visible edges`}
+          </small>
         </div>
         <input
           className={styles.search}
@@ -204,11 +250,13 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
 
           {LANE_ORDER.map((lane, index) => {
             const x = 24 + index * (LANE_WIDTH + LANE_GAP);
+            const shown = lanes.get(lane)?.length || 0;
+            const total = fullLaneCounts.get(lane) || 0;
             return (
               <g key={lane}>
                 <rect x={x - 8} y={18} width={226} height={layout.height - 36} rx={14} className={styles.lane} />
                 <text x={x} y={48} className={styles.laneTitle}>{LANE_LABELS[lane]}</text>
-                <text x={x} y={64} className={styles.laneCount}>{lanes.get(lane)?.length || 0} nodes</text>
+                <text x={x} y={64} className={styles.laneCount}>{shown === total ? `${shown} nodes` : `${shown} / ${total} nodes`}</text>
               </g>
             );
           })}
@@ -292,7 +340,11 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
               })}
               {!selectedEdges.length && <p>No visible connections in the enabled layers.</p>}
             </div>
-            {selectedNode.href && <button className={styles.open} type="button" onClick={() => router.push(selectedNode.href!)}>Open source</button>}
+            {selectedNode.href && (
+              <button className={styles.open} type="button" onClick={() => router.push(selectedNode.href!)}>
+                {selectedNode.kind === "revision" ? "Open current manuscript" : "Open source"}
+              </button>
+            )}
           </>
         ) : (
           <p className={styles.empty}>Select a node to inspect its source, semantic, version, citation, and revision connections.</p>
