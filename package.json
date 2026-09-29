@@ -9,8 +9,9 @@
   "scripts": {
     "dev": "node scripts/dev-research.mjs",
     "observaire:prepare": "node scripts/prepare-observaire-dirs.mjs",
-    "observaire:start": "npm run observaire:prepare && docker compose up -d",
-    "observaire:start:build": "npm run observaire:prepare && docker compose up -d --build",
+    "observaire:prepare-volume": "node scripts/prepare-observaire-volume.mjs",
+    "observaire:start": "npm run observaire:prepare && npm run observaire:prepare-volume && docker compose up -d",
+    "observaire:start:build": "npm run observaire:prepare && npm run observaire:prepare-volume && docker compose up -d --build",
     "observaire:stop": "docker compose down",
     "observaire:restart": "docker compose restart",
     "observaire:logs": "docker compose logs -f --tail=100",
