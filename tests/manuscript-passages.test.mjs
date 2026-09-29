@@ -17,12 +17,12 @@ test("passage extraction returns literal paragraph, line, and nearest explicit h
   const offset = source.indexOf("\\cite{beta}");
   const passage = locateManuscriptPassage(source, offset);
   assert.equal(passage.line, 6);
-  assert.equal(passage.lineStart, 5);
+  assert.equal(passage.lineStart, 6);
   assert.equal(passage.lineEnd, 6);
   assert.equal(passage.heading?.level, "subsection");
   assert.equal(passage.heading?.title, "Evaluation");
-  assert.match(passage.excerpt, /A second paragraph cites/);
-  assert.doesNotMatch(passage.excerpt, /Final uncited paragraph/);
+  assert.match(passage.excerpt, /^A second paragraph cites/);
+  assert.doesNotMatch(passage.excerpt, /subsection|Ignored comment|Final uncited paragraph/);
 });
 
 test("commented headings are not treated as manuscript structure", () => {
@@ -37,6 +37,7 @@ test("citations in the same paragraph map to the same passage identity", () => {
   const second = locateManuscriptPassage(text, text.indexOf("\\cite{b}"));
   assert.equal(first.start, second.start);
   assert.equal(first.end, second.end);
+  assert.equal(first.lineStart, 2);
   assert.equal(
     manuscriptPassageId("default", "main.tex", first.start, first.end),
     manuscriptPassageId("default", "main.tex", second.start, second.end),
