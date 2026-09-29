@@ -2,18 +2,19 @@
 
 These instructions apply to implementation under `lib/research/` and complement the repository-root `AGENTS.md`.
 
-For graph/timeline/version work, also read `docs/RESEARCH_EVOLUTION.md`.
+For graph/timeline/version work, also read `docs/RESEARCH_EVOLUTION.md`. For explicit manuscript Claim work, also read `docs/MANUSCRIPT_CLAIMS.md`.
 
 ## Canonical-data boundary
 
-- `progress/` remains the canonical indexed research source. Never create a second hand-maintained graph, timeline, citation, passage, or version database.
+- `progress/` remains the canonical indexed research source. Never create a second hand-maintained graph, timeline, citation, passage, claim, or version database.
 - Evolution/provenance/timeline data are derived projections and must remain rebuildable from canonical research/manuscript/Git sources.
+- Explicit manuscript Claim identity is authored in saved `.tex` comments; no separate Claim database is authoritative.
 - Generated `.research-observer/` and `public/_research/` data are never authoritative.
 
 ## Graph semantics
 
 - Preserve the compiler distinction between explicit typed relationships and implicit Markdown references.
-- Never infer `supports`, `contradicts`, `answers`, `based_on`, `supersedes`, or other semantic relationships from proximity, citation occurrence, manuscript passage text, annotation type, metric direction, dates, or AI interpretation.
+- Never infer `supports`, `contradicts`, `answers`, `based_on`, `supersedes`, `confirms`, or other semantic relationships from proximity, citation occurrence, manuscript passage text, explicit Claim presence, annotation type, metric direction, dates, or AI interpretation.
 - Promoted annotation provenance may be reconstructed only from the durable promotion snapshot stored in canonical evidence content plus canonical evidence `source` metadata.
 - Private annotation-sidecar changes after promotion must not silently rewrite historical evidence provenance.
 - Canonical local PDF identity must use the compiler-visible asset path, including folder-backed project context. Two projects with `papers/source.pdf` must never collapse into one source node.
@@ -31,9 +32,21 @@ For graph/timeline/version work, also read `docs/RESEARCH_EVOLUTION.md`.
 - Multiple citation occurrences in the same saved passage should deduplicate to one Passage node.
 - Never summarize, paraphrase, classify, score, or semantically interpret passage text as part of this projection.
 
+## Explicit manuscript Claims
+
+- Claims are created only from a user-authored `% observaire:claim <id>` comment in saved visible editable `.tex` source.
+- Claim IDs are lowercase kebab-case, at most 80 characters, project-scoped, and unique within the live manuscript projection. The reserved `claim-id` editor placeholder is invalid until replaced.
+- A Claim anchor attaches to the next substantive saved prose passage. Blank/comment-only lines, stacked Claim markers, and standalone heading commands may be skipped when locating that passage.
+- A valid unique Claim may exist without any citation. Do not invent a research/evidence edge for an uncited Claim.
+- Citation and Claim projections must converge on the same deterministic Passage identity when they refer to the same saved block.
+- Duplicate, invalid, and orphan anchors are health issues. Do not auto-rename, choose a duplicate winner, or manufacture a fallback target.
+- Claim projection may create only structural provenance edges such as `anchors_claim` and `part_of`.
+- Claim presence or citation proximity never implies `supports`, `contradicts`, `confirms`, `answers`, or any other Claim↔Evidence semantic relation.
+- Lightweight active-editor diagnostics may surface malformed/orphan Claim anchors, but project-wide duplicate detection belongs to the project-level projection.
+
 ## Manuscript navigation
 
-- Citation/Passage deep links may request a file and positive line in `/ide`.
+- Citation/Passage/Claim deep links may request a file and positive line in `/ide`.
 - The IDE must honor a requested file only if the selected workspace reports it as editable and visible.
 - Hidden, missing, resource, traversal, or unrelated-project paths must not be opened through provenance navigation.
 - Reuse the workbench `openFile`/cursor mechanism already used by diagnostics and SyncTeX; do not automate DOM clicks or bypass stale-safe source reads.
@@ -55,7 +68,7 @@ For graph/timeline/version work, also read `docs/RESEARCH_EVOLUTION.md`.
 - Use path-safe Git output. Renames, spaces, and non-ASCII source names must not silently disappear from history/status parsing.
 - A Git repository with no `HEAD` yet still has valid working-tree state: report dirty/untracked manuscript files while returning zero committed revisions.
 - Dirty/untracked manuscript files are working state, not revisions. Report them separately.
-- If Git history is unavailable, degrade the revision layer without breaking research/citation projections.
+- If Git history is unavailable, degrade the revision layer without breaking research/citation/claim projections.
 
 ## Timeline semantics
 
@@ -70,9 +83,10 @@ Keep expensive derived work bounded. Current contracts include:
 - manuscript Git history: maximum 80 revisions;
 - research source diff: maximum 240 lines per side;
 - project-scoped citation scanning: visible editable `.tex` files only;
+- project-scoped Claim scanning: visible editable `.tex` files only;
 - passage excerpt: bounded literal source text only;
 - provenance UI: maximum 90 rendered nodes per lane before search/focus prioritization;
-- selected provenance trace: maximum 6 hops in the UI (service helper accepts a bounded maximum of 12).
+- selected provenance trace: maximum 7 hops in the UI (service helper accepts a bounded maximum of 12).
 
 Do not remove bounds to make one large fixture pass. The underlying derived projection remains complete even when the UI renders a bounded working set.
 
@@ -86,7 +100,11 @@ node --test tests/research-evolution-consensus.test.mjs
 node --test tests/research-evolution-trace.test.mjs
 node --test tests/research-evolution-layout.test.mjs
 node --test tests/research-evolution-passages.test.mjs
+node --test tests/research-evolution-claims.test.mjs
 node --test tests/manuscript-passages.test.mjs
+node --test tests/manuscript-claims.test.mjs
+node --test tests/manuscript-claim-projection.test.mjs
+node --test tests/latex-claim-anchor-ui.test.mjs
 node --test tests/latex-provenance-navigation.test.mjs
 node --test tests/research-version-lineage.test.mjs
 node --test tests/research-version-compare.test.mjs
