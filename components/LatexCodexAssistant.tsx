@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import styles from "./LatexCodexAssistant.module.css";
 import { activeLatexEditor } from "./latex-editor-adapter";
+import { announceIdeOverlayOpen, listenForOtherIdeOverlay } from "./ide-overlay-coordinator";
 
 type Mode = "ask" | "draft" | "act";
 type Status = { enabled: boolean; reason?: string };
@@ -77,6 +78,7 @@ export function LatexCodexAssistant({ projectId }: { projectId: string }) {
 
   useEffect(() => {
     const controller = new AbortController();
+    const stopOverlayListener = listenForOtherIdeOverlay("codex", () => setOpen(false));
     Promise.all([
       fetchStatus("/api/codex/ask", controller.signal).catch((requestError) => {
         if ((requestError as Error).name === "AbortError") throw requestError;
@@ -90,11 +92,15 @@ export function LatexCodexAssistant({ projectId }: { projectId: string }) {
       setStatus(ask);
       setActStatus(act);
     }).catch(() => null);
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+      stopOverlayListener();
+    };
   }, []);
 
   const openAssistant = () => {
     const current = activeManuscriptEditor();
+    announceIdeOverlayOpen("codex");
     if (!current) {
       setContextLabel("Workspace · no manuscript source open");
       setOpen(true);
