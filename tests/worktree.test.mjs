@@ -93,3 +93,20 @@ test("Codex diff compares against the staged live research snapshot rather than 
     "research-data/new.md",
   ]);
 });
+
+test("stale-file checks reject a symlinked parent instead of following it outside the repository", async (t) => {
+  const root = await fixture();
+  const outside = await fs.mkdtemp(path.join(os.tmpdir(), "observaire-worktree-outside-"));
+  t.after(async () => {
+    await fs.rm(root, { recursive: true, force: true });
+    await fs.rm(outside, { recursive: true, force: true });
+  });
+
+  await fs.writeFile(path.join(outside, "new.tex"), "outside manuscript data\n", "utf8");
+  await fs.symlink(outside, path.join(root, "research-data", "linked"), "dir");
+
+  assert.deepEqual(
+    await changedFileStates(root, { "research-data/linked/new.tex": null }),
+    ["research-data/linked/new.tex"],
+  );
+});

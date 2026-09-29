@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import test from "node:test";
-import { allManuscriptPaths, collectManuscriptDiff } from "../lib/codex/worktree.mjs";
+import { allManuscriptPaths, collectManuscriptDiff, noHiddenManuscriptPaths } from "../lib/codex/worktree.mjs";
 
 function git(cwd, args) {
   return new Promise((resolve, reject) => {
@@ -51,6 +51,8 @@ test("manuscript proposal paths stay inside one project and only allow editable 
   assert.equal(allManuscriptPaths(["manuscripts/demo/AGENTS.md"], "manuscripts/demo"), false);
   assert.equal(allManuscriptPaths(["manuscripts/demo/figure.png"], "manuscripts/demo"), false);
   assert.throws(() => allManuscriptPaths(["../outside.tex"], "manuscripts/demo"), /inside the repository/);
+  assert.equal(noHiddenManuscriptPaths(["manuscripts/demo/hidden.tex"], ["manuscripts/demo/hidden.tex"]), false);
+  assert.equal(noHiddenManuscriptPaths(["manuscripts/demo/main.tex"], ["manuscripts/demo/hidden.tex"]), true);
 });
 
 test("reviewable manuscript diff supports source edits and additions", async (t) => {

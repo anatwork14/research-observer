@@ -164,7 +164,11 @@ export async function POST(request: Request) {
 
   let body: { prompt?: unknown; projectId?: unknown; context?: { manuscript?: ManuscriptContext } };
   try {
-    body = await request.json();
+    const parsed: unknown = await request.json();
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return NextResponse.json({ error: "Request body must be a JSON object." }, { status: 400 });
+    }
+    body = parsed as typeof body;
   } catch {
     return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
   }
@@ -184,6 +188,9 @@ export async function POST(request: Request) {
     const manuscriptPath = `${manuscriptsRootPath}/${projectId}`;
     const ide = await listLatexWorkspace({ rootDir: root, projectId });
     const visibleSources = ide.files.filter((file) => file.editable && !file.hidden);
+    const hiddenSourcePaths = new Set(ide.files
+      .filter((file) => file.editable && file.hidden)
+      .map((file) => manuscriptPath + "/" + file.path));
     const manuscriptContext = body.context?.manuscript ?? {};
 
     const activeFile = clean(manuscriptContext.file, 500);
@@ -255,13 +262,21 @@ export async function POST(request: Request) {
       if (restore.code !== 0) throw new Error(restore.stderr || "Could not restore the manuscript review baseline.");
 
       const diff = await collectManuscriptDiff(worktree, manuscriptPath);
+      const touchesHiddenSource = diff.files.some((file) => hiddenSourcePaths.has(file));
       const baseFiles = diff.allowed ? await captureTreeFileStates(worktree, baselineTree, diff.files) : {};
-      const validation = diff.allowed && diff.reviewable && diff.patch
+      const validation = diff.allowed && diff.reviewable && !touchesHiddenSource && diff.patch
         ? await validateProposalFiles(worktree, diff.files, manuscriptPath)
-        : { valid: false, diagnostics: [] };
+        : {
+          valid: false,
+          diagnostics: touchesHiddenSource
+            ? [{ file: "", severity: "error", code: "hidden-source", message: "Hidden manuscript sources cannot be changed by Act proposals." }]
+            : [],
+        };
 
       return {
         ...diff,
+        allowed: diff.allowed && !touchesHiddenSource,
+        reviewable: diff.reviewable && !touchesHiddenSource,
         kind: "manuscript-codex",
         baseFiles,
         projectId,

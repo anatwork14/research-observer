@@ -11,30 +11,43 @@ export type ProposalMetadata = {
   files: string[];
   valid: boolean;
   reviewable: boolean;
-  doctor: { code: number; output: string };
+  doctor?: { code: number; output: string };
   summary: string;
   slug?: string;
   filename?: string;
   baseSha256?: string;
   baseFiles?: Record<string, string | null>;
   researchPath?: string;
+  manuscriptPath?: string;
+  projectId?: string;
+  validation?: {
+    valid: boolean;
+    diagnostics: Array<{ file: string; severity: string; code: string; line?: number; message: string }>;
+  };
+  destructive?: boolean;
   workspaceSignature?: string;
   patchSha256: string;
 };
 
-export function runGit(cwd: string, args: string[], options?: { input?: string; timeoutMs?: number }): Promise<CommandResult>;
-export function parseStatusPaths(output: string): string[];
-export function allResearchPaths(paths: string[], researchPath?: string): boolean;
-export function gitStatusPaths(root: string): Promise<string[]>;
-export function withDetachedWorktree<T>(root: string, task: (worktree: string) => Promise<T>): Promise<T>;
-export function collectResearchDiff(worktree: string, researchPath?: string): Promise<{
+export type ProposalDiff = {
   files: string[];
   patch: string;
   allowed: boolean;
   reviewable: boolean;
   patchBytes: number;
   binary: boolean;
-}>;
+  destructive: boolean;
+};
+
+export function runGit(cwd: string, args: string[], options?: { input?: string; timeoutMs?: number }): Promise<CommandResult>;
+export function parseStatusPaths(output: string): string[];
+export function allResearchPaths(paths: string[], researchPath?: string): boolean;
+export function allManuscriptPaths(paths: string[], manuscriptPath: string): boolean;
+export function noHiddenManuscriptPaths(paths: string[], hiddenPaths: string[]): boolean;
+export function gitStatusPaths(root: string): Promise<string[]>;
+export function withDetachedWorktree<T>(root: string, task: (worktree: string) => Promise<T>): Promise<T>;
+export function collectResearchDiff(worktree: string, researchPath?: string): Promise<ProposalDiff>;
+export function collectManuscriptDiff(worktree: string, manuscriptPath: string): Promise<ProposalDiff>;
 export function captureTreeFileStates(worktree: string, treeSha: string, files: string[]): Promise<Record<string, string | null>>;
 export function changedFileStates(root: string, baseline?: Record<string, string | null>): Promise<string[]>;
 export function runResearchDoctor(root: string, cwd?: string): Promise<CommandResult>;
@@ -44,13 +57,17 @@ export function storeProposal(root: string, proposal: {
   patch: string;
   valid: boolean;
   reviewable: boolean;
-  doctor: { code: number; output: string };
+  doctor?: { code: number; output: string };
   summary: string;
   slug?: string;
   filename?: string;
   baseSha256?: string;
   baseFiles?: Record<string, string | null>;
   researchPath?: string;
+  manuscriptPath?: string;
+  projectId?: string;
+  validation?: ProposalMetadata["validation"];
+  destructive?: boolean;
   workspaceSignature?: string;
 }): Promise<ProposalMetadata>;
 export function loadProposal(root: string, id: string): Promise<{ metadata: ProposalMetadata; patch: string }>;

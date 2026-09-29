@@ -7,6 +7,7 @@ import {
   changedFileStates,
   deleteProposal,
   loadProposal,
+  noHiddenManuscriptPaths,
   runGit,
 } from "@/lib/codex/worktree.mjs";
 
@@ -33,7 +34,11 @@ export async function POST(request: Request) {
 
   let body: { id?: unknown; action?: unknown };
   try {
-    body = await request.json();
+    const parsed: unknown = await request.json();
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return NextResponse.json({ error: "Request body must be a JSON object." }, { status: 400 });
+    }
+    body = parsed as typeof body;
   } catch {
     return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
   }
@@ -57,7 +62,12 @@ export async function POST(request: Request) {
 
     const manuscriptPath = clean(metadata.manuscriptPath, 1000);
     const projectId = clean(metadata.projectId, 120);
-    if (!manuscriptPath || !projectId || !allManuscriptPaths(metadata.files ?? [], manuscriptPath)) {
+    const ide = projectId ? await listLatexWorkspace({ rootDir: root, projectId }) : null;
+    const hiddenSourcePaths = ide?.files
+      .filter((file) => file.editable && file.hidden)
+      .map((file) => manuscriptPath + "/" + file.path) ?? [];
+    if (!manuscriptPath || !projectId || !allManuscriptPaths(metadata.files ?? [], manuscriptPath) ||
+      !noHiddenManuscriptPaths(metadata.files ?? [], hiddenSourcePaths)) {
       return NextResponse.json({ error: "The proposal contains files outside its reviewed manuscript project." }, { status: 409 });
     }
     if (metadata.destructive) {
@@ -93,6 +103,14 @@ export async function POST(request: Request) {
     const check = await runGit(root, ["apply", "--check", "--whitespace=nowarn", "-"], { input: patch });
     if (check.code !== 0) {
       return NextResponse.json({ error: "The manuscript proposal no longer applies cleanly.", detail: check.stderr.slice(0, 4000) }, { status: 409 });
+    }
+
+    const lastCheckConflicts = await changedFileStates(root, baseline);
+    if (lastCheckConflicts.length) {
+      return NextResponse.json({
+        error: "Live manuscript files changed while Apply was checking the reviewed proposal. Generate a new proposal from the latest source.",
+        conflicts: lastCheckConflicts,
+      }, { status: 409 });
     }
 
     const applied = await runGit(root, ["apply", "--whitespace=nowarn", "-"], { input: patch });
