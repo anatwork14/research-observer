@@ -12,6 +12,7 @@ const fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "observaire-compose-
 const researchDir = path.join(fixtureRoot, "progress");
 const annotationsDir = path.join(fixtureRoot, "annotations");
 const manuscriptsDir = path.join(fixtureRoot, "manuscripts");
+const stateMarker = "state-volume-survives-recreate";
 
 if (stateVolume === "observaire-profile") throw new Error("Persistence verification must never use the normal Observaire state volume.");
 
@@ -85,6 +86,32 @@ function mountedChecks() {
     .join(" && ");
 }
 
+async function probeStateVolume() {
+  const probe = await run("docker", [
+    "compose", "-p", project, "run", "--rm", "--no-deps", "observaire",
+    "sh", "-lc",
+    `set -eu; test -w /app/.research-observer; printf '%s\\n' '${stateMarker}' > /app/.research-observer/persistence-marker.txt; sync; grep -Fxq '${stateMarker}' /app/.research-observer/persistence-marker.txt`,
+  ], { allowFailure: true, capture: true });
+  if (probe.code === 0) return;
+
+  const detail = `${probe.stderr}\n${probe.stdout}`.trim();
+  const disk = await run("docker", ["system", "df"], { allowFailure: true, capture: true }).catch(() => ({ stdout: "", stderr: "" }));
+  const storageFailure = /(?:i\/o error|input\/output error|no space left on device|enospc|disk quota)/i.test(detail);
+  const permissionFailure = /permission denied/i.test(detail);
+  const hint = storageFailure
+    ? "Docker's storage backend is not writable or is out of space. Free/expand Docker VM storage, then rerun verification. This is an infrastructure failure; the persistence gate must remain failed until the write+fsync probe succeeds."
+    : permissionFailure
+      ? "The Observaire runtime UID/GID cannot write the disposable state volume. Check Docker volume ownership/copy-up permissions; do not bypass this by running the application as root."
+      : "The disposable Observaire state volume failed a write+fsync/readback probe with the real application image and runtime user.";
+  throw new Error([
+    `[verify:persistence] state-volume preflight failed for ${stateVolume}.`,
+    hint,
+    detail ? `Probe output:\n${detail}` : "Probe returned no diagnostic output.",
+    disk.stdout?.trim() ? `Docker storage summary:\n${disk.stdout.trim()}` : "",
+    disk.stderr?.trim() ? `Docker storage diagnostic:\n${disk.stderr.trim()}` : "",
+  ].filter(Boolean).join("\n\n"));
+}
+
 console.log(`[verify:persistence] project: ${project}`);
 console.log(`[verify:persistence] disposable state volume: ${stateVolume}`);
 console.log(`[verify:persistence] fixture root: ${fixtureRoot}`);
@@ -96,15 +123,18 @@ try {
   }
   await run("docker", ["volume", "create", stateVolume]);
   await run("docker", ["compose", "-p", project, "build", "observaire"]);
+  await probeStateVolume();
+  console.log("[verify:persistence] disposable state-volume write+fsync preflight: PASS");
+
   await run("docker", ["compose", "-p", project, "up", "-d", "--no-build", "observaire"]);
-  await run("docker", ["compose", "-p", project, "exec", "-T", "observaire", "sh", "-lc", `${mountedChecks()} && printf '%s\\n' 'state-volume-survives-recreate' > /app/.research-observer/persistence-marker.txt`]);
+  await run("docker", ["compose", "-p", project, "exec", "-T", "observaire", "sh", "-lc", `${mountedChecks()} && grep -Fxq '${stateMarker}' /app/.research-observer/persistence-marker.txt`]);
 
   await run("docker", ["compose", "-p", project, "down"]);
 
   await verifyHostBytes();
 
   await run("docker", ["compose", "-p", project, "up", "-d", "--no-build", "observaire"]);
-  await run("docker", ["compose", "-p", project, "exec", "-T", "observaire", "sh", "-lc", `${mountedChecks()} && grep -Fxq 'state-volume-survives-recreate' /app/.research-observer/persistence-marker.txt`]);
+  await run("docker", ["compose", "-p", project, "exec", "-T", "observaire", "sh", "-lc", `${mountedChecks()} && grep -Fxq '${stateMarker}' /app/.research-observer/persistence-marker.txt`]);
   await verifyHostBytes();
 
   console.log("[verify:persistence] PASS");
@@ -112,7 +142,7 @@ try {
   console.log("annotation bind mount: PASS");
   console.log("manuscript bind mount: PASS");
   console.log("exact SHA-256 bytes before and after recreation: PASS");
-  console.log("state volume across recreation: PASS");
+  console.log("state volume write+fsync and recreation: PASS");
 } finally {
   await run("docker", ["compose", "-p", project, "down"], { allowFailure: true }).catch(() => null);
   await run("docker", ["volume", "rm", "-f", stateVolume], { allowFailure: true }).catch(() => null);
