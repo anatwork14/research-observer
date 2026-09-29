@@ -39,10 +39,14 @@ async function restoreSnapshot(root: string, id: string) {
     const restored = await restoreManuscriptRecoverySnapshot({ root, proposalId: id });
     try {
       await deleteManuscriptRecoverySnapshot({ root, proposalId: id });
+      return { ok: true, restored: restored.restored };
     } catch (error) {
-      throw new Error("Source files were restored, but the recovery snapshot could not be removed: " + (error instanceof Error ? error.message : "unknown cleanup error"));
+      return {
+        ok: true,
+        restored: restored.restored,
+        cleanupError: "Source files were restored, but the recovery snapshot could not be removed: " + (error instanceof Error ? error.message : "unknown cleanup error"),
+      };
     }
-    return { ok: true, restored: restored.restored };
   } catch (error) {
     return {
       ok: false,
@@ -149,10 +153,19 @@ export async function POST(request: Request) {
     const applied = await runGit(root, ["apply", "--whitespace=nowarn", "-"], { input: patch });
     if (applied.code !== 0) {
       const recovery = await restoreSnapshot(root, id);
+      if (recovery.ok && recovery.cleanupError) {
+        return NextResponse.json({
+          error: "Git could not apply the reviewed manuscript proposal. The pre-apply source snapshot was restored, but the retained recovery snapshot needs manual cleanup.",
+          detail: applied.stderr.slice(0, 4000),
+          recovered: recovery.restored,
+          cleanup: recovery.cleanupError,
+          snapshotRetained: true,
+        }, { status: 500 });
+      }
       return NextResponse.json({
         error: recovery.ok
           ? "Git could not apply the reviewed manuscript proposal. The pre-apply source snapshot was restored."
-          : "Git could not apply the reviewed manuscript proposal. " + recovery.error + " Manual recovery is required.",
+          : "Git could not apply the reviewed manuscript proposal. " + recovery.error + " Manual source recovery is required.",
         detail: applied.stderr.slice(0, 4000),
         ...(recovery.ok ? { recovered: recovery.restored } : { recoveryRequired: true, recovery: recovery.error, snapshotRetained: true }),
       }, { status: 500 });
@@ -207,6 +220,17 @@ export async function POST(request: Request) {
       }
 
       if (recovery.method === "snapshot") {
+        if (recovery.cleanupError) {
+          return NextResponse.json({
+            error: "Applied manuscript changes failed source validation. Reverse-patch rollback failed and the exact pre-apply source snapshot restored the source, but the retained snapshot needs manual cleanup.",
+            detail,
+            rollback: recovery.rollback.stderr?.slice(0, 4000) ?? "",
+            recovered: recovery.restored,
+            rollbackFallback: "snapshot",
+            cleanup: recovery.cleanupError,
+            snapshotRetained: true,
+          }, { status: 500 });
+        }
         return NextResponse.json({
           error: "Applied manuscript changes failed source validation. Reverse-patch rollback failed, but the exact pre-apply source snapshot was restored.",
           detail,
