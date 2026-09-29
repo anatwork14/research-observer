@@ -1,3 +1,5 @@
+import type { ResearchEntry, ResearchWorkspace } from "./compiler.mjs";
+
 export type ResearchVersionDiffLine = {
   kind: "unchanged" | "added" | "removed" | "ellipsis";
   text: string;
@@ -16,5 +18,5 @@ export type ResearchVersionComparison = {
   truncated: boolean;
 };
 
-export function compareResearchVersions(older: any, newer: any): ResearchVersionComparison;
-export function buildResearchVersionComparisons(workspace: any, options?: { projectId?: string }): ResearchVersionComparison[];
+export function compareResearchVersions(older: ResearchEntry, newer: ResearchEntry): ResearchVersionComparison;
+export function buildResearchVersionComparisons(workspace: ResearchWorkspace, options?: { projectId?: string }): ResearchVersionComparison[];

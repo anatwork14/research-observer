@@ -1,9 +1,9 @@
-import type { ResearchEvolutionProjection } from "./evolution.mjs";
+import type { EvolutionEdge, EvolutionNode, EvolutionTimelineEvent, ResearchEvolutionProjection } from "./evolution.mjs";
 
 export type OptionalEvolutionLayer = {
-  nodes?: any[];
-  edges?: any[];
-  timeline?: any[];
+  nodes?: EvolutionNode[];
+  edges?: EvolutionEdge[];
+  timeline?: EvolutionTimelineEvent[];
   [key: string]: unknown;
 };
 

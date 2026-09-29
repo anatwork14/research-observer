@@ -1,3 +1,6 @@
+import type { ResearchWorkspace } from "./compiler.mjs";
+import type { LatexCitationReference } from "./latex-citations.mjs";
+
 export type EvolutionNode = {
   id: string;
   kind: "research" | "paper" | "annotation" | "manuscript" | "citation" | "revision";
@@ -83,7 +86,7 @@ export type ResearchEvolutionProjection = {
   manuscript?: ManuscriptCitationProjection;
 };
 
-export function buildResearchEvolutionProjection(workspace: any, options?: { projectId?: string }): ResearchEvolutionProjection;
-export function buildManuscriptCitationProjection(options?: { projectId?: string; mainFile?: string; files?: Array<{ file: string; citations: any[] }> }): ManuscriptCitationProjection;
+export function buildResearchEvolutionProjection(workspace: ResearchWorkspace, options?: { projectId?: string }): ResearchEvolutionProjection;
+export function buildManuscriptCitationProjection(options?: { projectId?: string; mainFile?: string; files?: Array<{ file: string; citations: LatexCitationReference[] }> }): ManuscriptCitationProjection;
 export function loadManuscriptCitationProjection(options?: { rootDir?: string; projectId?: string }): Promise<ManuscriptCitationProjection>;
 export function mergeEvolutionProjections(research: ResearchEvolutionProjection, manuscript: ManuscriptCitationProjection): ResearchEvolutionProjection;
