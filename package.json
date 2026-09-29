@@ -25,6 +25,8 @@
     "research:prepare-pdf": "node scripts/prepare-pdf-runtime.mjs",
     "verify:latex": "node scripts/verify-latex-toolchain.mjs",
     "verify:latex:container": "node scripts/verify-latex-container.mjs",
+    "verify:latex:project-toolchain": "docker build --target latex-toolchain -t observaire-latex-toolchain .",
+    "verify:latex:project-app": "npm run observaire:prepare-volume && docker compose build observaire && docker compose run --rm observaire npm run verify:latex",
     "doctor": "node scripts/research-doctor.mjs",
     "test": "node --test tests/*.test.mjs",
     "check": "npm run doctor && npm run test && npm run typecheck && npm run lint",
