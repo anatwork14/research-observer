@@ -52,8 +52,6 @@ function offsetForLine(content: string, line: number, column = 1) {
   const rows = content.split("\n");
   const target = Math.max(1, Math.min(rows.length, Math.trunc(line)));
   let offset = 0;
-  for (let index = 0; index < target - 1; index += rows[index].length + 1) {}
-  offset = 0;
   for (let index = 0; index < target - 1; index += 1) offset += rows[index].length + 1;
   return Math.min(content.length, offset + Math.max(0, Math.trunc(column) - 1));
 }
