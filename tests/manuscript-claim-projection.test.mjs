@@ -28,6 +28,9 @@ test("unique explicit claim creates Passage to Claim to Manuscript provenance", 
   assert.equal(claim.line, 3);
   assert.equal(claim.anchorLine, 2);
   assert.match(claim.excerpt, /method remains stable/);
+  assert.match(claim.href, /file=main\.tex/);
+  assert.match(claim.href, /line=2/);
+  assert.match(passage.href, /line=3/);
   assert.equal(projection.stats.claims, 1);
   assert.equal(projection.stats.claimIssues, 0);
 
