@@ -19,11 +19,12 @@ npm run check:full
 npm run verify:workflow
 ```
 
-`verify:workflow` uses an isolated temporary workspace and exercises the real durable service chain:
+`verify:workflow` uses isolated temporary workspaces and exercises the real durable service chain for both selectable-text evidence and reviewed visual-region evidence:
 
 ```text
 local PDF
-→ PDF annotation
+→ text annotation OR Area/Figure/Table region
+→ reviewed quote OR reviewed caption/OCR/transcription
 → durable evidence note
 → verified literature metadata
 → deduplicated BibTeX record
@@ -32,6 +33,8 @@ local PDF
 → stale-safe manuscript save
 → citation token back to canonical literature/evidence
 ```
+
+The visual-region flow must never substitute a comment for source text; only explicitly reviewed caption/OCR/transcription text is eligible for evidence promotion.
 
 The fixture does not compile TeX. Compilation belongs to the toolchain gates below.
 
@@ -76,9 +79,15 @@ Run:
 npm run verify:latex:project-app
 ```
 
-This builds the repository `app` Docker target and runs `npm run verify:latex` in a hermetic container. The verification container is read-only, network-isolated, capability-dropped, and uses temporary writable storage.
+This builds the repository `app` Docker target and launches the service verifier directly with Node inside that image. The verification container:
 
-This is the authoritative compiler integration check because it exercises `compileLatexProject` and SyncTeX through the same Node service code used by the IDE.
+- has no Compose bind mounts or user research/manuscript volumes;
+- is read-only except for an isolated `/tmp` tmpfs;
+- has networking disabled;
+- drops Linux capabilities and enables `no-new-privileges`;
+- executes `scripts/verify-latex-toolchain.mjs` against an internal temporary Observaire workspace.
+
+This is the authoritative compiler integration check because it exercises `compileLatexProject` and SyncTeX through the same Node service code used by the IDE, without npm cache writes or access to real user data.
 
 ## 5. Docker recreation and persistence
 
@@ -129,6 +138,8 @@ The automated commands do not replace browser verification. Before merge, verify
 - reviewed caption/OCR/transcription evidence flow;
 - iPad/tablet landscape and portrait;
 - narrow mobile layout;
+- only one Editor/Codex/Citations auxiliary drawer is open at a time;
+- the three narrow-screen launchers remain reachable above the sticky status bar/safe area;
 - CodeMirror and plain-textarea fallback;
 - citation source navigation;
 - PDF preview and forward/reverse SyncTeX controls;
