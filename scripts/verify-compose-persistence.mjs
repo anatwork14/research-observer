@@ -57,7 +57,7 @@ async function writeFixtures() {
     fs.mkdir(path.join(annotationsDir, "default"), { recursive: true }),
     fs.mkdir(path.join(manuscriptsDir, "default"), { recursive: true }),
   ]);
-  await fs.writeFile(path.join(researchDir, "00_persistence.md"), `---\nid: persistence-fixture\ntitle: Persistence fixture\ntype: note\nstatus: complete\n---\n\n# Persistence fixture\n\nDurable research bytes.\n`, "utf8");
+  await fs.writeFile(path.join(researchDir, "00_persistence.md"), `---\nid: persistence-fixture\ntitle: Persistence fixture\ntype: literature\nstatus: complete\nauthors:\n  - Observaire Verification\nyear: 2026\n---\n\n# Persistence fixture\n\nDurable research bytes.\n`, "utf8");
   await fs.writeFile(path.join(annotationsDir, "default", "persistence.json"), JSON.stringify({
     schemaVersion: 2,
     revision: 1,
