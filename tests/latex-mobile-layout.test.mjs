@@ -8,6 +8,8 @@ const bottomSheets = [
   "components/LatexEditorAssistant.module.css",
   "components/LatexCodexAssistant.module.css",
   "components/LatexCitationDrawer.module.css",
+  "components/PdfAnnotationBridge.module.css",
+  "components/PdfReanchorSuggestions.module.css",
 ];
 
 function mobileBlock(css) {
@@ -19,7 +21,7 @@ function mobileBlock(css) {
   return nextMedia === -1 ? rest : rest.slice(0, nextMedia);
 }
 
-test("IDE bottom-sheet drawers stay within the layout viewport on mobile", async () => {
+test("mobile bottom-sheet drawers stay within the layout viewport", async () => {
   for (const relative of bottomSheets) {
     const css = await fs.readFile(path.join(root, relative), "utf8");
     const mobile = mobileBlock(css);
@@ -28,4 +30,13 @@ test("IDE bottom-sheet drawers stay within the layout viewport on mobile", async
     assert.match(mobile, /\.drawer\s*\{[^}]*\bright\s*:\s*0\s*;/s, `${relative} should pin the mobile drawer to the right layout edge`);
     assert.match(mobile, /\.drawer\s*\{[^}]*\bmax-width\s*:\s*100%\s*;/s, `${relative} should clamp the mobile drawer to the layout viewport`);
   }
+});
+
+test("PDF mobile capture hint avoids viewport-unit scrollbar overflow", async () => {
+  const css = await fs.readFile(path.join(root, "components/PdfAnnotationBridge.module.css"), "utf8");
+  const mobile = mobileBlock(css);
+  assert.doesNotMatch(mobile, /\.captureHint\s*\{[^}]*100vw/s);
+  assert.match(mobile, /\.captureHint\s*\{[^}]*\bleft\s*:\s*0\.75rem\s*;/s);
+  assert.match(mobile, /\.captureHint\s*\{[^}]*\bright\s*:\s*0\.75rem\s*;/s);
+  assert.match(mobile, /\.captureHint\s*\{[^}]*\bwidth\s*:\s*auto\s*;/s);
 });
