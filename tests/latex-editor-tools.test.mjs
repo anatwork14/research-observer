@@ -4,6 +4,7 @@ import {
   analyzeLatexDocument,
   insertLatexEnvironment,
   insertLatexSection,
+  insertObservaireClaimAnchor,
   toggleLatexLineComments,
   wrapLatexSelection,
 } from "../lib/research/latex-editor-tools.mjs";
@@ -66,6 +67,14 @@ test("environment and section insertions expose editable inner ranges", () => {
   const section = insertLatexSection("", 0, 0, "section");
   assert.equal(section.content, "\\section{Title}");
   assert.equal(section.content.slice(section.selectionStart, section.selectionEnd), "Title");
+});
+
+test("claim anchor insertion is compile-safe and requires the author to replace the explicit ID", () => {
+  const source = "\\section{Results}\nThe result is robust.";
+  const cursor = source.indexOf("The result");
+  const inserted = insertObservaireClaimAnchor(source, cursor);
+  assert.equal(inserted.content, "\\section{Results}\n% observaire:claim claim-id\nThe result is robust.");
+  assert.equal(inserted.content.slice(inserted.selectionStart, inserted.selectionEnd), "claim-id");
 });
 
 test("unsupported editor transforms are rejected", () => {
