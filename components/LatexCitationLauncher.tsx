@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { configureLatexBibliographySource, mapLatexOffsetThroughInsertions } from "@/lib/research/latex-bibliography.mjs";
 import { LatexCitationDrawer } from "./LatexCitationDrawer";
 import styles from "./LatexCitationLauncher.module.css";
 import { activeLatexEditor, notifyLatexEditorChange } from "./latex-editor-adapter";
+import { announceIdeOverlayOpen, listenForOtherIdeOverlay } from "./ide-overlay-coordinator";
 
 function activeLatexTextarea() {
   return activeLatexEditor();
@@ -19,6 +20,13 @@ function validateLatexTarget() {
 
 export function LatexCitationLauncher({ projectId }: { projectId: string }) {
   const [open, setOpen] = useState(false);
+
+  useEffect(() => listenForOtherIdeOverlay("citations", () => setOpen(false)), []);
+
+  const openDrawer = () => {
+    announceIdeOverlayOpen("citations");
+    setOpen(true);
+  };
 
   const insertCitation = (key: string) => {
     const editor = validateLatexTarget();
@@ -50,7 +58,7 @@ export function LatexCitationLauncher({ projectId }: { projectId: string }) {
   return (
     <>
       {!open && (
-        <button type="button" className={styles.launcher} onClick={() => setOpen(true)}>
+        <button type="button" className={styles.launcher} onClick={openDrawer}>
           Citations
         </button>
       )}
