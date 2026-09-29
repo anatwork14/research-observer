@@ -739,3 +739,41 @@ Temporarily set `manuscriptsDir` to `workspace/authored-manuscripts` and restore
 ### Merge readiness
 
 **Not merge-ready.** Unit/full repository checks and custom-root HTTP flows pass, but real Docker LaTeX verification, actual bibliography rendering, SyncTeX round-trip, Compose recreation persistence, and route-level rollback fallback remain unverified. Disposable host directories and the isolated state volume are cleaned after this checkpoint. The feature branch remains unmerged from `main`.
+
+
+## 2026-09-29 checkpoint — PDF annotations and LaTeX IDE verification
+
+Repository: `https://github.com/anatwork14/research-observer.git`
+Branch: `feature/pdf-annotations-latex-ide`
+Starting SHA: `82c1f1cb3470a8a8e862e77134c73a94967c6da9`
+Implementation commit: `7875dd6` (`fix: verify latex bibliography sync and persistence`). A documentation-only checkpoint commit follows. Nothing was merged to `main`.
+
+### Fixes committed
+
+- Added the missing Debian TeX Live package for `biblatex` to the app image.
+- Reverse SyncTeX now maps generated `.bbl` paths inside the current build directory to the main TeX bibliography directive. Paths outside the manuscript project remain rejected. Unit coverage exercises both absolute and relative `.bbl` paths.
+- Strengthened the TeX verifiers to inspect actual BibTeX/Biber `.bbl` and PDF text output, unresolved reference logs, and validated SyncTeX parser output.
+- Compose persistence verification now compares SHA-256 bytes for research, annotation, and manuscript bind mounts before and after recreation.
+- Auxiliary IDE launchers now sit above active drawers; at narrow widths they sit in the clear strip above the bottom sheet. This fixes the observed case where a drawer covered the controls for switching to another auxiliary panel.
+
+### Local and TeX verification
+
+Node `v22.23.2` / npm `10.9.8` were used. Git fixture operations used `GIT_CONFIG_GLOBAL=/dev/null` to avoid the host SSH signing configuration. The latest `npm run verify:merge-local` passed, including `check:full` and the workflow checks. Its unit suite reported 125 passed, 0 failed; the workflow suite reported 2 passed, 0 failed. `git diff --check` passed.
+
+The latest `npm run verify:merge-full` completed the local gate and these external stages successfully:
+
+- `verify:latex:container`: PASS on the digest-pinned TeX Live image. pdfLaTeX, XeLaTeX, LuaLaTeX, BibTeX, and Biber fixtures passed; bibliography text appeared in generated PDFs; forward and reverse SyncTeX mapped `main.tex:5` on page 1.
+- `verify:latex:project-toolchain`: PASS.
+- `verify:latex:project-app`: PASS. The app image compiled with all three engines, BibTeX, and Biber, then completed a forward/reverse SyncTeX round trip to `main.tex:5`.
+- `verify:persistence`: did not pass. After the disposable Compose service started and all three bind-mount hash checks ran, writing the state-volume marker failed with `printf: I/O error`. Docker's VM had previously reported no free space; no unrelated images, containers, or volumes were removed. The full gate therefore exited 1 at persistence.
+
+### Browser checks
+
+- The real-PDF reader regression passed in the earlier browser run: PDF.js rendered the real paper, text/search and page navigation worked, an annotation survived reload with source hashes and `verifiedAt`, promotion created durable evidence, and the citation drawer found and linked the literature PDF.
+- Citation insertion/navigation and normal forward/reverse SyncTeX worked in the real manuscript browser flow. The newly fixed reverse bibliography `.bbl` case was regression-tested in unit tests, but its actual browser click was not repeated after the fix because the updated browser image could not be rebuilt while Docker reported a full VM.
+- IDE auxiliary drawer switching was exercised in Chromium at 1024×768, 768×1024, and 390×844. Editor, Codex, Citations, and Ctrl/Cmd+Shift+P switching worked; launchers were hit-testable outside the open sheet's content area. These are responsive viewport checks, not physical iPad/Safari runs.
+- The manuscript Codex service was disabled in this browser (`RESEARCH_OBSERVER_CODEX=0`); the drawer and modes were visible, but live Codex responses were not tested in this browser session.
+
+### Merge status
+
+**Not merge-ready.** The browser drawer-layering defect is fixed and required local/TeX checks passed, but the final `verify:merge-full` did not pass because Compose persistence could not write its marker in the full Docker VM. The real-browser bibliography reverse-click retest also remains outstanding. The branch is pushed without merging to `main`.
