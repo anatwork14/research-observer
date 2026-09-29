@@ -40,3 +40,9 @@ test("PDF mobile capture hint avoids viewport-unit scrollbar overflow", async ()
   assert.match(mobile, /\.captureHint\s*\{[^}]*\bright\s*:\s*0\.75rem\s*;/s);
   assert.match(mobile, /\.captureHint\s*\{[^}]*\bwidth\s*:\s*auto\s*;/s);
 });
+
+test("mobile LaTeX statusbar may wrap when its toolchain labels exceed the row", async () => {
+  const css = await fs.readFile(path.join(root, "components/LatexWorkbench.module.css"), "utf8");
+  const mobile = mobileBlock(css);
+  assert.match(mobile, /\.statusbar\s*\{[^}]*\bflex-wrap\s*:\s*wrap\s*;/s);
+});
