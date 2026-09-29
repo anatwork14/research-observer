@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "LaTeX IDE · Observaire",
-  description: "Project-scoped LaTeX authoring, research citations, editor tools, Codex Ask/Draft, compilation, PDF preview, diagnostics, and SyncTeX navigation.",
+  description: "Project-scoped LaTeX authoring, research citations, CodeMirror, Codex Ask/Draft plus reviewed Act patches, compilation, PDF preview, diagnostics, and SyncTeX navigation.",
 };
 
 export default async function IdePage({
