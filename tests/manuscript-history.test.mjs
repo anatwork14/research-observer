@@ -50,3 +50,20 @@ test("manuscript history preserves renamed source paths and dirty filenames with
     await fs.rm(root, { recursive: true, force: true });
   }
 });
+
+test("manuscript history reports uncommitted source in a repository with no HEAD", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "observaire-manuscript-history-empty-"));
+  try {
+    const manuscriptRoot = path.join(root, "manuscripts", "default");
+    await fs.mkdir(manuscriptRoot, { recursive: true });
+    await fs.writeFile(path.join(manuscriptRoot, "draft.tex"), "\\documentclass{article}\n", "utf8");
+    git(root, "init");
+
+    const history = await listManuscriptRevisions({ rootDir: root, projectId: "default" });
+    assert.equal(history.available, true);
+    assert.deepEqual(history.revisions, []);
+    assert.deepEqual(history.dirtyFiles, ["draft.tex"]);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
