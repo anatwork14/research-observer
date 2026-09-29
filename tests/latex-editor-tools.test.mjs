@@ -42,6 +42,14 @@ test("LaTeX analysis reports mismatched environments, duplicate labels, and brac
   assert.ok(codes.has("latex-missing-end-document"));
 });
 
+test("LaTeX analysis surfaces malformed claim anchors but accepts a valid explicit claim", () => {
+  const invalid = analyzeLatexDocument("% observaire:claim claim-id\nA placeholder claim.");
+  assert.ok(invalid.diagnostics.some((item) => item.code === "observaire-claim-invalid-id"));
+
+  const valid = analyzeLatexDocument("% observaire:claim robust-under-shift\nA deliberate claim.");
+  assert.equal(valid.diagnostics.some((item) => item.code.startsWith("observaire-claim-")), false);
+});
+
 test("toggle line comments preserves indentation and reverses cleanly", () => {
   const source = "alpha\n  beta\ngamma";
   const commented = toggleLatexLineComments(source, 0, source.indexOf("gamma") - 1);
