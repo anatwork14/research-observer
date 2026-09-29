@@ -778,3 +778,49 @@ The latest `npm run verify:merge-full` completed the local gate and these extern
 ### Merge status
 
 **Not merge-ready.** The browser drawer-layering defect is fixed and required local/TeX checks passed, but the final `verify:merge-full` did not pass because Compose persistence could not write its marker in the full Docker VM. The real-browser bibliography reverse-click retest and narrow-layout overflow investigation also remain outstanding. The branch is pushed without merging to `main`.
+
+## 2026-09-29 final verification checkpoint — mobile layout and generated bibliography SyncTeX
+
+Repository: `https://github.com/anatwork14/research-observer.git`
+
+Branch: `feature/pdf-annotations-latex-ide`
+
+Starting SHA: `4a50ecb4fc2a450a72c73b2b64f96b1da6980598`
+Verified source commit: `5afe9d233cb38daafaa9773a88c3ebaddf9197be` (`fix: prevent mobile IDE statusbar overflow`). A follow-on checkpoint commit updates this file. Nothing was merged to `main`.
+
+### Defect found and fixed
+
+At 390×844, the IDE statusbar's toolchain labels retained their intrinsic width after the status row shrank, producing `scrollWidth: 397` while `clientWidth: 390`. The mobile statusbar now wraps. A regression assertion was added to `tests/latex-mobile-layout.test.mjs`; the post-fix browser measurement is `390/390`.
+
+Next.js 16's development server also inserted its generated agent-rules block into `AGENTS.md`; that generated block is included with the source fix so `next dev` does not leave it as an uncommitted change.
+
+### Storage and cleanup
+
+- Host free space: 28 GiB before cleanup; 40 GiB after the full verification run.
+- Docker before cleanup: 45.46 GB of images (40.69 GB reported reclaimable), 5.198 GB builder cache, 4.921 GB volumes. The disposable persistence container reported its overlay filesystem at 100% with 0 bytes available, confirming the earlier state-volume `printf: I/O error` was Docker VM storage exhaustion.
+- Cleanup: pruned 5.198 GB of unused build cache and dangling unused images (17.73 GB actual reclaimed). The digest-pinned TeX image was pulled again for verification. Docker Desktop was restarted to restore the VM. No containers or volumes were deleted; `observaire-profile` remains present. Temporary verifier volumes were removed by the verifier.
+- After verification: Docker images 32.09 GB, build cache 3.089 GB, volumes 4.921 GB; Docker VM overlay had 15 GB available. No `observaire-profile-verification-*` volumes or `observaire-persistence-*` containers remain. The pre-existing `teobun-db-1` and `teobun-litellm-1` containers are exited after the Docker Desktop restart and were left untouched.
+- Temporary browser manuscript files and state, copied PDF/note, test annotation sidecar, and generated `.bbl`/PDF/SyncTeX artifacts were removed.
+
+### Local and container gates
+
+- Node `v22.23.2`, npm `10.9.8`, Docker `28.0.1`, Compose `v2.33.1-desktop.1`; `npm ci` passed with 0 vulnerabilities.
+- `npm run verify:merge-local`: PASS; `check:full` and workflow suite passed. Unit tests: 128 passed, 0 failed; workflow tests: 2 passed, 0 failed. `git diff --check`: PASS.
+- Standalone `npm run verify:persistence`: PASS. Disposable state-volume write/fsync/readback, research/annotation/manuscript bind-mount hashes, recreation, and state-marker survival all passed.
+- `npm run verify:latex:container`: PASS on the digest-pinned Linux/amd64 TeX Live image. pdfLaTeX, XeLaTeX, LuaLaTeX, BibTeX, Biber, shell-escape restriction, and SyncTeX checks passed.
+- `npm run verify:latex:project-toolchain`: PASS.
+- `npm run verify:latex:project-app`: PASS; app image compilation and service-level checks completed.
+- Final `npm run verify:merge-full`: PASS through all stages, including persistence.
+
+### Browser verification
+
+- Chromium responsive emulation at 390×844: closed IDE, Editor open, Codex open, and Citations open each measured `scrollWidth/clientWidth = 390/390`.
+- At 1024×768 and 768×1024: document overflow was `1024/1024` and `768/768`. Files and Preview controls and Editor/Codex/Citations launchers were visible within the viewport. Codex Apply and Discard were available in the review UI; a tablet-sized Discard completed without changing source. These are Chromium viewport checks, not physical iPad hardware.
+- A real local SemTrust FCL method-figure PDF was copied temporarily into the worktree. PDF.js rendered it at 390×844. The annotation drawer, `Select area` figure/table controls, and a stale-anchor suggestion drawer each measured `390/390`; candidate search found an exact 94% match. The copied PDF, note, and annotation sidecar were removed afterward.
+- A temporary `main.tex`/`references.bib` manuscript compiled with BibTeX in the verified project TeX toolchain and produced `main.bbl`, `main.pdf`, and SyncTeX output. In the browser, double-clicking the rendered bibliography entry returned the editor to `main.tex` line 14, the `\bibliography{references}` directive; the generated `.bbl` remained under the temporary build directory and was removed afterward.
+- The authenticated live Codex backend passed Ask and Draft with `main.tex` context; the source SHA-256 remained unchanged. Act displayed the exact proposed diff without modifying the source, Apply made only the requested test-sentence edit, and a second proposal was discarded with the source SHA-256 unchanged.
+- One development-only Turbopack internal error appeared in the server log while temporary fixtures were being removed; surrounding requests returned HTTP 200 and the production build/full gate passed. No application or data-integrity failure was observed from it.
+
+### Merge decision
+
+**Merge-ready: yes.** The local and full merge gates, isolated persistence verification, all three TeX engines, BibTeX/Biber, forward/reverse SyncTeX, 390 px layouts, both tablet viewport orientations, generated-`.bbl` browser click, live Codex Ask/Draft/Act Apply/Discard, and the real-PDF narrow regression passed. Remaining warnings are the non-reproduced development-only Turbopack message, existing lint/build warnings, and the two user containers left exited after Docker Desktop restarted. Branch remains unmerged from `main`.
