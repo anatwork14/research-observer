@@ -465,7 +465,7 @@ export function ResearchGraph({
                 transform={`translate(${point.x} ${point.y})`}
                 role="button"
                 tabIndex={0}
-                aria-label={`${node.title}. ${connections} connections. Double click or press Enter to open.`}
+                aria-label={`${node.title}. ${connections} connections. Press Enter or Space to select; double click to open.`}
                 onPointerDown={(event) => startNodeDrag(event, node.slug)}
                 onPointerMove={moveNode}
                 onPointerUp={finishNodeDrag}
@@ -475,8 +475,10 @@ export function ResearchGraph({
                 onClick={(event) => { event.stopPropagation(); setSelected(node.slug); }}
                 onDoubleClick={() => router.push(`/progress/${node.slug}`)}
                 onKeyDown={(event) => {
-                  if (event.key === "Enter") router.push(`/progress/${node.slug}`);
-                  if (event.key === " ") { event.preventDefault(); setSelected(node.slug); }
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setSelected(node.slug);
+                  }
                 }}
               >
                 <circle r={radius} />
