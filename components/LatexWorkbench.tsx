@@ -105,7 +105,15 @@ async function jsonRequest(url: string, init?: RequestInit) {
   return payload;
 }
 
-export function LatexWorkbench({ projectId }: { projectId: string }) {
+export function LatexWorkbench({
+  projectId,
+  initialFile,
+  initialLine,
+}: {
+  projectId: string;
+  initialFile?: string;
+  initialLine?: number;
+}) {
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [source, setSource] = useState<Source | null>(null);
   const [content, setContent] = useState("");
@@ -207,14 +215,20 @@ export function LatexWorkbench({ projectId }: { projectId: string }) {
       setToolchain(compileStatus.toolchain ?? {});
       setBuild(compileStatus.latest ?? null);
       if (compileStatus.latest?.success) setPreviewTab("pdf");
+      const requested = initialFile
+        ? nextWorkspace.files.find((file: WorkspaceFile) => file.path === initialFile && file.editable && !file.hidden)?.path
+        : undefined;
       const first = nextWorkspace.files.find((file: WorkspaceFile) => file.editable && !file.hidden)?.path;
-      const preferred = nextWorkspace.mainFile || first;
-      if (preferred) void openFile(preferred);
+      const preferred = requested || nextWorkspace.mainFile || first;
+      const cursor = requested && Number.isFinite(initialLine) && Number(initialLine) > 0
+        ? { line: Math.max(1, Math.trunc(Number(initialLine))), column: 0 }
+        : undefined;
+      if (preferred) void openFile(preferred, cursor);
     }).catch((requestError) => {
       if (!cancelled) setError(requestError instanceof Error ? requestError.message : "Could not load LaTeX workspace.");
     });
     return () => { cancelled = true; };
-  }, [openFile, projectId, refreshWorkspace]);
+  }, [initialFile, initialLine, openFile, projectId, refreshWorkspace]);
 
   useEffect(() => {
     if (!pendingCursor) return;
