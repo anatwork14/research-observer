@@ -5,6 +5,7 @@ import {
   analyzeLatexDocument,
   insertLatexEnvironment,
   insertLatexSection,
+  insertObservaireClaimAnchor,
   latexEditorCommands,
   toggleLatexLineComments,
   wrapLatexSelection,
@@ -51,6 +52,8 @@ function offsetForLine(content: string, line: number, column = 1) {
   const rows = content.split("\n");
   const target = Math.max(1, Math.min(rows.length, Math.trunc(line)));
   let offset = 0;
+  for (let index = 0; index < target - 1; index += rows[index].length + 1) {}
+  offset = 0;
   for (let index = 0; index < target - 1; index += 1) offset += rows[index].length + 1;
   return Math.min(content.length, offset + Math.max(0, Math.trunc(column) - 1));
 }
@@ -141,6 +144,7 @@ export function LatexEditorAssistant() {
       const value = editor.value();
       const selection = editor.selection();
       if (id === "toggle-comment") transform = toggleLatexLineComments(value, selection.start, selection.end);
+      else if (id === "claim-anchor") transform = insertObservaireClaimAnchor(value, selection.start);
       else if (id === "bold") transform = wrapLatexSelection(value, selection.start, selection.end, "textbf");
       else if (id === "italic") transform = wrapLatexSelection(value, selection.start, selection.end, "textit");
       else if (id === "emphasis") transform = wrapLatexSelection(value, selection.start, selection.end, "emph");
