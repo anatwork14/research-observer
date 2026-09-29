@@ -2,7 +2,7 @@
 
 This directory contains durable, project-scoped manuscript source. It is intentionally separate from `progress/`, whose compiler treats non-Markdown files as research assets.
 
-- Each research project owns `manuscripts/<project-id>/`.
+- Each research project owns `<configured manuscriptsDir>/<project-id>/`; `manuscripts/<project-id>/` is the default, not a hard-coded requirement.
 - Editable source types are `.tex`, `.bib`, `.sty`, `.cls`, and `.bst`. Figures and other manuscript resources may live alongside them.
 - `.observaire-ide.json` is managed by `lib/research/latex-ide.mjs`. It stores IDE state such as the selected main file, TeX engine, and soft-hidden files.
 - Hiding/removing a manuscript file in the IDE is a soft delete. Keep the physical source file and add it to `hiddenFiles`; restoring removes it from that list.
@@ -11,6 +11,7 @@ This directory contains durable, project-scoped manuscript source. It is intenti
 - LaTeX builds must keep unrestricted shell escape disabled. Treat compilation as execution of potentially complex input and preserve resource/time bounds.
 - SyncTeX is the canonical source↔PDF positioning mechanism. Keep `-synctex=1` enabled for supported engines.
 - Do not commit ordinary TeX intermediate files such as `.aux`, `.log`, `.fls`, `.fdb_latexmk`, `.out`, `.toc`, or `.synctex.gz` inside manuscript source directories.
+- `npm run verify:latex` is the isolated real-toolchain smoke command. Run it in an environment containing the project TeX toolchain (the Docker image includes latexmk, Biber, pdfLaTeX, XeLaTeX, LuaLaTeX, and SyncTeX). It must not use or mutate real manuscript/research data.
 
 ## Citations and bibliography
 
@@ -37,7 +38,9 @@ This directory contains durable, project-scoped manuscript source. It is intenti
 - The UI must display the exact patch and touched files before enabling **Apply reviewed changes**. Advisory LaTeX structure diagnostics may be shown, but they are not a substitute for the real compiler.
 - `/api/codex/manuscript-apply` must verify proposal kind, patch SHA-256, path scope, non-destructive status, reviewability, and all frozen live file hashes before applying.
 - If any touched live source changed after review, apply must fail with a stale/conflict response and require a new proposal.
-- Apply must use `git apply --check` before mutation, validate resulting manuscript sources, and reverse the patch if post-apply source validation fails.
-- Discard deletes only the transient proposal. It never changes manuscript files.
+- Apply must use `git apply --check` before mutation and create an exact pre-apply recovery snapshot for every touched source under transient `.research-observer/codex-recovery/` state.
+- Post-apply source validation first attempts reverse-patch rollback on failure. If reverse rollback fails, restore the exact recovery snapshot; existing files return to their previous bytes and files newly created by the proposal are removed.
+- Recovery snapshot state is deleted after successful apply, successful rollback, or discard. Retain it only when automatic snapshot restoration itself fails, and report that manual recovery is required.
+- Discard deletes only transient proposal/recovery state. It never changes manuscript files.
 - A successful apply should reload/reopen the IDE from disk so editor base hashes are refreshed rather than continuing with stale browser state.
 - Manuscript Act remains local-development only until an authenticated production agent execution service is explicitly designed and enabled.
