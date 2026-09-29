@@ -12,7 +12,8 @@ This directory contains durable, project-scoped manuscript source. It is intenti
 - SyncTeX is the canonical source↔PDF positioning mechanism. Keep `-synctex=1` enabled for supported engines.
 - Do not commit ordinary TeX intermediate files such as `.aux`, `.log`, `.fls`, `.fdb_latexmk`, `.out`, `.toc`, or `.synctex.gz` inside manuscript source directories.
 - `npm run verify:latex` is the isolated application-service toolchain smoke command. It executes the same `compileLatexProject`/SyncTeX service used by the IDE and therefore requires Node plus the TeX toolchain.
-- `npm run verify:latex:container` is a verification-only fallback that avoids building the Observaire runtime image. It runs `scripts/verify-latex-toolchain.sh` in a digest-pinned prebuilt TeX Live container, mounts the repository read-only, and validates pdfLaTeX, XeLaTeX, LuaLaTeX, classic BibTeX, Biber/biblatex, SyncTeX, and disabled unrestricted shell escape. Passing it proves the external TeX toolchain contract, not the Node service integration; `verify:latex` remains the service-level check.
+- `npm run verify:latex:container` is a verification-only fallback that avoids building the Observaire runtime image. It runs `scripts/verify-latex-toolchain.sh` in a digest-pinned prebuilt TeX Live container, mounts the repository read-only, and validates pdfLaTeX, XeLaTeX, LuaLaTeX, classic BibTeX, Biber/biblatex, SyncTeX, and disabled unrestricted shell escape. Passing it proves the external TeX toolchain contract, not the Node service integration.
+- `npm run verify:latex:project-toolchain` builds the exact Docker TeX/system layer used by Observaire. `npm run verify:latex:project-app` builds the app target and runs the Node service verifier in a read-only, network-disabled container with only `/tmp` writable; it must not mount real research/manuscript data or the normal state volume.
 - Keep the default verification container image digest-pinned. `OBSERVAIRE_LATEX_VERIFY_IMAGE` and `OBSERVAIRE_LATEX_VERIFY_PLATFORM` may override it deliberately for another trusted test environment.
 
 ## Citations and bibliography
@@ -42,7 +43,9 @@ This directory contains durable, project-scoped manuscript source. It is intenti
 - If any touched live source changed after review, apply must fail with a stale/conflict response and require a new proposal.
 - Apply must use `git apply --check` before mutation and create an exact pre-apply recovery snapshot for every touched source under transient `.research-observer/codex-recovery/` state.
 - Post-apply source validation first attempts reverse-patch rollback on failure. If reverse rollback fails, restore the exact recovery snapshot; existing files return to their previous bytes and files newly created by the proposal are removed.
-- Recovery snapshot state is deleted after successful apply, successful rollback, or discard. Retain it only when automatic snapshot restoration itself fails, and report that manual recovery is required.
+- Recovery orchestration belongs in `lib/codex/manuscript-apply-recovery.mjs` so reverse-patch failure → exact-snapshot fallback can be tested without a production fault-injection flag. Do not duplicate that decision tree inside route code.
+- Distinguish source recovery from snapshot cleanup: if manuscript bytes were restored but transient recovery-state deletion fails, report source recovery as successful while retaining the snapshot and requiring cleanup. Do not misreport that state as source loss.
+- Recovery snapshot state is deleted after successful apply, successful rollback, or discard. Retain it when cleanup or automatic restoration fails and report the retained state clearly.
 - Discard deletes only transient proposal/recovery state. It never changes manuscript files.
 - A successful apply should reload/reopen the IDE from disk so editor base hashes are refreshed rather than continuing with stale browser state.
 - Manuscript Act remains local-development only until an authenticated production agent execution service is explicitly designed and enabled.
