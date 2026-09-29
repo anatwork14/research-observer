@@ -141,6 +141,7 @@
 .layer_semantic { stroke: color-mix(in srgb, var(--accent) 68%, var(--line)); }
 .layer_version { stroke: color-mix(in srgb, #6f7fcf 74%, var(--line)); stroke-dasharray: 6 4; }
 .layer_citation { stroke: color-mix(in srgb, #8d63c7 70%, var(--line)); }
+.layer_claim { stroke: color-mix(in srgb, var(--accent-deep) 62%, #a676c8); stroke-width: 1.8; }
 .layer_reference { stroke: color-mix(in srgb, var(--muted) 45%, transparent); stroke-dasharray: 2 5; }
 .arrow { fill: var(--accent-deep); }
 .dim { opacity: .12; }
@@ -166,6 +167,11 @@
   fill: color-mix(in srgb, #a676c8 6%, var(--surface-strong));
   stroke: color-mix(in srgb, #8d63c7 42%, var(--line-strong));
   stroke-dasharray: 3 2;
+}
+.node[data-kind="claim"] rect {
+  fill: color-mix(in srgb, var(--accent-wash) 42%, var(--surface-strong));
+  stroke: color-mix(in srgb, var(--accent-deep) 74%, var(--line-strong));
+  stroke-width: 1.6;
 }
 .node[data-kind="manuscript"] rect { fill: color-mix(in srgb, #6f7fcf 8%, var(--surface-strong)); }
 .node[data-role="evidence"] rect { stroke: color-mix(in srgb, var(--accent) 55%, var(--line)); }
