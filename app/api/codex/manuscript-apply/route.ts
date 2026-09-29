@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { isSameOrigin } from "@/lib/http/same-origin";
 import { latexWritesEnabled, listLatexWorkspace, readLatexSource } from "@/lib/research/latex-ide.mjs";
+import { recoverAppliedManuscript } from "@/lib/codex/manuscript-apply-recovery.mjs";
 import {
   createManuscriptRecoverySnapshot,
   deleteManuscriptRecoverySnapshot,
@@ -181,37 +182,48 @@ export async function POST(request: Request) {
         workspace,
       }, { headers: { "Cache-Control": "no-store" } });
     } catch (validationError) {
-      const rollback = await runGit(root, ["apply", "-R", "--whitespace=nowarn", "-"], { input: patch });
-      if (rollback.code === 0) {
-        try {
-          await deleteManuscriptRecoverySnapshot({ root, proposalId: id });
-        } catch (snapshotCleanupError) {
+      const recovery = await recoverAppliedManuscript({
+        reversePatch: () => runGit(root, ["apply", "-R", "--whitespace=nowarn", "-"], { input: patch }),
+        restoreSnapshot: () => restoreSnapshot(root, id),
+        deleteSnapshot: () => deleteManuscriptRecoverySnapshot({ root, proposalId: id }),
+      });
+      const detail = validationError instanceof Error ? validationError.message : "Manuscript validation failed.";
+
+      if (recovery.method === "reverse-patch") {
+        if (recovery.cleanupError) {
           return NextResponse.json({
             error: "Manuscript changes were rolled back, but the recovery snapshot could not be removed. Manual cleanup is required.",
-            detail: validationError instanceof Error ? validationError.message : "Manuscript validation failed.",
-            cleanup: snapshotCleanupError instanceof Error ? snapshotCleanupError.message : "Recovery snapshot cleanup failed.",
+            detail,
+            cleanup: recovery.cleanupError,
             rollback: "reverse-patch",
             snapshotRetained: true,
           }, { status: 500 });
         }
         return NextResponse.json({
           error: "Applied manuscript changes failed source validation and were rolled back.",
-          detail: validationError instanceof Error ? validationError.message : "Manuscript validation failed.",
+          detail,
           rollback: "reverse-patch",
         }, { status: 422 });
       }
 
-      const recovery = await restoreSnapshot(root, id);
+      if (recovery.method === "snapshot") {
+        return NextResponse.json({
+          error: "Applied manuscript changes failed source validation. Reverse-patch rollback failed, but the exact pre-apply source snapshot was restored.",
+          detail,
+          rollback: recovery.rollback.stderr?.slice(0, 4000) ?? "",
+          recovered: recovery.restored,
+          rollbackFallback: "snapshot",
+        }, { status: 422 });
+      }
+
       return NextResponse.json({
-        error: recovery.ok
-          ? "Applied manuscript changes failed source validation. Reverse-patch rollback failed, but the exact pre-apply source snapshot was restored."
-          : "Applied manuscript changes failed source validation and both automatic rollback methods failed. Inspect the touched manuscript files before continuing.",
-        detail: validationError instanceof Error ? validationError.message : "Manuscript validation failed.",
-        rollback: rollback.stderr.slice(0, 4000),
-        ...(recovery.ok
-          ? { recovered: recovery.restored, rollbackFallback: "snapshot" }
-          : { recoveryRequired: true, recovery: recovery.error, snapshotRetained: true }),
-      }, { status: recovery.ok ? 422 : 500 });
+        error: "Applied manuscript changes failed source validation and both automatic rollback methods failed. Inspect the touched manuscript files before continuing.",
+        detail,
+        rollback: recovery.rollback.stderr?.slice(0, 4000) ?? "",
+        recoveryRequired: true,
+        recovery: recovery.recoveryError,
+        snapshotRetained: true,
+      }, { status: 500 });
     }
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Could not " + (action === "discard" ? "discard" : "apply") + " manuscript proposal." }, { status: 500, headers: { "Cache-Control": "no-store" } });
