@@ -14,12 +14,14 @@ type EvolutionNode = {
   type?: string;
   status?: string;
   date?: string;
+  shortCommit?: string;
+  author?: string;
 };
 
 type TimelineEvent = {
   id: string;
   at: string;
-  kind: "research" | "run";
+  kind: "research" | "run" | "manuscript";
   nodeId?: string;
   label: string;
   research: string;
@@ -27,6 +29,7 @@ type TimelineEvent = {
   status?: string;
   experimentSlug?: string;
   runId?: string;
+  commit?: string;
 };
 
 type EvolutionLineage = {
@@ -56,6 +59,7 @@ function eventLabel(event: TimelineEvent) {
     const stage = event.type ? event.type.replace(/At$/, "").replace(/([A-Z])/g, " $1").trim() : "run";
     return `${stage}: ${event.label}`;
   }
+  if (event.kind === "manuscript") return `revision: ${event.label}`;
   return event.label;
 }
 
@@ -70,7 +74,7 @@ export function ResearchEvolutionTimeline({
 }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
-  const [kinds, setKinds] = useState<Set<TimelineEvent["kind"]>>(new Set(["research", "run"]));
+  const [kinds, setKinds] = useState<Set<TimelineEvent["kind"]>>(new Set(["research", "run", "manuscript"]));
   const nodeById = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
 
   const filtered = useMemo(() => {
@@ -79,8 +83,16 @@ export function ResearchEvolutionTimeline({
       if (!kinds.has(event.kind)) return false;
       if (!needle) return true;
       const node = event.nodeId ? nodeById.get(event.nodeId) : undefined;
-      return [event.label, event.type || "", event.status || "", node?.role || "", node?.type || ""]
-        .some((value) => value.toLowerCase().includes(needle));
+      return [
+        event.label,
+        event.type || "",
+        event.status || "",
+        event.commit || "",
+        node?.role || "",
+        node?.type || "",
+        node?.shortCommit || "",
+        node?.author || "",
+      ].some((value) => value.toLowerCase().includes(needle));
     });
   }, [kinds, nodeById, query, timeline]);
 
@@ -116,14 +128,18 @@ export function ResearchEvolutionTimeline({
       <header className={styles.header}>
         <div>
           <span className={styles.kicker}>Evolution timeline</span>
-          <h2>See when the research changed—and which versions replaced which.</h2>
-          <p>Chronology comes only from explicit research dates and experiment-run timestamps. Version chains come only from explicit <code>supersedes</code> relationships.</p>
+          <h2>See when research changed—and when manuscript source was actually committed.</h2>
+          <p>
+            Research chronology comes only from explicit note dates and experiment-run timestamps. Manuscript revision events come only from real Git commits.
+            Semantic version chains come only from explicit <code>supersedes</code> relationships.
+          </p>
         </div>
         <div className={styles.controls}>
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Filter timeline…" aria-label="Filter research timeline" />
           <div>
             <button type="button" aria-pressed={kinds.has("research")} onClick={() => toggleKind("research")}>Research</button>
             <button type="button" aria-pressed={kinds.has("run")} onClick={() => toggleKind("run")}>Runs</button>
+            <button type="button" aria-pressed={kinds.has("manuscript")} onClick={() => toggleKind("manuscript")}>Manuscript</button>
           </div>
         </div>
       </header>
@@ -159,7 +175,7 @@ export function ResearchEvolutionTimeline({
                       <span className={styles.dot} />
                       <time>{readableDate(event.at)}</time>
                       <strong>{eventLabel(event)}</strong>
-                      <small>{[event.kind, node?.role || node?.type, event.status].filter(Boolean).join(" · ")}</small>
+                      <small>{[event.kind, node?.role || node?.type, node?.shortCommit, event.status].filter(Boolean).join(" · ")}</small>
                     </button>
                   );
                 })}
@@ -171,7 +187,7 @@ export function ResearchEvolutionTimeline({
 
         <aside className={styles.lineages}>
           <div className={styles.lineageHeading}>
-            <span className={styles.kicker}>Version lineages</span>
+            <span className={styles.kicker}>Semantic version lineages</span>
             <strong>{lineages.length} explicit chains</strong>
           </div>
           {lineages.map((lineage) => (
@@ -186,7 +202,7 @@ export function ResearchEvolutionTimeline({
                   return (
                     <div className={styles.versionStep} key={id}>
                       <button type="button" onClick={() => node.href && router.push(node.href)}>
-                        <small>{oldest ? "oldest" : newest ? "newest" : `v${index + 1}`}</small>
+                        <small>{oldest ? "oldest" : newest ? "newest" : `version ${index + 1}`}</small>
                         <strong>{node.label}</strong>
                         <span>{[node.date, node.status].filter(Boolean).join(" · ")}</span>
                       </button>
