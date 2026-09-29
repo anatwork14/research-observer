@@ -8,7 +8,7 @@ The projection may read from four existing durable domains:
 
 1. `progress/` — canonical research Markdown, typed relationships, dates, paper paths, experiment definitions and results.
 2. `annotations/` — annotation sidecars. The evolution projection does not scan private sidecars directly for semantic graph edges; promoted evidence carries the durable annotation snapshot marker needed for public provenance.
-3. `manuscripts/` — current LaTeX/BibTeX manuscript source used to resolve visible citation tokens.
+3. `manuscripts/` — current saved LaTeX/BibTeX manuscript source used to resolve visible citation tokens and literal passage context.
 4. Git history — optional committed manuscript revision history. Git commits are read-only history; they are not a replacement for manuscript source.
 
 Generated `.research-observer/` and `public/_research/` data are never authoritative evolution sources.
@@ -63,21 +63,55 @@ Evidence
 
 This is provenance only. Saving or displaying an external paper must never manufacture `supports`, `contradicts`, `answers`, or another semantic research relationship.
 
-### Citation and manuscript layer
+### Citation, passage, and manuscript layer
 
 Each visible `.tex` source is a manuscript node. Each citation token is an occurrence node rather than a global bibliography-key node because the same key may appear in several files or positions.
+
+A manuscript passage is a **derived literal saved-source block** around one or more citation occurrences. It is not durable state and is never a semantic claim. The passage projection may expose only structural/source facts such as:
+
+- source file;
+- source start/end offsets;
+- line span;
+- nearest explicit LaTeX heading;
+- a bounded literal excerpt from the saved `.tex` block.
+
+Comment-only lines and a preceding heading command are excluded from the prose excerpt when the citation is on a later line; the heading remains separate metadata. Multiple citations in the same saved paragraph/block deduplicate to one Passage node.
 
 ```text
 Research object
   → cited_as
 Citation occurrence
+  → located_in
+Manuscript passage
+  → part_of
+Manuscript file
+```
+
+The historical direct compatibility edge also remains:
+
+```text
+Citation occurrence
   → appears_in
 Manuscript file
 ```
 
-A research-to-citation edge is created **only** when the existing citation resolver returns exactly one canonical choice. `ambiguous` and `missing` citations remain visible health items and never gain guessed research edges.
+A research-to-citation edge is created **only** when the existing citation resolver returns exactly one canonical choice. `ambiguous` and `missing` citations may still have literal passage/file/line context, but they never gain a guessed research edge.
 
-Hidden manuscript files are excluded from live citation projection.
+Passage extraction must not infer that nearby prose supports, contradicts, proves, answers, or otherwise semantically relates to the cited research object. If semantic claim-level links are added in the future, they require an explicit durable user-authored contract separate from passage extraction.
+
+Hidden manuscript files are excluded from live citation and passage projection.
+
+### Manuscript deep links
+
+Citation and Passage nodes may link to:
+
+```text
+/ide?research=<project>&file=<saved-source>&line=<positive-line>
+```
+
+The IDE may honor the location only when the requested file is present in the selected manuscript workspace, editable, and not hidden. Invalid, hidden, missing, or resource-file requests fall back to the normal manuscript entry file rather than bypassing workspace path/visibility rules.
+
+The navigation uses the same `openFile` plus editor-cursor path already used by diagnostics and reverse SyncTeX. It must not add a DOM-click automation path or bypass stale-safe manuscript reads.
 
 ### Manuscript revision layer
 
@@ -154,27 +188,28 @@ Large comparisons stay bounded to 240 source lines per side. The UI must disclos
 
 ## Provenance trace interaction
 
-Selecting a node in the provenance graph highlights a bounded neighborhood over the currently enabled layers. The UI uses six hops, sufficient for the intended chain:
+Selecting a node in the provenance graph highlights a bounded neighborhood over the currently enabled layers. The UI uses six hops, sufficient for the passage-aware intended chain:
 
 ```text
 Paper/source
   → Annotation snapshot
   → Evidence/research object
   → Citation occurrence
+  → Manuscript passage
   → Manuscript file
   → Revision
 ```
 
 Traversal is cycle-safe and treats a provenance path as navigational context, not as a new semantic assertion. Disabling a layer removes those edges from the selected trace.
 
-The inspector lists direct visible connections while canvas emphasis may extend across the bounded multi-hop trace.
+The inspector lists direct visible connections while canvas emphasis may extend across the bounded multi-hop trace. Passage inspectors may show the literal bounded excerpt and source location; they must not relabel the excerpt as a claim.
 
 ## UI behavior
 
 `/graph` has three complementary views:
 
 1. **Research graph** — existing force-directed canonical research relationships.
-2. **Provenance** — stable-lane source → annotation → research → citation → manuscript → revision trace.
+2. **Provenance** — stable-lane source → annotation → research → citation → passage → manuscript → revision trace.
 3. **Timeline & versions** — explicit dated events, semantic version lineages, manuscript commit events, and explicit version-pair content comparison.
 
 The existing research graph remains first-class. The provenance graph must not replace or mutate it.
@@ -191,17 +226,18 @@ All evolution views are scoped by the selected stable research project ID.
 
 - Research nodes must belong to the selected project.
 - Semantic/reference edges whose endpoint leaves the selected project are excluded from the scoped evolution projection.
-- Citation resolution uses the same selected project.
+- Citation and passage resolution use the same selected project.
 - Manuscript history is path-confined to that project's configured manuscript root.
 - Local paper identity retains the canonical project-folder asset path.
 
-Never silently merge similarly named objects or note-relative assets from different research projects.
+Never silently merge similarly named objects, manuscript paths, or note-relative assets from different research projects.
 
 ## Performance and safety bounds
 
 - Manuscript Git history is bounded to 80 revisions.
 - Research version source comparison is bounded to 240 lines per side.
 - Citation resolution reuses the existing project-scoped citation service and scans visible editable `.tex` files only.
+- Passage excerpts are bounded literal strings derived from the same saved `.tex` snapshot used for citation resolution.
 - Provenance rendering is bounded to 90 nodes per lane.
 - Selected UI trace traversal is bounded to six hops; the reusable helper clamps callers to at most 12.
 - Provenance scrolling has a bounded viewport even when the SVG working set is tall.
@@ -217,6 +253,9 @@ node --test tests/research-evolution.test.mjs
 node --test tests/research-evolution-consensus.test.mjs
 node --test tests/research-evolution-trace.test.mjs
 node --test tests/research-evolution-layout.test.mjs
+node --test tests/research-evolution-passages.test.mjs
+node --test tests/manuscript-passages.test.mjs
+node --test tests/latex-provenance-navigation.test.mjs
 node --test tests/research-version-lineage.test.mjs
 node --test tests/research-version-compare.test.mjs
 node --test tests/manuscript-evolution.test.mjs
@@ -232,14 +271,18 @@ Browser verification should exercise `/graph` in all three modes on desktop, tab
 - nested-project local PDF paths remain distinct;
 - promoted Figure/Table evidence shows paper → annotation → evidence provenance;
 - saved Consensus evidence shows verified external source → evidence provenance without a fabricated semantic edge;
-- uniquely resolved citations connect to manuscript files;
-- ambiguous/missing citations do not gain guessed edges;
+- uniquely resolved citations connect to literal manuscript passage context and manuscript files;
+- multiple citations in one saved paragraph deduplicate to one Passage node;
+- ambiguous/missing citations retain literal location context but do not gain guessed research edges;
+- Passage inspector text is a literal bounded saved-source excerpt, not an AI summary or claim;
+- Passage/Citation `Open manuscript location` opens the requested visible editable `.tex` source at the requested line in both CodeMirror and plain-editor modes;
+- hidden manuscript sources do not become reachable through provenance deep links;
 - manuscript commits appear only when real history exists;
 - dirty manuscript files are not presented as revisions, including a Git repository before its first commit;
 - renamed manuscript source remains represented in revision history;
 - `supersedes` chains read oldest → newest from edge direction even when dates are missing or misleading;
 - date-only research events do not shift calendar day with timezone;
 - version diff selects only explicit same-project version pairs;
-- selected source/evidence nodes highlight the complete enabled provenance trace;
+- selected source/evidence nodes highlight the complete enabled passage-aware provenance trace;
 - large synthetic projections disclose the render budget and remain searchable;
 - graph scrollers do not create page-level horizontal overflow.
