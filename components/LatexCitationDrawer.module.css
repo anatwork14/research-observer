@@ -198,9 +198,11 @@
 @media (max-width: 760px) {
   .drawer {
     top: auto;
+    left: 0;
     right: 0;
     bottom: 0;
-    width: 100vw;
+    width: auto;
+    max-width: 100%;
     max-height: 78vh;
     border-radius: 18px 18px 0 0;
     padding-bottom: env(safe-area-inset-bottom, 0px);
