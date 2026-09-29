@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { traceEvolutionNeighborhood } from "@/lib/research/evolution-trace.mjs";
 import styles from "./EvolutionGraph.module.css";
 
 type EvolutionNode = {
@@ -41,6 +42,7 @@ const LANE_GAP = 18;
 const NODE_WIDTH = 210;
 const NODE_HEIGHT = 52;
 const MAX_VISIBLE_PER_LANE = 90;
+const TRACE_DEPTH = 6;
 const LANE_LABELS: Record<string, string> = {
   paper: "Papers",
   annotation: "Annotations",
@@ -97,14 +99,19 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
   );
 
   const nodeById = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
+  const enabledEdges = useMemo(() => edges.filter((edge) => layers.has(edge.layer)), [edges, layers]);
   const degree = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const edge of edges) {
+    for (const edge of enabledEdges) {
       counts.set(edge.source, (counts.get(edge.source) || 0) + 1);
       counts.set(edge.target, (counts.get(edge.target) || 0) + 1);
     }
     return counts;
-  }, [edges]);
+  }, [enabledEdges]);
+  const selectedTrace = useMemo(
+    () => traceEvolutionNeighborhood(enabledEdges, selected, TRACE_DEPTH),
+    [enabledEdges, selected],
+  );
   const needle = query.trim().toLowerCase();
   const matchIds = useMemo(() => {
     if (!needle) return new Set<string>();
@@ -116,12 +123,12 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
   const filteredNodes = useMemo(() => {
     if (!needle) return nodes;
     const expanded = new Set(matchIds);
-    for (const edge of edges) {
+    for (const edge of enabledEdges) {
       if (matchIds.has(edge.source)) expanded.add(edge.target);
       if (matchIds.has(edge.target)) expanded.add(edge.source);
     }
     return nodes.filter((node) => expanded.has(node.id));
-  }, [edges, matchIds, needle, nodes]);
+  }, [enabledEdges, matchIds, needle, nodes]);
 
   const fullLaneCounts = useMemo(() => {
     const counts = new Map<string, number>(LANE_ORDER.map((lane) => [lane, 0]));
@@ -138,6 +145,9 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
       items.sort((a, b) => {
         if (a.id === selected) return -1;
         if (b.id === selected) return 1;
+        const aTrace = selectedTrace.has(a.id);
+        const bTrace = selectedTrace.has(b.id);
+        if (aTrace !== bTrace) return aTrace ? -1 : 1;
         const aMatch = matchIds.has(a.id);
         const bMatch = matchIds.has(b.id);
         if (aMatch !== bMatch) return aMatch ? -1 : 1;
@@ -147,13 +157,13 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
       visible.push(...items.slice(0, MAX_VISIBLE_PER_LANE));
     }
     return visible;
-  }, [degree, filteredNodes, matchIds, selected]);
+  }, [degree, filteredNodes, matchIds, selected, selectedTrace]);
 
   const hiddenNodeCount = filteredNodes.length - displayNodes.length;
   const visibleIds = useMemo(() => new Set(displayNodes.map((node) => node.id)), [displayNodes]);
   const visibleEdges = useMemo(
-    () => edges.filter((edge) => layers.has(edge.layer) && visibleIds.has(edge.source) && visibleIds.has(edge.target)),
-    [edges, layers, visibleIds],
+    () => enabledEdges.filter((edge) => visibleIds.has(edge.source) && visibleIds.has(edge.target)),
+    [enabledEdges, visibleIds],
   );
 
   const lanes = useMemo(() => {
@@ -188,16 +198,10 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
     };
   }, [lanes]);
 
-  const connected = useMemo(() => {
-    if (!selected) return new Set<string>();
-    const next = new Set([selected]);
-    for (const edge of visibleEdges) {
-      if (edge.source === selected) next.add(edge.target);
-      if (edge.target === selected) next.add(edge.source);
-    }
-    return next;
-  }, [selected, visibleEdges]);
-
+  const connected = useMemo(
+    () => traceEvolutionNeighborhood(visibleEdges, selected, TRACE_DEPTH),
+    [selected, visibleEdges],
+  );
   const selectedNode = selected ? nodeById.get(selected) : undefined;
   const selectedEdges = selected
     ? visibleEdges.filter((edge) => edge.source === selected || edge.target === selected)
@@ -219,15 +223,20 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
           <span className={styles.kicker}>Provenance graph</span>
           <strong>Trace research into the manuscript and its committed revisions</strong>
           <small className={styles.scopeNote} aria-live="polite">
-            {hiddenNodeCount > 0
-              ? `Showing ${displayNodes.length} of ${filteredNodes.length} matching/connected nodes. Search narrows the complete projection.`
-              : `${displayNodes.length} nodes · ${visibleEdges.length} visible edges`}
+            {selected
+              ? `${connected.size} nodes in selected trace · ${visibleEdges.length} visible edges`
+              : hiddenNodeCount > 0
+                ? `Showing ${displayNodes.length} of ${filteredNodes.length} matching/connected nodes. Search narrows the complete projection.`
+                : `${displayNodes.length} nodes · ${visibleEdges.length} visible edges`}
           </small>
         </div>
         <input
           className={styles.search}
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setSelected("");
+          }}
           placeholder="Filter papers, evidence, claims, citations, revisions…"
           aria-label="Filter provenance graph"
         />
@@ -265,7 +274,7 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
             const source = layout.positions.get(edge.source);
             const target = layout.positions.get(edge.target);
             if (!source || !target) return null;
-            const active = !selected || edge.source === selected || edge.target === selected;
+            const active = !selected || (connected.has(edge.source) && connected.has(edge.target));
             return (
               <path
                 key={edge.id}
@@ -338,7 +347,7 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
                   </button>
                 ) : null;
               })}
-              {!selectedEdges.length && <p>No visible connections in the enabled layers.</p>}
+              {!selectedEdges.length && <p>No direct connections in the enabled visible layers.</p>}
             </div>
             {selectedNode.href && (
               <button className={styles.open} type="button" onClick={() => router.push(selectedNode.href!)}>
@@ -347,7 +356,7 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
             )}
           </>
         ) : (
-          <p className={styles.empty}>Select a node to inspect its source, semantic, version, citation, and revision connections.</p>
+          <p className={styles.empty}>Select a node to trace its source, semantic, version, citation, and revision path.</p>
         )}
       </aside>
     </section>
