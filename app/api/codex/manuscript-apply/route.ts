@@ -3,6 +3,11 @@ import { NextResponse } from "next/server";
 import { isSameOrigin } from "@/lib/http/same-origin";
 import { latexWritesEnabled, listLatexWorkspace, readLatexSource } from "@/lib/research/latex-ide.mjs";
 import {
+  createManuscriptRecoverySnapshot,
+  deleteManuscriptRecoverySnapshot,
+  restoreManuscriptRecoverySnapshot,
+} from "@/lib/codex/manuscript-recovery.mjs";
+import {
   allManuscriptPaths,
   changedFileStates,
   deleteProposal,
@@ -26,6 +31,19 @@ function relativeProjectFile(repoFile: string, manuscriptPath: string) {
   const prefix = `${manuscriptPath}/`;
   if (!repoFile.startsWith(prefix)) throw new Error("Proposal file escaped the reviewed manuscript project.");
   return repoFile.slice(prefix.length);
+}
+
+async function restoreSnapshot(root: string, id: string) {
+  try {
+    const restored = await restoreManuscriptRecoverySnapshot({ root, proposalId: id });
+    await deleteManuscriptRecoverySnapshot({ root, proposalId: id }).catch(() => null);
+    return { ok: true, restored: restored.restored };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Could not restore the manuscript recovery snapshot.",
+    };
+  }
 }
 
 export async function POST(request: Request) {
@@ -56,7 +74,10 @@ export async function POST(request: Request) {
     }
 
     if (action === "discard") {
-      await deleteProposal(root, id);
+      await Promise.all([
+        deleteProposal(root, id),
+        deleteManuscriptRecoverySnapshot({ root, proposalId: id }).catch(() => null),
+      ]);
       return NextResponse.json({ discarded: true }, { headers: { "Cache-Control": "no-store" } });
     }
 
@@ -113,9 +134,25 @@ export async function POST(request: Request) {
       }, { status: 409 });
     }
 
+    try {
+      await createManuscriptRecoverySnapshot({ root, proposalId: id, files: metadata.files as string[] });
+    } catch (snapshotError) {
+      return NextResponse.json({
+        error: "Could not create the pre-apply manuscript recovery snapshot. No source changes were made.",
+        detail: snapshotError instanceof Error ? snapshotError.message : "Recovery snapshot failed.",
+      }, { status: 500 });
+    }
+
     const applied = await runGit(root, ["apply", "--whitespace=nowarn", "-"], { input: patch });
     if (applied.code !== 0) {
-      return NextResponse.json({ error: "Git could not apply the reviewed manuscript proposal.", detail: applied.stderr.slice(0, 4000) }, { status: 500 });
+      const recovery = await restoreSnapshot(root, id);
+      return NextResponse.json({
+        error: recovery.ok
+          ? "Git could not apply the reviewed manuscript proposal. The pre-apply source snapshot was restored."
+          : "Git could not apply the reviewed manuscript proposal and automatic source recovery also failed. Inspect the touched manuscript files before continuing.",
+        detail: applied.stderr.slice(0, 4000),
+        ...(recovery.ok ? { recovered: recovery.restored } : { recoveryRequired: true, recovery: recovery.error, snapshotRetained: true }),
+      }, { status: 500 });
     }
 
     try {
@@ -124,7 +161,10 @@ export async function POST(request: Request) {
         await readLatexSource({ rootDir: root, projectId, file });
       }
       const workspace = await listLatexWorkspace({ rootDir: root, projectId });
-      await deleteProposal(root, id);
+      await Promise.all([
+        deleteProposal(root, id),
+        deleteManuscriptRecoverySnapshot({ root, proposalId: id }).catch(() => null),
+      ]);
       return NextResponse.json({
         applied: true,
         files: metadata.files,
@@ -132,13 +172,26 @@ export async function POST(request: Request) {
       }, { headers: { "Cache-Control": "no-store" } });
     } catch (validationError) {
       const rollback = await runGit(root, ["apply", "-R", "--whitespace=nowarn", "-"], { input: patch });
+      if (rollback.code === 0) {
+        await deleteManuscriptRecoverySnapshot({ root, proposalId: id }).catch(() => null);
+        return NextResponse.json({
+          error: "Applied manuscript changes failed source validation and were rolled back.",
+          detail: validationError instanceof Error ? validationError.message : "Manuscript validation failed.",
+          rollback: "reverse-patch",
+        }, { status: 422 });
+      }
+
+      const recovery = await restoreSnapshot(root, id);
       return NextResponse.json({
-        error: rollback.code === 0
-          ? "Applied manuscript changes failed source validation and were rolled back."
-          : "Applied manuscript changes failed source validation and automatic rollback also failed. Inspect the touched manuscript files before continuing.",
+        error: recovery.ok
+          ? "Applied manuscript changes failed source validation. Reverse-patch rollback failed, but the exact pre-apply source snapshot was restored."
+          : "Applied manuscript changes failed source validation and both automatic rollback methods failed. Inspect the touched manuscript files before continuing.",
         detail: validationError instanceof Error ? validationError.message : "Manuscript validation failed.",
-        ...(rollback.code !== 0 ? { rollback: rollback.stderr.slice(0, 4000) } : {}),
-      }, { status: rollback.code === 0 ? 422 : 500 });
+        rollback: rollback.stderr.slice(0, 4000),
+        ...(recovery.ok
+          ? { recovered: recovery.restored, rollbackFallback: "snapshot" }
+          : { recoveryRequired: true, recovery: recovery.error, snapshotRetained: true }),
+      }, { status: recovery.ok ? 422 : 500 });
     }
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Could not apply manuscript proposal." }, { status: 500, headers: { "Cache-Control": "no-store" } });
