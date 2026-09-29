@@ -3,7 +3,7 @@ import type { LatexCitationReference } from "./latex-citations.mjs";
 
 export type EvolutionNode = {
   id: string;
-  kind: "research" | "paper" | "annotation" | "manuscript" | "passage" | "citation" | "revision";
+  kind: "research" | "paper" | "annotation" | "manuscript" | "passage" | "claim" | "citation" | "revision";
   label: string;
   research: string;
   role?: string;
@@ -26,6 +26,8 @@ export type EvolutionNode = {
   file?: string;
   main?: boolean;
   key?: string;
+  claimId?: string;
+  anchorLine?: number;
   start?: number;
   end?: number;
   line?: number;
@@ -48,7 +50,7 @@ export type EvolutionEdge = {
   source: string;
   target: string;
   type: string;
-  layer: "semantic" | "reference" | "source" | "version" | "citation";
+  layer: "semantic" | "reference" | "source" | "version" | "citation" | "claim";
   explicit: boolean;
 };
 
