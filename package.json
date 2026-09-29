@@ -25,6 +25,7 @@
     "research:prepare-pdf": "node scripts/prepare-pdf-runtime.mjs",
     "verify:workflow": "node --test tests/research-manuscript-flow.test.mjs",
     "verify:merge-local": "npm run check:full && npm run verify:workflow",
+    "verify:merge-full": "npm run verify:merge-local && npm run verify:latex:container && npm run verify:latex:project-toolchain && npm run verify:latex:project-app",
     "verify:latex": "node scripts/verify-latex-toolchain.mjs",
     "verify:latex:container": "node scripts/verify-latex-container.mjs",
     "verify:latex:project-toolchain": "docker build --target latex-toolchain -t observaire-latex-toolchain .",
