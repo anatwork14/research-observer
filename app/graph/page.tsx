@@ -63,7 +63,7 @@ export default async function GraphPage({
     nodes: [],
     edges: [],
     unresolved: [],
-    stats: { manuscriptFiles: 0, citations: 0, resolved: 0, ambiguous: 0, missing: 0 },
+    stats: { manuscriptFiles: 0, passages: 0, citations: 0, resolved: 0, ambiguous: 0, missing: 0 },
   };
   let citationAvailable = view === "research" ? null : false;
   let revisions = buildManuscriptRevisionProjection({
@@ -96,16 +96,16 @@ export default async function GraphPage({
         <header className="collection-heading">
           <div>
             <p className="eyebrow">Research evolution</p>
-            <h1>Trace how sources become evidence, claims, citations, manuscript text, and revisions.</h1>
+            <h1>Trace how sources become evidence, citations, manuscript passages, and revisions.</h1>
             <p>
               Keep the force-directed semantic graph for research relationships, switch to provenance to follow source-to-manuscript paths,
-              or use the timeline to compare dated research, explicit semantic versions, and real committed manuscript revisions. No graph layer invents relationships or revision history.
+              or use the timeline to compare dated research, explicit semantic versions, and real committed manuscript revisions. Passage context is literal saved LaTeX structure; no graph layer invents claims or revision history.
             </p>
           </div>
           <span className="collection-count">
             {view === "research"
               ? `${typedCount} typed · ${referenceCount} references · ${projectGraphNodes.length} nodes`
-              : `${evolution.stats.researchNodes} research · ${evolution.stats.annotationNodes} annotations · ${citationAvailable ? `${evolution.stats.citationNodes} citations` : "citation scan unavailable"} · ${manuscriptHistoryAvailable ? `${evolution.stats.revisionNodes} revisions` : "Git history unavailable"} · ${evolution.stats.timelineEvents} dated events`}
+              : `${evolution.stats.researchNodes} research · ${evolution.stats.annotationNodes} annotations · ${citationAvailable ? `${evolution.stats.citationNodes} citations · ${evolution.stats.passageNodes} passages` : "citation scan unavailable"} · ${manuscriptHistoryAvailable ? `${evolution.stats.revisionNodes} revisions` : "Git history unavailable"} · ${evolution.stats.timelineEvents} dated events`}
           </span>
         </header>
 
@@ -160,6 +160,7 @@ export default async function GraphPage({
               </div>
               <div className="relationship-index">
                 <div className="relationship-index-row"><span>Citation scan</span><strong>{citationAvailable ? "Available" : "Unavailable"}</strong><span>{citationAvailable ? `${manuscript.stats.citations} occurrences` : "research graph remains usable"}</span></div>
+                <div className="relationship-index-row"><span>Passages</span><strong>{citationAvailable ? manuscript.stats.passages : "—"}</strong><span>literal saved LaTeX blocks</span></div>
                 <div className="relationship-index-row"><span>Resolved</span><strong>{citationAvailable ? manuscript.stats.resolved : "—"}</strong><span>citation links</span></div>
                 <div className="relationship-index-row"><span>Ambiguous</span><strong>{citationAvailable ? manuscript.stats.ambiguous : "—"}</strong><span>require explicit choice</span></div>
                 <div className="relationship-index-row"><span>Missing</span><strong>{citationAvailable ? manuscript.stats.missing : "—"}</strong><span>not linked</span></div>
@@ -167,7 +168,7 @@ export default async function GraphPage({
                 <div className="relationship-index-row"><span>Working changes</span><strong>{manuscriptHistoryAvailable ? revisions.stats.dirtyFiles : "Unavailable"}</strong><span>not presented as revisions</span></div>
                 {manuscript.unresolved.slice(0, 12).map((item) => (
                   <div className="relationship-index-row" key={`${item.file}-${item.key}-${item.status}`}>
-                    <span>{item.file}</span><strong>{item.key}</strong><span>{item.status}</span>
+                    <span>{item.line ? `${item.file}:${item.line}` : item.file}</span><strong>{item.key}</strong><span>{[item.status, item.section].filter(Boolean).join(" · ")}</span>
                   </div>
                 ))}
               </div>
