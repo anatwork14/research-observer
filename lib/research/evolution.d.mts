@@ -11,6 +11,10 @@ export type EvolutionNode = {
   date?: string;
   order?: number;
   pdf?: string;
+  sourceKind?: "pdf" | "consensus";
+  doi?: string;
+  url?: string;
+  paperId?: string;
   annotationId?: string;
   annotationType?: string;
   anchorKind?: string;
