@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { LatexCitationLauncher } from "@/components/LatexCitationLauncher";
 import { LatexCodexAssistant } from "@/components/LatexCodexAssistant";
+import { LatexDeepLinkCursor } from "@/components/LatexDeepLinkCursor";
 import { LatexEditorAssistant } from "@/components/LatexEditorAssistant";
 import { LatexWorkbench } from "@/components/LatexWorkbench";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
@@ -33,6 +34,7 @@ export default async function IdePage({
     <div className="site-shell pdf-site-shell">
       <WorkspaceHeader entries={navEntries} active="ide" />
       <LatexWorkbench projectId={projectId} initialFile={requestedFile} initialLine={initialLine} />
+      <LatexDeepLinkCursor file={requestedFile} line={initialLine} />
       <LatexEditorAssistant />
       <LatexCodexAssistant projectId={projectId} />
       <LatexCitationLauncher projectId={projectId} />
