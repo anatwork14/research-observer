@@ -249,8 +249,8 @@ test("reviewed visual source text flows from a figure region into evidence and a
     new Set(["verified-paper", promoted.evidence.slug]),
   );
 
-  const evidencePath = path.join(root, promoted.evidence.filename);
+  const evidencePath = path.join(root, "progress", promoted.evidence.filename);
   const evidenceMarkdown = await fs.readFile(evidencePath, "utf8");
   assert.match(evidenceMarkdown, /Figure 2\. Reranking increases retrieval quality/);
-  assert.match(evidenceMarkdown, /Visual source text: caption/);
+  assert.match(evidenceMarkdown, /\*\*Region source text kind:\*\* caption/);
 });
