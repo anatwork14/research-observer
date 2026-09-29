@@ -16,6 +16,8 @@ For graph/timeline/version work, also read `docs/RESEARCH_EVOLUTION.md`.
 - Never infer `supports`, `contradicts`, `answers`, `based_on`, `supersedes`, or other semantic relationships from proximity, citation occurrence, annotation type, metric direction, dates, or AI interpretation.
 - Promoted annotation provenance may be reconstructed only from the durable promotion snapshot stored in canonical evidence content plus canonical evidence `source` metadata.
 - Private annotation-sidecar changes after promotion must not silently rewrite historical evidence provenance.
+- Canonical local PDF identity must use the compiler-visible asset path, including folder-backed project context. Two projects with `papers/source.pdf` must never collapse into one source node.
+- Reviewed Consensus/external scholarly evidence may create a source-provenance node from already stored canonical identifiers only. Identity precedence is normalized DOI, then provider paper ID, then canonical HTTPS URL. Do not invent a paper identity or upgrade external evidence into a semantic relationship.
 
 ## Citation projection
 
@@ -37,8 +39,16 @@ For graph/timeline/version work, also read `docs/RESEARCH_EVOLUTION.md`.
 
 - Manuscript revision history may use real Git commits only. Do not use `.observaire-ide.json.updatedAt`, source mtimes, browser save timestamps, or build timestamps as revision events.
 - Git history access is read-only, project-path confined, bounded, and must ignore potentially disruptive global Git configuration where practical.
+- Use path-safe Git output. Renames, spaces, and non-ASCII source names must not silently disappear from history/status parsing.
+- A Git repository with no `HEAD` yet still has valid working-tree state: report dirty/untracked manuscript files while returning zero committed revisions.
 - Dirty/untracked manuscript files are working state, not revisions. Report them separately.
 - If Git history is unavailable, degrade the revision layer without breaking research/citation projections.
+
+## Timeline semantics
+
+- Research-note `date` is a calendar date, not an instant. UI formatting must not shift it across days because of the viewer's timezone.
+- Experiment-run and Git commit timestamps are real instants and may be localized for display.
+- Never synthesize chronology from numeric filename order, mtimes, graph position, or IDE timestamps.
 
 ## Bounds
 
@@ -46,9 +56,11 @@ Keep expensive derived work bounded. Current contracts include:
 
 - manuscript Git history: maximum 80 revisions;
 - research source diff: maximum 240 lines per side;
-- project-scoped citation scanning: visible editable `.tex` files only.
+- project-scoped citation scanning: visible editable `.tex` files only;
+- provenance UI: maximum 90 rendered nodes per lane before search/focus prioritization;
+- selected provenance trace: maximum 6 hops in the UI (service helper accepts a bounded maximum of 12).
 
-Do not remove bounds to make one large fixture pass.
+Do not remove bounds to make one large fixture pass. The underlying derived projection remains complete even when the UI renders a bounded working set.
 
 ## Verification
 
@@ -56,9 +68,13 @@ For evolution work, run focused tests plus the repository gate:
 
 ```bash
 node --test tests/research-evolution.test.mjs
+node --test tests/research-evolution-consensus.test.mjs
+node --test tests/research-evolution-trace.test.mjs
+node --test tests/research-evolution-layout.test.mjs
 node --test tests/research-version-lineage.test.mjs
 node --test tests/research-version-compare.test.mjs
 node --test tests/manuscript-evolution.test.mjs
+node --test tests/manuscript-history.test.mjs
 GIT_CONFIG_GLOBAL=/dev/null npm run verify:merge-local
 git diff --check
 ```
