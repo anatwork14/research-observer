@@ -7,7 +7,7 @@ import styles from "./EvolutionGraph.module.css";
 
 type EvolutionNode = {
   id: string;
-  kind: "research" | "paper" | "annotation" | "manuscript" | "citation" | "revision";
+  kind: "research" | "paper" | "annotation" | "manuscript" | "passage" | "citation" | "revision";
   label: string;
   research: string;
   role?: string;
@@ -18,6 +18,12 @@ type EvolutionNode = {
   annotationType?: string;
   key?: string;
   file?: string;
+  line?: number;
+  lineEnd?: number;
+  column?: number;
+  section?: string;
+  sectionLevel?: string;
+  excerpt?: string;
   shortCommit?: string;
   author?: string;
   date?: string;
@@ -36,7 +42,7 @@ type EvolutionEdge = {
 
 type NodePosition = { x: number; y: number; width: number; height: number };
 
-const LANE_ORDER = ["paper", "annotation", "research", "citation", "manuscript", "revision"] as const;
+const LANE_ORDER = ["paper", "annotation", "research", "citation", "passage", "manuscript", "revision"] as const;
 const LANE_WIDTH = 244;
 const LANE_GAP = 18;
 const NODE_WIDTH = 210;
@@ -48,6 +54,7 @@ const LANE_LABELS: Record<string, string> = {
   annotation: "Annotations",
   research: "Research objects",
   citation: "Citations",
+  passage: "Manuscript passages",
   manuscript: "Manuscripts",
   revision: "Revisions",
 };
@@ -87,6 +94,9 @@ function visualNodeCompare(a: EvolutionNode, b: EvolutionNode) {
     return (a.role || "").localeCompare(b.role || "") || a.label.localeCompare(b.label);
   }
   if (a.kind === "revision" && b.kind === "revision") return (a.date || "").localeCompare(b.date || "");
+  if (a.kind === "passage" && b.kind === "passage") {
+    return (a.file || "").localeCompare(b.file || "") || (a.line || 0) - (b.line || 0);
+  }
   return a.label.localeCompare(b.label);
 }
 
@@ -116,8 +126,18 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
   const matchIds = useMemo(() => {
     if (!needle) return new Set<string>();
     return new Set(nodes
-      .filter((node) => [node.label, node.kind, node.role || "", node.type || "", node.status || "", node.shortCommit || "", node.author || ""]
-        .some((value) => value.toLowerCase().includes(needle)))
+      .filter((node) => [
+        node.label,
+        node.kind,
+        node.role || "",
+        node.type || "",
+        node.status || "",
+        node.shortCommit || "",
+        node.author || "",
+        node.file || "",
+        node.section || "",
+        node.excerpt || "",
+      ].some((value) => value.toLowerCase().includes(needle)))
       .map((node) => node.id));
   }, [needle, nodes]);
   const filteredNodes = useMemo(() => {
@@ -131,13 +151,13 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
   }, [enabledEdges, matchIds, needle, nodes]);
 
   const fullLaneCounts = useMemo(() => {
-    const counts = new Map<string, number>(LANE_ORDER.map((lane) => [lane, 0]));
+    const counts = new Map<string, number>(LANE_ORDER.map((lane) => [lane, 0] as [string, number]));
     for (const node of filteredNodes) counts.set(node.kind, (counts.get(node.kind) || 0) + 1);
     return counts;
   }, [filteredNodes]);
 
   const displayNodes = useMemo(() => {
-    const grouped = new Map<string, EvolutionNode[]>(LANE_ORDER.map((lane) => [lane, []]));
+    const grouped = new Map<string, EvolutionNode[]>(LANE_ORDER.map((lane) => [lane, []] as [string, EvolutionNode[]]));
     for (const node of filteredNodes) grouped.get(node.kind)?.push(node);
     const visible: EvolutionNode[] = [];
     for (const lane of LANE_ORDER) {
@@ -221,7 +241,7 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
       <div className={styles.toolbar}>
         <div>
           <span className={styles.kicker}>Provenance graph</span>
-          <strong>Trace research into the manuscript and its committed revisions</strong>
+          <strong>Trace research into cited manuscript passages and committed revisions</strong>
           <small className={styles.scopeNote} aria-live="polite">
             {selected
               ? `${connected.size} nodes in selected trace · ${visibleEdges.length} visible edges`
@@ -237,7 +257,7 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
             setQuery(event.target.value);
             setSelected("");
           }}
-          placeholder="Filter papers, evidence, claims, citations, revisions…"
+          placeholder="Filter papers, evidence, citations, passages, revisions…"
           aria-label="Filter provenance graph"
         />
         <div className={styles.layers} aria-label="Graph layers">
@@ -292,7 +312,9 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
             const isSelected = selected === id;
             const secondary = node.kind === "revision"
               ? [node.shortCommit, node.added !== undefined ? `+${node.added}` : "", node.removed !== undefined ? `−${node.removed}` : ""].filter(Boolean).join(" · ")
-              : [node.role || node.kind, node.type, node.status].filter(Boolean).join(" · ");
+              : node.kind === "passage"
+                ? [node.section || "unsectioned", node.line && node.lineEnd && node.lineEnd !== node.line ? `lines ${node.line}–${node.lineEnd}` : node.line ? `line ${node.line}` : ""].filter(Boolean).join(" · ")
+                : [node.role || node.kind, node.type, node.status].filter(Boolean).join(" · ");
             return (
               <g
                 key={id}
@@ -332,10 +354,13 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
               {selectedNode.status && <span>{selectedNode.status}</span>}
               {selectedNode.page && <span>page {selectedNode.page}</span>}
               {selectedNode.file && <span>{selectedNode.file}</span>}
+              {selectedNode.section && <span>{selectedNode.sectionLevel ? `${selectedNode.sectionLevel}: ` : ""}{selectedNode.section}</span>}
+              {selectedNode.line && <span>{selectedNode.lineEnd && selectedNode.lineEnd !== selectedNode.line ? `lines ${selectedNode.line}–${selectedNode.lineEnd}` : `line ${selectedNode.line}`}</span>}
               {selectedNode.shortCommit && <span>{selectedNode.shortCommit}</span>}
               {selectedNode.date && <span>{selectedNode.date.slice(0, 10)}</span>}
               {selectedNode.author && <span>{selectedNode.author}</span>}
             </div>
+            {selectedNode.excerpt && <p className={styles.excerpt}>{selectedNode.excerpt}</p>}
             <div className={styles.connections}>
               {selectedEdges.map((edge) => {
                 const outgoing = edge.source === selectedNode.id;
@@ -351,12 +376,12 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
             </div>
             {selectedNode.href && (
               <button className={styles.open} type="button" onClick={() => router.push(selectedNode.href!)}>
-                {selectedNode.kind === "revision" ? "Open current manuscript" : "Open source"}
+                {selectedNode.kind === "revision" ? "Open current manuscript" : selectedNode.kind === "passage" || selectedNode.kind === "citation" ? "Open manuscript location" : "Open source"}
               </button>
             )}
           </>
         ) : (
-          <p className={styles.empty}>Select a node to trace its source, semantic, version, citation, and revision path.</p>
+          <p className={styles.empty}>Select a node to trace its source, semantic, citation, passage, manuscript, and revision path.</p>
         )}
       </aside>
     </section>
