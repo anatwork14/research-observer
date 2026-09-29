@@ -13,6 +13,7 @@ import {
 } from "@/lib/research/latex-editor-tools.mjs";
 import styles from "./LatexEditorAssistant.module.css";
 import { activeLatexEditor, notifyLatexEditorChange } from "./latex-editor-adapter";
+import { announceIdeOverlayOpen, listenForOtherIdeOverlay } from "./ide-overlay-coordinator";
 
 type Tab = "commands" | "outline" | "problems";
 type Transform = { content: string; selectionStart: number; selectionEnd: number };
@@ -75,6 +76,12 @@ export function LatexEditorAssistant() {
     const editor = activeEditor();
     setSnapshot(editor ? snapshotFromEditor(editor) : { file: "", content: "", outline: [], diagnostics: [] });
   };
+  const openEditorTools = (nextTab: Tab = "commands") => {
+    refreshSnapshot();
+    announceIdeOverlayOpen("editor");
+    setTab(nextTab);
+    setOpen(true);
+  };
   const commands = useMemo(() => latexEditorCommands(), []);
   const visibleCommands = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -90,6 +97,7 @@ export function LatexEditorAssistant() {
       }
       setSnapshot(snapshotFromEditor(editor));
     };
+    const stopOverlayListener = listenForOtherIdeOverlay("editor", () => setOpen(false));
     window.addEventListener("latex-editor-change", refresh);
     refresh();
 
@@ -97,6 +105,7 @@ export function LatexEditorAssistant() {
       if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === "p") {
         event.preventDefault();
         refreshSnapshot();
+        announceIdeOverlayOpen("editor");
         setOpen(true);
         setTab("commands");
         return;
@@ -111,12 +120,14 @@ export function LatexEditorAssistant() {
         } catch (requestError) {
           setError(requestError instanceof Error ? requestError.message : "Could not toggle comments.");
           refreshSnapshot();
+          announceIdeOverlayOpen("editor");
           setOpen(true);
         }
       }
     };
     window.addEventListener("keydown", keydown);
     return () => {
+      stopOverlayListener();
       window.removeEventListener("latex-editor-change", refresh);
       window.removeEventListener("keydown", keydown);
     };
@@ -159,7 +170,7 @@ export function LatexEditorAssistant() {
   return (
     <>
       {!open && (
-        <button type="button" className={styles.launcher} onClick={() => { refreshSnapshot(); setOpen(true); }} title="LaTeX editor tools (Ctrl/⌘ + Shift + P)">
+        <button type="button" className={styles.launcher} onClick={() => openEditorTools()} title="LaTeX editor tools (Ctrl/⌘ + Shift + P)">
           Editor
           {snapshot.diagnostics.length > 0 && <span>{snapshot.diagnostics.length}</span>}
         </button>
