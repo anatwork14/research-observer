@@ -288,8 +288,9 @@
 @media (max-width: 760px) {
   .launcher {
     right: auto;
-    left: 6.6rem;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
+    left: 50%;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 2.65rem);
+    transform: translateX(-50%);
   }
 
   .drawer {
@@ -319,7 +320,7 @@
   .launcher {
     left: 50%;
     right: auto;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.65rem);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 2.65rem);
     transform: translateX(-50%);
     padding: 0.48rem 0.62rem;
     font-size: 0.78rem;
