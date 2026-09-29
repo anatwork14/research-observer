@@ -3,7 +3,7 @@ import type { LatexCitationReference } from "./latex-citations.mjs";
 
 export type EvolutionNode = {
   id: string;
-  kind: "research" | "paper" | "annotation" | "manuscript" | "citation" | "revision";
+  kind: "research" | "paper" | "annotation" | "manuscript" | "passage" | "citation" | "revision";
   label: string;
   research: string;
   role?: string;
@@ -28,6 +28,12 @@ export type EvolutionNode = {
   key?: string;
   start?: number;
   end?: number;
+  line?: number;
+  lineEnd?: number;
+  column?: number;
+  section?: string;
+  sectionLevel?: string;
+  excerpt?: string;
   choices?: string[];
   commit?: string;
   shortCommit?: string;
@@ -72,8 +78,22 @@ export type ManuscriptCitationProjection = {
   projectId: string;
   nodes: EvolutionNode[];
   edges: EvolutionEdge[];
-  unresolved: Array<{ file: string; key: string; status: string; choices: string[] }>;
-  stats: { manuscriptFiles: number; citations: number; resolved: number; ambiguous: number; missing: number };
+  unresolved: Array<{
+    file: string;
+    key: string;
+    status: string;
+    choices: string[];
+    line?: number;
+    section?: string;
+  }>;
+  stats: {
+    manuscriptFiles: number;
+    passages: number;
+    citations: number;
+    resolved: number;
+    ambiguous: number;
+    missing: number;
+  };
 };
 
 export type ResearchEvolutionProjection = {
@@ -87,6 +107,10 @@ export type ResearchEvolutionProjection = {
 };
 
 export function buildResearchEvolutionProjection(workspace: ResearchWorkspace, options?: { projectId?: string }): ResearchEvolutionProjection;
-export function buildManuscriptCitationProjection(options?: { projectId?: string; mainFile?: string; files?: Array<{ file: string; citations: LatexCitationReference[] }> }): ManuscriptCitationProjection;
+export function buildManuscriptCitationProjection(options?: {
+  projectId?: string;
+  mainFile?: string;
+  files?: Array<{ file: string; content?: string; citations: LatexCitationReference[] }>;
+}): ManuscriptCitationProjection;
 export function loadManuscriptCitationProjection(options?: { rootDir?: string; projectId?: string }): Promise<ManuscriptCitationProjection>;
 export function mergeEvolutionProjections(research: ResearchEvolutionProjection, manuscript: ManuscriptCitationProjection): ResearchEvolutionProjection;
