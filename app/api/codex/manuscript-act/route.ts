@@ -211,8 +211,14 @@ export async function POST(request: Request) {
       }
       const configName = await syncConfigSnapshot(root, worktree);
 
-      const stage = await runGit(worktree, ["add", "-A", "--", manuscriptsRootPath, configName]);
-      if (stage.code !== 0) throw new Error(stage.stderr || "Could not stage the live manuscript snapshot for review.");
+      const stageConfig = await runGit(worktree, ["add", "-A", "--", configName]);
+      if (stageConfig.code !== 0) throw new Error(stageConfig.stderr || "Could not stage the live Observaire configuration snapshot.");
+      const trackedProject = await runGit(worktree, ["ls-files", "-z", "--", manuscriptPath]);
+      if (trackedProject.code !== 0) throw new Error(trackedProject.stderr || "Could not inspect the manuscript review baseline.");
+      if (sources.length || trackedProject.stdout) {
+        const stageProject = await runGit(worktree, ["add", "-A", "--", manuscriptPath]);
+        if (stageProject.code !== 0) throw new Error(stageProject.stderr || "Could not stage the live manuscript snapshot for review.");
+      }
       const tree = await runGit(worktree, ["write-tree"]);
       if (tree.code !== 0 || !tree.stdout.trim()) throw new Error(tree.stderr || "Could not freeze the manuscript review baseline.");
       const baselineTree = tree.stdout.trim();
