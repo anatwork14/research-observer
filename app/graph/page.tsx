@@ -2,6 +2,7 @@ import Link from "next/link";
 import { EvolutionGraph } from "@/components/EvolutionGraph";
 import { ResearchEvolutionTimeline } from "@/components/ResearchEvolutionTimeline";
 import { ResearchGraph } from "@/components/ResearchGraph";
+import { ResearchVersionCompare } from "@/components/ResearchVersionCompare";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
 import { getResearchWorkspace } from "@/lib/progress";
 import {
@@ -10,6 +11,7 @@ import {
   mergeEvolutionProjections,
   type ManuscriptCitationProjection,
 } from "@/lib/research/evolution.mjs";
+import { buildResearchVersionComparisons } from "@/lib/research/version-compare.mjs";
 
 type GraphView = "research" | "provenance" | "timeline";
 
@@ -47,6 +49,7 @@ export default async function GraphPage({
   const referenceCount = projectGraphEdges.length - typedCount;
 
   const researchEvolution = buildResearchEvolutionProjection(workspace, { projectId });
+  const versionComparisons = buildResearchVersionComparisons(workspace, { projectId });
   let manuscript: ManuscriptCitationProjection = {
     projectId,
     nodes: [],
@@ -143,7 +146,10 @@ export default async function GraphPage({
         )}
 
         {view === "timeline" && (
-          <ResearchEvolutionTimeline nodes={evolution.nodes} timeline={evolution.timeline} lineages={evolution.lineages} />
+          <>
+            <ResearchEvolutionTimeline nodes={evolution.nodes} timeline={evolution.timeline} lineages={evolution.lineages} />
+            <ResearchVersionCompare comparisons={versionComparisons} />
+          </>
         )}
       </main>
     </div>
