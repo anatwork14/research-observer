@@ -66,11 +66,24 @@ async function writeFixtures() {
   await fs.writeFile(path.join(manuscriptsDir, "default", "main.tex"), "\\documentclass{article}\n\\begin{document}\nDurable manuscript bytes.\n\\end{document}\n", "utf8");
 }
 
-const mountedChecks = [
-  "test -s /app/progress/00_persistence.md",
-  "test -s /app/annotations/default/persistence.json",
-  "test -s /app/manuscripts/default/main.tex",
-].join(" && ");
+const mountedFiles = [
+  { path: path.join(researchDir, "00_persistence.md"), containerPath: "/app/progress/00_persistence.md" },
+  { path: path.join(annotationsDir, "default", "persistence.json"), containerPath: "/app/annotations/default/persistence.json" },
+  { path: path.join(manuscriptsDir, "default", "main.tex"), containerPath: "/app/manuscripts/default/main.tex" },
+];
+const expectedHashes = new Map();
+async function verifyHostBytes() {
+  for (const file of mountedFiles) {
+    const actual = crypto.createHash("sha256").update(await fs.readFile(file.path)).digest("hex");
+    if (actual !== expectedHashes.get(file.path)) throw new Error(`Host fixture bytes changed: ${file.path}`);
+  }
+}
+
+function mountedChecks() {
+  return mountedFiles
+    .map((file) => `test -s '${file.containerPath}' && test "$(sha256sum '${file.containerPath}' | cut -d ' ' -f 1)" = '${expectedHashes.get(file.path)}'`)
+    .join(" && ");
+}
 
 console.log(`[verify:persistence] project: ${project}`);
 console.log(`[verify:persistence] disposable state volume: ${stateVolume}`);
@@ -78,26 +91,27 @@ console.log(`[verify:persistence] fixture root: ${fixtureRoot}`);
 
 try {
   await writeFixtures();
+  for (const file of mountedFiles) {
+    expectedHashes.set(file.path, crypto.createHash("sha256").update(await fs.readFile(file.path)).digest("hex"));
+  }
   await run("docker", ["volume", "create", stateVolume]);
   await run("docker", ["compose", "-p", project, "build", "observaire"]);
   await run("docker", ["compose", "-p", project, "up", "-d", "--no-build", "observaire"]);
-  await run("docker", ["compose", "-p", project, "exec", "-T", "observaire", "sh", "-lc", `${mountedChecks} && printf '%s\\n' 'state-volume-survives-recreate' > /app/.research-observer/persistence-marker.txt`]);
+  await run("docker", ["compose", "-p", project, "exec", "-T", "observaire", "sh", "-lc", `${mountedChecks()} && printf '%s\\n' 'state-volume-survives-recreate' > /app/.research-observer/persistence-marker.txt`]);
 
   await run("docker", ["compose", "-p", project, "down"]);
 
-  for (const file of [
-    path.join(researchDir, "00_persistence.md"),
-    path.join(annotationsDir, "default", "persistence.json"),
-    path.join(manuscriptsDir, "default", "main.tex"),
-  ]) await fs.access(file);
+  await verifyHostBytes();
 
   await run("docker", ["compose", "-p", project, "up", "-d", "--no-build", "observaire"]);
-  await run("docker", ["compose", "-p", project, "exec", "-T", "observaire", "sh", "-lc", `${mountedChecks} && grep -Fxq 'state-volume-survives-recreate' /app/.research-observer/persistence-marker.txt`]);
+  await run("docker", ["compose", "-p", project, "exec", "-T", "observaire", "sh", "-lc", `${mountedChecks()} && grep -Fxq 'state-volume-survives-recreate' /app/.research-observer/persistence-marker.txt`]);
+  await verifyHostBytes();
 
   console.log("[verify:persistence] PASS");
   console.log("research bind mount: PASS");
   console.log("annotation bind mount: PASS");
   console.log("manuscript bind mount: PASS");
+  console.log("exact SHA-256 bytes before and after recreation: PASS");
   console.log("state volume across recreation: PASS");
 } finally {
   await run("docker", ["compose", "-p", project, "down"], { allowFailure: true }).catch(() => null);

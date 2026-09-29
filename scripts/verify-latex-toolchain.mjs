@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { spawn } from "node:child_process";
 import {
   compileLatexProject,
   createLatexSource,
@@ -16,6 +17,31 @@ function fail(message) {
 async function requireFile(file, label) {
   const stat = await fs.stat(file).catch(() => null);
   if (!stat?.isFile()) fail(`${label} was not generated: ${file}`);
+}
+
+async function requireResolvedCitation(build, root, name, label) {
+  const buildDir = path.join(root, ".research-observer", "latex-builds", "default", build.id);
+  await requireFile(path.join(buildDir, `${name}.pdf`), `${label} PDF`);
+  const bblPath = path.join(buildDir, `${name}.bbl`);
+  await requireFile(bblPath, `${label} bibliography`);
+  const bbl = await fs.readFile(bblPath, "utf8");
+  if (!bbl.trim() || !/Toolchain verification fixture/.test(bbl)) fail(`${label} bibliography does not contain the fixture record.`);
+  const finalLog = await fs.readFile(path.join(buildDir, `${name}.log`), "utf8");
+  if (/Citation [`'][^`']+[`'].*undefined|Reference [`'][^`']+[`'].*undefined|There were undefined references|Please \(re\)run (?:BibTeX|Biber)/i.test(finalLog)) {
+    fail(`${label} compile left unresolved citation or reference diagnostics.\n${finalLog.slice(-4000)}`);
+  }
+  const text = await new Promise((resolve, reject) => {
+    const child = spawn("gs", ["-q", "-dBATCH", "-dNOPAUSE", "-sDEVICE=txtwrite", "-o", "-", path.join(buildDir, `${name}.pdf`)], { stdio: ["ignore", "pipe", "pipe"] });
+    const stdout = [];
+    const stderr = [];
+    child.stdout.on("data", (chunk) => stdout.push(chunk));
+    child.stderr.on("data", (chunk) => stderr.push(chunk));
+    child.once("error", reject);
+    child.once("close", (code) => code === 0
+      ? resolve(Buffer.concat(stdout).toString("utf8"))
+      : reject(new Error(Buffer.concat(stderr).toString("utf8") || `Ghostscript exited ${code}`)));
+  });
+  if (!/Observaire\s+Test/.test(text)) fail(`${label} PDF does not visibly render its cited bibliography author.`);
 }
 
 async function compileOrFail(root, mainFile, engine) {
@@ -104,10 +130,7 @@ Classic BibTeX citation~\\cite{observaire2026}.
 `,
     });
     const classic = await compileOrFail(root, "classic.tex", "pdflatex");
-    await requireFile(
-      path.join(root, ".research-observer", "latex-builds", "default", classic.id, "classic.bbl"),
-      "Classic BibTeX bibliography",
-    );
+    await requireResolvedCitation(classic, root, "classic", "Classic BibTeX");
 
     await createLatexSource({
       rootDir: root,
@@ -123,10 +146,7 @@ Biber citation~\\cite{observaire2026}.
 `,
     });
     const biblatex = await compileOrFail(root, "biblatex.tex", "pdflatex");
-    await requireFile(
-      path.join(root, ".research-observer", "latex-builds", "default", biblatex.id, "biblatex.bbl"),
-      "biblatex/Biber bibliography",
-    );
+    await requireResolvedCitation(biblatex, root, "biblatex", "biblatex/Biber");
 
     const summary = {
       ok: true,

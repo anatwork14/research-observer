@@ -7,6 +7,7 @@ import {
   configureLatexWorkspace,
   createLatexSource,
   listLatexWorkspace,
+  reverseSyncLatex,
   readLatexSource,
   saveLatexSource,
   setLatexFileHidden,
@@ -83,4 +84,48 @@ test("LaTeX manuscript files live outside the Markdown progress compiler", async
   assert.ok(workspace.files.some((file) => file.path === "chapters/results.tex"));
   await assert.rejects(fs.access(path.join(root, "progress", "chapters", "results.tex")));
   await fs.access(path.join(root, "manuscripts", "default", "chapters", "results.tex"));
+});
+
+test("reverse SyncTeX on generated bibliography maps to the main TeX command", async (t) => {
+  const root = await fixture();
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const buildId = "20260929050824-c865c08a";
+  const buildDir = path.join(root, ".research-observer", "latex-builds", "default", buildId);
+  const projectRoot = path.join(root, "manuscripts", "default");
+  const fakeBin = path.join(root, "fake-bin");
+  await Promise.all([
+    fs.mkdir(buildDir, { recursive: true }),
+    fs.mkdir(projectRoot, { recursive: true }),
+    fs.mkdir(fakeBin, { recursive: true }),
+  ]);
+  await fs.writeFile(path.join(projectRoot, "main.tex"), "\\documentclass{article}\n\\addbibresource{references.bib}\n\\begin{document}\nText \\cite{fixture}.\n\\printbibliography\n\\end{document}\n", "utf8");
+  await fs.writeFile(path.join(buildDir, "build.json"), JSON.stringify({
+    schemaVersion: 1,
+    id: buildId,
+    project: "default",
+    mainFile: "main.tex",
+    success: true,
+    pdf: "main.pdf",
+  }), "utf8");
+  const previousPath = process.env.PATH;
+  process.env.PATH = `${fakeBin}${path.delimiter}${previousPath ?? ""}`;
+  try {
+    for (const input of [path.join(buildDir, "main.bbl"), "main.bbl"]) {
+      await fs.writeFile(path.join(fakeBin, "synctex"), `#!/usr/bin/env node\nprocess.stdout.write(${JSON.stringify([
+        "This is SyncTeX command line utility, version 1.5",
+        "SyncTeX result begin",
+        `Output:${path.join(buildDir, "main.pdf")}`,
+        `Input:${input}`,
+        "Line:6",
+        "Column:-1",
+        "SyncTeX result end",
+        "",
+      ].join("\n"))});\n`, { mode: 0o755 });
+      const result = await reverseSyncLatex({ rootDir: root, projectId: "default", buildId, page: 1, x: 300, y: 400 });
+      assert.equal(result.file, "main.tex");
+      assert.equal(result.line, 5);
+    }
+  } finally {
+    process.env.PATH = previousPath;
+  }
 });

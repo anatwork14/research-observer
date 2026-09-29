@@ -11,6 +11,7 @@ done
 
 root="$(mktemp -d "${TMPDIR:-/tmp}/observaire-latex-shell-XXXXXX")"
 trap 'rm -rf "$root"' EXIT
+source "$(dirname "$0")/synctex-validation.sh"
 
 cat >"$root/main.tex" <<'TEX'
 \documentclass{article}
@@ -77,12 +78,32 @@ latexmk -pdf -cd "-outdir=$root/build-classic" "-pdflatex=pdflatex $common" "$ro
 test -s "$root/build-classic/classic.pdf"
 test -s "$root/build-classic/classic.bbl"
 grep -Fq 'Toolchain verification fixture' "$root/build-classic/classic.bbl"
+if grep -Eiq 'Citation .+ undefined|There were undefined references' "$root/build-classic/classic.log"; then
+  echo "[verify:latex:toolchain] classic BibTeX log contains unresolved citations/references" >&2
+  exit 6
+fi
+classic_text="$(gs -q -dNOPAUSE -dBATCH -sDEVICE=txtwrite -sOutputFile=- "$root/build-classic/classic.pdf")"
+if ! grep -Fq 'Observaire Test' <<<"$classic_text"; then
+  echo "[verify:latex:toolchain] classic BibTeX citation/bibliography did not render in the PDF" >&2
+  printf '%s\n' "$classic_text" >&2
+  exit 6
+fi
 
 mkdir -p "$root/build-biblatex"
 latexmk -pdf -cd "-outdir=$root/build-biblatex" "-pdflatex=pdflatex $common" "$root/biblatex.tex"
 test -s "$root/build-biblatex/biblatex.pdf"
 test -s "$root/build-biblatex/biblatex.bbl"
 grep -Fq 'Toolchain verification fixture' "$root/build-biblatex/biblatex.bbl"
+if grep -Eiq 'Citation .+ undefined|There were undefined references|Please (re)?run Biber' "$root/build-biblatex/biblatex.log"; then
+  echo "[verify:latex:toolchain] biblatex/Biber log contains unresolved bibliography output" >&2
+  exit 7
+fi
+biblatex_text="$(gs -q -dNOPAUSE -dBATCH -sDEVICE=txtwrite -sOutputFile=- "$root/build-biblatex/biblatex.pdf")"
+if ! grep -Fq 'Observaire Test' <<<"$biblatex_text"; then
+  echo "[verify:latex:toolchain] biblatex/Biber citation/bibliography did not render in the PDF" >&2
+  printf '%s\n' "$biblatex_text" >&2
+  exit 7
+fi
 
 forward="$(synctex view -i "5:0:$root/main.tex" -o "$root/build-pdflatex/main.pdf")"
 page="$(printf '%s\n' "$forward" | awk -F: '$1 == "Page" {sub(/^[[:space:]]+/, "", $2); print $2; exit}')"
@@ -96,14 +117,13 @@ if [[ -z "$page" || -z "$x" || -z "$y" ]]; then
 fi
 
 reverse="$(synctex edit -o "$page:$x:$y:$root/build-pdflatex/main.pdf")"
-input="$(printf '%s\n' "$reverse" | awk -F: '$1 == "Input" {sub(/^[[:space:]]+/, "", $2); print $2; exit}')"
-line="$(printf '%s\n' "$reverse" | awk -F: '$1 == "Line" {sub(/^[[:space:]]+/, "", $2); print $2; exit}')"
 
-if [[ "$input" != "$root/main.tex" || ! "$line" =~ ^[0-9]+$ || "$line" -lt 1 ]]; then
+if ! verify_synctex_reverse_output "$reverse" "$root/main.tex"; then
   echo "[verify:latex:toolchain] SyncTeX reverse output did not resolve to main.tex" >&2
   printf '%s\n' "$reverse" >&2
   exit 5
 fi
+line="$(printf '%s\n' "$reverse" | awk -F: '$1 == "Line" {sub(/^[[:space:]]+/, "", $2); print $2; exit}')"
 
 first_line() {
   "$@" 2>&1 | sed -n '1p'

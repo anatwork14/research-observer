@@ -35,6 +35,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         texlive-latex-base \
         texlive-latex-recommended \
         texlive-latex-extra \
+        texlive-bibtex-extra \
         texlive-fonts-recommended \
         texlive-pictures \
         texlive-science \

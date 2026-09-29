@@ -1,6 +1,6 @@
 .launcher {
   position: fixed;
-  z-index: 87;
+  z-index: 100;
   right: 14.4rem;
   bottom: 1rem;
   border: 1px solid var(--border);
@@ -289,7 +289,7 @@
   .launcher {
     right: auto;
     left: 50%;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 2.65rem);
+    bottom: calc(86vh + env(safe-area-inset-bottom, 0px) + 0.4rem);
     transform: translateX(-50%);
   }
 
@@ -320,7 +320,7 @@
   .launcher {
     left: 50%;
     right: auto;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 2.65rem);
+    bottom: calc(86vh + env(safe-area-inset-bottom, 0px) + 0.4rem);
     transform: translateX(-50%);
     padding: 0.48rem 0.62rem;
     font-size: 0.78rem;

@@ -189,6 +189,8 @@ test("reviewed visual source text flows from a figure region into evidence and a
   assert.equal(figure.annotation.anchorStatus, "current");
   assert.equal(figure.annotation.quote.exact, "");
   assert.equal(figure.annotation.sourceText?.kind, "caption");
+  assert.match(figure.annotation.sourceText?.sha256 ?? "", /^[0-9a-f]{64}$/);
+  assert.ok(figure.annotation.sourceText?.verifiedAt);
   assert.equal(figure.annotation.sourceText?.reviewRequired, false);
 
   const promoted = await promotePdfAnnotationToEvidence({
@@ -252,5 +254,7 @@ test("reviewed visual source text flows from a figure region into evidence and a
   const evidencePath = path.join(root, "progress", promoted.evidence.filename);
   const evidenceMarkdown = await fs.readFile(evidencePath, "utf8");
   assert.match(evidenceMarkdown, /Figure 2\. Reranking increases retrieval quality/);
-  assert.match(evidenceMarkdown, /\*\*Region source text kind:\*\* caption/);
+  assert.ok(evidenceMarkdown.includes("**Region source text kind:** caption"));
+  assert.ok(evidenceMarkdown.includes(`**Region source text SHA-256:** ${figure.annotation.sourceText.sha256}`));
+  assert.ok(evidenceMarkdown.includes(`**Region source text verified:** ${figure.annotation.sourceText.verifiedAt}`));
 });
