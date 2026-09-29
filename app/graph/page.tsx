@@ -38,6 +38,8 @@ export default async function GraphPage({
   const projectSlugs = new Set(workspace.entries.filter((entry) => entry.research === projectId).map((entry) => entry.slug));
   const projectGraphNodes = workspace.graph.nodes.filter((node) => projectSlugs.has(node.slug));
   const projectGraphEdges = workspace.graph.edges.filter((edge) => projectSlugs.has(edge.source) && projectSlugs.has(edge.target));
+  const typedCount = projectGraphEdges.filter((edge) => edge.explicit).length;
+  const referenceCount = projectGraphEdges.length - typedCount;
   const relationTypes = [...new Set(projectGraphEdges.filter((edge) => edge.explicit).map((edge) => edge.type))].sort();
   const edges = filters.relation
     ? projectGraphEdges.filter((edge) => edge.type === filters.relation)
@@ -63,6 +65,7 @@ export default async function GraphPage({
     unresolved: [],
     stats: { manuscriptFiles: 0, citations: 0, resolved: 0, ambiguous: 0, missing: 0 },
   };
+  let citationAvailable = view === "research" ? null : false;
   let revisions = buildManuscriptRevisionProjection({
     projectId,
     history: { projectId, projectPath: "", revisions: [], dirtyFiles: [], available: false },
@@ -73,7 +76,10 @@ export default async function GraphPage({
       loadManuscriptCitationProjection({ projectId }),
       listManuscriptRevisions({ projectId }),
     ]);
-    if (citationResult.status === "fulfilled") manuscript = citationResult.value;
+    if (citationResult.status === "fulfilled") {
+      manuscript = citationResult.value;
+      citationAvailable = true;
+    }
     const manuscriptHistory = historyResult.status === "fulfilled"
       ? historyResult.value
       : { projectId, projectPath: "", revisions: [], dirtyFiles: [], available: false };
@@ -96,7 +102,9 @@ export default async function GraphPage({
             </p>
           </div>
           <span className="collection-count">
-            {evolution.stats.researchNodes} research · {evolution.stats.annotationNodes} annotations · {evolution.stats.citationNodes} citations · {evolution.stats.revisionNodes} revisions · {evolution.stats.timelineEvents} dated events
+            {view === "research"
+              ? `${typedCount} typed · ${referenceCount} references · ${projectGraphNodes.length} nodes`
+              : `${evolution.stats.researchNodes} research · ${evolution.stats.annotationNodes} annotations · ${citationAvailable ? `${evolution.stats.citationNodes} citations` : "citation scan unavailable"} · ${revisions.available ? `${evolution.stats.revisionNodes} revisions` : "Git history unavailable"} · ${evolution.stats.timelineEvents} dated events`}
           </span>
         </header>
 
@@ -150,11 +158,12 @@ export default async function GraphPage({
                 <div><span className="kicker">Trace health</span><h2>Manuscript linkage and revision state</h2></div>
               </div>
               <div className="relationship-index">
-                <div className="relationship-index-row"><span>Resolved</span><strong>{manuscript.stats.resolved}</strong><span>citation links</span></div>
-                <div className="relationship-index-row"><span>Ambiguous</span><strong>{manuscript.stats.ambiguous}</strong><span>require explicit choice</span></div>
-                <div className="relationship-index-row"><span>Missing</span><strong>{manuscript.stats.missing}</strong><span>not linked</span></div>
-                <div className="relationship-index-row"><span>Committed revisions</span><strong>{revisions.stats.revisions}</strong><span>{revisions.available ? "Git history" : "Git history unavailable"}</span></div>
-                <div className="relationship-index-row"><span>Working changes</span><strong>{revisions.stats.dirtyFiles}</strong><span>not presented as revisions</span></div>
+                <div className="relationship-index-row"><span>Citation scan</span><strong>{citationAvailable ? "Available" : "Unavailable"}</strong><span>{citationAvailable ? `${manuscript.stats.citations} occurrences` : "research graph remains usable"}</span></div>
+                <div className="relationship-index-row"><span>Resolved</span><strong>{citationAvailable ? manuscript.stats.resolved : "—"}</strong><span>citation links</span></div>
+                <div className="relationship-index-row"><span>Ambiguous</span><strong>{citationAvailable ? manuscript.stats.ambiguous : "—"}</strong><span>require explicit choice</span></div>
+                <div className="relationship-index-row"><span>Missing</span><strong>{citationAvailable ? manuscript.stats.missing : "—"}</strong><span>not linked</span></div>
+                <div className="relationship-index-row"><span>Committed revisions</span><strong>{revisions.available ? revisions.stats.revisions : "—"}</strong><span>{revisions.available ? "Git history" : "Git history unavailable"}</span></div>
+                <div className="relationship-index-row"><span>Working changes</span><strong>{revisions.available ? revisions.stats.dirtyFiles : "—"}</strong><span>not presented as revisions</span></div>
                 {manuscript.unresolved.slice(0, 12).map((item) => (
                   <div className="relationship-index-row" key={`${item.file}-${item.key}-${item.status}`}>
                     <span>{item.file}</span><strong>{item.key}</strong><span>{item.status}</span>
