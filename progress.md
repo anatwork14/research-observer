@@ -864,3 +864,46 @@ Starting SHA: `004592239e881c8bca79c5917e9b10cee9db4247` (clean; 0 behind `origi
 ### Merge status
 
 **Not merge-ready.** Selected-trace priority under the >90-node visual budget, west-of-UTC browser date emulation, provider-backed Consensus provenance, and a dedicated clear-selection browser action remain unverified. `check:full` was not run. The feature branch is to be pushed without merging to `main`.
+
+## 2026-09-30 verification checkpoint — manuscript Passage provenance and IDE navigation
+
+Repository: `https://github.com/anatwork14/research-observer.git`
+
+Branch: `feature/research-graph-timeline`
+
+Starting SHA: `cb674d47a205f4051382ce378092c039e0fe65f8` (clean and aligned with the feature remote). Final implementation SHA: `c072c99efb2dc16ded395eb2d6efaec554836b6a`. The follow-on documentation checkpoint is committed separately. Nothing was merged to `main`.
+
+### Defect fixed
+
+- `c072c99` — `fix: key unresolved citations by occurrence`. The Provenance health list used file/key/status as its React key, which collided when the same unresolved key appeared more than once. Unresolved citation projections now retain the citation's source offset, and the UI key includes that occurrence identity. A disposable fixture reproduced the warning before the change; refreshing after the fix produced no new duplicate-key warning.
+
+### Local gates
+
+- Node `v22.23.2`, npm `10.9.8`; `npm ci` passed with 0 vulnerabilities.
+- The 11 evolution-focused test files passed: 33 tests, 0 failures. The three new focused files passed 10 tests total (4 passage extraction, 3 citation projection, 3 IDE navigation).
+- `npm run verify:merge-local`: PASS. Its `check:full` passed with 161 unit tests, typecheck, lint, and production build; the workflow suite passed 2/2.
+- Standalone `npm run check:full`: PASS, including 161/161 unit tests, typecheck, lint, and production build. `git diff --check`: PASS.
+- Lint: 0 errors, 2 warnings (`app/api/codex/ask/route.ts:63` and `lib/research/latex-editor-tools.mjs:30`). Build: compiled successfully; Turbopack reported 22 dynamic-filesystem tracing warnings. Doctor reported its existing ignored-`AGENTS.md` note warning. `npm ci` also printed the pinned ESLint deprecation notice.
+- Build-generated changes to `next-env.d.ts` and `tsconfig.json` were restored; they are not part of the implementation.
+
+### Passage and provenance checks
+
+- A disposable saved-source fixture produced an Introduction passage at line 4 and an Evaluation passage at line 8. The preceding section command was omitted from the first excerpt, the comment-only heading was ignored, and the next paragraph was excluded. A paragraph containing three citation tokens produced three Citation nodes, one shared Passage node, and one Passage-to-Manuscript membership edge.
+- The Provenance health panel reported citation scan availability, passages, resolved, ambiguous, missing, committed revisions, and working changes. The header included its Passage count. The Passage inspector showed file, section level/title, line, and the bounded literal excerpt.
+- A uniquely resolved citation created its source-to-Citation edge. Ambiguous and missing citations retained their literal Passage location without a guessed research edge. No relationship was inferred from surrounding prose.
+- The focused trace test passed the complete Paper → Annotation → Evidence → Citation → Passage → Manuscript → Revision chain: 7 nodes and 6 edges at depth six; depth five did not reach Revision.
+- Search surfaced the Evaluation Passage by heading and a synthetic Passage by excerpt text. Filename-only search was not separately exercised.
+- A saved-source edit expanded the fixture from 3 to 103 passages. Reloaded provenance showed the new paragraph at line 208 and returned it in search, demonstrating that Passage lines and excerpts are rebuilt from saved source.
+- Large fixture result: 107 citations and 103 passages; the UI rendered 90/107 Citation nodes and 90/103 Passage nodes, with 190 of 220 matching/connected nodes shown. Search surfaced paragraph 100 outside the initial node set. Selected-trace priority under an over-budget lane was not independently verified.
+
+### IDE and browser checks
+
+- Cold Passage-to-IDE navigation opened `/ide?research=passage-qa&file=main.tex&line=4`; CodeMirror focused line 4. The plain editor opened Project B's same-named `main.tex` at line 4 and showed Project B source, not Project A source.
+- Invalid inputs `../outside.tex`, `../../package.json`, `missing.tex`, and `image.png` all fell back to `main.tex`. Hiding `hidden.tex` in the UI made a manual deep link fall back to `main.tex`; the hidden file SHA-256 stayed `e0d7067e79c88809deb6b64bba09dfda1267dd596c8bdec07a25f929e643d31c`. The file was restored afterward.
+- At 390×844, 768×1024, 1024×768, and 1280×800, the document had no horizontal overflow. At 390×844, the selected Passage excerpt fit its 308 px inspector width without overflow.
+- The canonical Research Graph loaded without a Passage lane and had no document overflow. Drag, pin, pan, zoom, and graph-filter interactions were not re-exercised in this pass.
+- Browser console captured the duplicate-key warning before the fix; hot refresh after the change produced no new duplicate-key warning. Source loading, citation reference rendering, and forward Passage-to-IDE navigation worked. Citation insertion and an actual forward/reverse SyncTeX round trip were not run. Unsaved-editor isolation was not completed because the large fixture editor did not yield a textarea within the browser action timeout. Provider-backed Codex behavior was disabled in the disposable browser.
+
+### Remaining boundary
+
+**Merge-ready: no for this verification pass.** Local quality gates pass and the feature-only checkpoint is ready to review. Unsaved-source isolation, selected-trace priority under the large-graph budget, full Research Graph interactions, citation insertion, and actual browser SyncTeX remain unverified. These limits do not change the saved-source-only implementation contract. The feature branch remains unmerged from `main`.
