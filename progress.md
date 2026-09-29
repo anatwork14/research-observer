@@ -636,3 +636,9 @@ This update supersedes the earlier “Next implementation targets” status for 
 ### Remaining verification and merge status
 
 This branch is **not merge-ready**. Tablet/touch and narrow responsive layouts need browser verification; real-PDF annotation behavior, all three TeX engine paths, `latexmk`, BibTeX and Biber output, compiled citation navigation, SyncTeX, build retention, production runtime, and Compose recreation need isolated integration checks. Manuscript stale-save/Hide/Restore browser coverage also remains outstanding. The existing Codex Act boundary remains scoped to `progress/`.
+
+## 2026-09-29 checkpoint — annotation Hide/Restore default root
+
+Commit `9e6a9d6` contains the citation-navigation and CodeMirror implementation documented above. The separate `lib/research/pdf-annotations.mjs` fix now defaults the soft-delete/restore service root to the current working directory, matching the other annotation service entry points. This fixes the browser Hide/Restore request that previously failed with a 422 when no explicit root was passed.
+
+Browser validation on the temporary synthetic PDF confirmed Hide, Show hidden, and Restore after this change, with the sidecar revision advancing and active/hidden counts updating. The temporary fixture was removed. The final `npm run check:full` run above included this one-line service fix and passed. Full real-PDF and Compose persistence coverage remains outstanding as described above. The feature branch remains unmerged from `main`.
