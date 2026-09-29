@@ -1,6 +1,6 @@
 export type EvolutionNode = {
   id: string;
-  kind: "research" | "paper" | "annotation" | "manuscript" | "citation";
+  kind: "research" | "paper" | "annotation" | "manuscript" | "citation" | "revision";
   label: string;
   research: string;
   role?: string;
@@ -22,6 +22,12 @@ export type EvolutionNode = {
   start?: number;
   end?: number;
   choices?: string[];
+  commit?: string;
+  shortCommit?: string;
+  author?: string;
+  added?: number;
+  removed?: number;
+  files?: string[];
 };
 
 export type EvolutionEdge = {
@@ -36,7 +42,7 @@ export type EvolutionEdge = {
 export type EvolutionTimelineEvent = {
   id: string;
   at: string;
-  kind: "research" | "run";
+  kind: "research" | "run" | "manuscript";
   nodeId?: string;
   label: string;
   research: string;
@@ -44,6 +50,7 @@ export type EvolutionTimelineEvent = {
   status?: string;
   experimentSlug?: string;
   runId?: string;
+  commit?: string;
 };
 
 export type EvolutionLineage = {
