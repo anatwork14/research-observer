@@ -161,3 +161,96 @@ test("durable research flows from PDF annotation through evidence and citation i
     (error) => error?.code === "LATEX_SOURCE_STALE",
   );
 });
+
+test("reviewed visual source text flows from a figure region into evidence and a manuscript citation", async (t) => {
+  const root = await fixture();
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+
+  const figure = await createPdfAnnotation({
+    rootDir: root,
+    paperPath: "papers/sample.pdf",
+    expectedRevision: 0,
+    annotation: {
+      type: "figure",
+      page: 3,
+      anchorKind: "region",
+      quote: { exact: "" },
+      rects: [{ x: 0.18, y: 0.28, width: 0.58, height: 0.36 }],
+      sourceText: {
+        kind: "caption",
+        text: "Figure 2. Reranking increases retrieval quality while preserving the fixed latency budget.",
+      },
+      comment: "Interpretation: use this visual result only with the reviewed caption as source text.",
+      tags: ["figure", "reranking"],
+    },
+  });
+
+  assert.equal(figure.annotation.anchorKind, "region");
+  assert.equal(figure.annotation.anchorStatus, "current");
+  assert.equal(figure.annotation.quote.exact, "");
+  assert.equal(figure.annotation.sourceText?.kind, "caption");
+  assert.equal(figure.annotation.sourceText?.reviewRequired, false);
+
+  const promoted = await promotePdfAnnotationToEvidence({
+    rootDir: root,
+    paperPath: "papers/sample.pdf",
+    id: figure.annotation.id,
+    expectedRevision: 1,
+  });
+  assert.equal(promoted.existing, false);
+
+  const citation = await ensureLatexCitation({
+    rootDir: root,
+    projectId: "default",
+    slug: promoted.evidence.slug,
+    bibFile: "visual-references.bib",
+  });
+  assert.equal(citation.created, true);
+  assert.equal(citation.candidate.metadataSlug, "verified-paper");
+  assert.equal(citation.candidate.doi, "10.1234/verified.2026");
+
+  const literatureCitation = await ensureLatexCitation({
+    rootDir: root,
+    projectId: "default",
+    slug: "verified-paper",
+    bibFile: "visual-references.bib",
+  });
+  assert.equal(literatureCitation.created, false);
+  assert.equal(literatureCitation.key, citation.key);
+
+  const manuscript = await createLatexSource({
+    rootDir: root,
+    projectId: "default",
+    file: "visual.tex",
+    content: "\\documentclass{article}\n\\begin{document}\nVisual evidence pending.\n\\end{document}\n",
+  });
+  const configured = configureLatexBibliographySource(
+    `\\documentclass{article}\n\\begin{document}\nThe reviewed figure supports the reranking result~\\cite{${citation.key}}.\n\\end{document}\n`,
+    "visual-references.bib",
+  );
+  const saved = await saveLatexSource({
+    rootDir: root,
+    projectId: "default",
+    file: "visual.tex",
+    content: configured.content,
+    baseSha256: manuscript.baseSha256,
+  });
+  assert.match(saved.content, new RegExp(`\\\\cite\\{${citation.key}\\}`));
+
+  const resolved = await resolveLatexCitationTokens({
+    rootDir: root,
+    projectId: "default",
+    file: "visual.tex",
+  });
+  assert.equal(resolved.citations.length, 1);
+  assert.equal(resolved.citations[0].key, citation.key);
+  assert.deepEqual(
+    new Set(resolved.citations[0].choices.map((choice) => choice.slug)),
+    new Set(["verified-paper", promoted.evidence.slug]),
+  );
+
+  const evidencePath = path.join(root, promoted.evidence.filename);
+  const evidenceMarkdown = await fs.readFile(evidencePath, "utf8");
+  assert.match(evidenceMarkdown, /Figure 2\. Reranking increases retrieval quality/);
+  assert.match(evidenceMarkdown, /Visual source text: caption/);
+});
