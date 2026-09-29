@@ -31,6 +31,13 @@
   font: 600 16px/1.2 var(--serif);
 }
 
+.scopeNote {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font: 7.5px/1.4 var(--mono);
+}
+
 .kicker,
 .laneCount,
 .nodeMeta,
@@ -90,7 +97,9 @@
 }
 
 .scroller {
+  box-sizing: border-box;
   min-width: 0;
+  height: clamp(560px, 72vh, 860px);
   overflow: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
