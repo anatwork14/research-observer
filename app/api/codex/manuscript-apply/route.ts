@@ -36,7 +36,11 @@ function relativeProjectFile(repoFile: string, manuscriptPath: string) {
 async function restoreSnapshot(root: string, id: string) {
   try {
     const restored = await restoreManuscriptRecoverySnapshot({ root, proposalId: id });
-    await deleteManuscriptRecoverySnapshot({ root, proposalId: id }).catch(() => null);
+    try {
+      await deleteManuscriptRecoverySnapshot({ root, proposalId: id });
+    } catch (error) {
+      throw new Error("Source files were restored, but the recovery snapshot could not be removed: " + (error instanceof Error ? error.message : "unknown cleanup error"));
+    }
     return { ok: true, restored: restored.restored };
   } catch (error) {
     return {
@@ -74,10 +78,8 @@ export async function POST(request: Request) {
     }
 
     if (action === "discard") {
-      await Promise.all([
-        deleteProposal(root, id),
-        deleteManuscriptRecoverySnapshot({ root, proposalId: id }).catch(() => null),
-      ]);
+      await deleteManuscriptRecoverySnapshot({ root, proposalId: id });
+      await deleteProposal(root, id);
       return NextResponse.json({ discarded: true }, { headers: { "Cache-Control": "no-store" } });
     }
 
@@ -149,7 +151,7 @@ export async function POST(request: Request) {
       return NextResponse.json({
         error: recovery.ok
           ? "Git could not apply the reviewed manuscript proposal. The pre-apply source snapshot was restored."
-          : "Git could not apply the reviewed manuscript proposal and automatic source recovery also failed. Inspect the touched manuscript files before continuing.",
+          : "Git could not apply the reviewed manuscript proposal. " + recovery.error + " Manual recovery is required.",
         detail: applied.stderr.slice(0, 4000),
         ...(recovery.ok ? { recovered: recovery.restored } : { recoveryRequired: true, recovery: recovery.error, snapshotRetained: true }),
       }, { status: 500 });
@@ -161,10 +163,18 @@ export async function POST(request: Request) {
         await readLatexSource({ rootDir: root, projectId, file });
       }
       const workspace = await listLatexWorkspace({ rootDir: root, projectId });
-      await Promise.all([
-        deleteProposal(root, id),
-        deleteManuscriptRecoverySnapshot({ root, proposalId: id }).catch(() => null),
-      ]);
+      try {
+        await deleteManuscriptRecoverySnapshot({ root, proposalId: id });
+      } catch (snapshotCleanupError) {
+        return NextResponse.json({
+          error: "Manuscript changes were applied and validated, but the recovery snapshot could not be removed. Manual cleanup is required.",
+          detail: snapshotCleanupError instanceof Error ? snapshotCleanupError.message : "Recovery snapshot cleanup failed.",
+          applied: true,
+          files: metadata.files,
+          snapshotRetained: true,
+        }, { status: 500 });
+      }
+      await deleteProposal(root, id);
       return NextResponse.json({
         applied: true,
         files: metadata.files,
@@ -173,7 +183,17 @@ export async function POST(request: Request) {
     } catch (validationError) {
       const rollback = await runGit(root, ["apply", "-R", "--whitespace=nowarn", "-"], { input: patch });
       if (rollback.code === 0) {
-        await deleteManuscriptRecoverySnapshot({ root, proposalId: id }).catch(() => null);
+        try {
+          await deleteManuscriptRecoverySnapshot({ root, proposalId: id });
+        } catch (snapshotCleanupError) {
+          return NextResponse.json({
+            error: "Manuscript changes were rolled back, but the recovery snapshot could not be removed. Manual cleanup is required.",
+            detail: validationError instanceof Error ? validationError.message : "Manuscript validation failed.",
+            cleanup: snapshotCleanupError instanceof Error ? snapshotCleanupError.message : "Recovery snapshot cleanup failed.",
+            rollback: "reverse-patch",
+            snapshotRetained: true,
+          }, { status: 500 });
+        }
         return NextResponse.json({
           error: "Applied manuscript changes failed source validation and were rolled back.",
           detail: validationError instanceof Error ? validationError.message : "Manuscript validation failed.",
@@ -194,6 +214,6 @@ export async function POST(request: Request) {
       }, { status: recovery.ok ? 422 : 500 });
     }
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Could not apply manuscript proposal." }, { status: 500, headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Could not " + (action === "discard" ? "discard" : "apply") + " manuscript proposal." }, { status: 500, headers: { "Cache-Control": "no-store" } });
   }
 }
