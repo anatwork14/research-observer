@@ -8,6 +8,7 @@ import {
   buildResearchEvolutionProjection,
   loadManuscriptCitationProjection,
   mergeEvolutionProjections,
+  type ManuscriptCitationProjection,
 } from "@/lib/research/evolution.mjs";
 
 type GraphView = "research" | "provenance" | "timeline";
@@ -46,7 +47,7 @@ export default async function GraphPage({
   const referenceCount = projectGraphEdges.length - typedCount;
 
   const researchEvolution = buildResearchEvolutionProjection(workspace, { projectId });
-  let manuscript = {
+  let manuscript: ManuscriptCitationProjection = {
     projectId,
     nodes: [],
     edges: [],
