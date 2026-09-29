@@ -355,20 +355,22 @@ CodeMirror is a UI dependency only; manuscript source remains plain files with t
 
 ## Codex manuscript context
 
-The manuscript assistant intentionally supports Ask/Draft only.
+The manuscript assistant has three distinct modes:
 
-It may include as untrusted context:
+- **Ask** is read-only reasoning about the manuscript.
+- **Draft** returns proposed text without inserting it.
+- **Act** prepares an isolated source patch for exact human review and explicit apply.
+
+Ask and Draft may include as untrusted context:
 
 - project ID;
 - active TeX file;
 - unsaved selection/source snapshot;
 - compiler diagnostics.
 
-Ask/Draft are read-only. Draft output is proposal text and is not automatically inserted.
+Act uses separate `/api/codex/manuscript-act` and `/api/codex/manuscript-apply` routes. It refuses an unsaved active editor, snapshots visible `.tex`, `.bib`, `.sty`, `.cls`, and `.bst` sources into a detached worktree, and stores a bounded exact patch with source hashes for review. Hidden sources, resources, IDE state, sibling projects, app/config files, renames, and physical deletions cannot be applied. Apply checks proposal identity, patch hash, path scope, hidden-source status, destructive state, and current source hashes before `git apply --check` and mutation. It validates the resulting source and rolls back on validation failure. Discard removes transient proposal state only.
 
-Existing Codex Act remains scoped to reviewed research-file changes under `progress/`.
-
-A future manuscript Act must have its own stale-safe snapshot/diff/apply workflow rather than weakening the research-only path guard.
+The existing research Codex Act remains a separate workflow restricted to reviewed changes under `progress/`. Manuscript Act remains local-development only until an authenticated production agent service is configured.
 
 ## Docker persistence
 
@@ -382,31 +384,15 @@ ${OBSERVAIRE_MANUSCRIPTS_DIR:-./manuscripts} -> /app/manuscripts
 
 `.research-observer/` remains transient/rebuildable state.
 
-## Next architectural integrations
+## Integrated editor and research navigation
 
-### Citation token → source navigation
+The shared editor adapter supports CodeMirror 6 and the plain-textarea fallback for citation insertion, editor helpers, manuscript Codex snapshots, and cursor-based SyncTeX.
 
-Resolve a `\cite{key}` from visible project `.bib` source back to canonical literature/evidence using verified DOI/URL/PDF identity.
+Citation tokens resolve from visible project `.bib` source to canonical literature/evidence using verified DOI, URL, local-PDF, or title/year identity. Ambiguous and missing matches remain explicit rather than guessing a destination.
 
-### Manuscript Act/review
+### Possible future tooling
 
-A manuscript-writing agent path should use:
-
-- project-scoped manuscript snapshot;
-- source hashes;
-- proposed patch/diff;
-- stale-source detection;
-- explicit apply;
-- path guards independent from research Act.
-
-### Optional CodeMirror / TexLab
-
-When package installation/lockfile verification is available:
-
-- add CodeMirror adapter;
-- keep touch-safe fallback;
-- optionally add TexLab/LSP completion/symbols/hover/references;
-- keep compiler diagnostics authoritative.
+TexLab/LSP completion, symbols, hover, and references remain optional future work. Lightweight editor diagnostics remain advisory; latexmk and the selected TeX engine remain authoritative for compilation.
 
 ## Verification contract
 

@@ -642,3 +642,49 @@ This branch is **not merge-ready**. Tablet/touch and narrow responsive layouts n
 Commit `9e6a9d6` contains the citation-navigation and CodeMirror implementation documented above. The separate `lib/research/pdf-annotations.mjs` fix now defaults the soft-delete/restore service root to the current working directory, matching the other annotation service entry points. This fixes the browser Hide/Restore request that previously failed with a 422 when no explicit root was passed.
 
 Browser validation on the temporary synthetic PDF confirmed Hide, Show hidden, and Restore after this change, with the sidecar revision advancing and active/hidden counts updating. The temporary fixture was removed. The final `npm run check:full` run above included this one-line service fix and passed. Full real-PDF and Compose persistence coverage remains outstanding as described above. The feature branch remains unmerged from `main`.
+
+## 2026-09-29 checkpoint — verified manuscript Codex Act and stale-safe apply
+
+Starting branch head after `git fetch origin` and `git pull --ff-only`: `0aa639680975894126ac8aff04cb928a0ceb35f3` on `feature/pdf-annotations-latex-ide`. The implementation fixes are in `676fa86cfc7454b5e2cf250a7163b0380a91e304` and `cc63a4cdb4e1b15dcf75ceeecba56aa4ae8d71f0`; the documentation/checkpoint commit follows those code commits. No merge to `main` was performed.
+
+### Fixes in this checkpoint
+
+- Matched the worktree TypeScript declarations to manuscript proposal metadata and diff results.
+- Made live file-state checks reject symlinked repository roots and parent directories, and added a symlink regression test.
+- Rechecked touched file hashes after `git apply --check` and immediately before applying a manuscript patch.
+- Rejected malformed JSON bodies that are null, arrays, or non-objects on both manuscript Act routes.
+- Excluded hidden sources from reviewable proposal and Apply paths, including proposals that try to recreate a hidden source.
+- Changed the manuscript review drawer to a flex layout so proposal actions remain clickable when an error or long review is present.
+
+### Commands and results
+
+- `npm ci`: PASS, 513 packages added, 514 audited, 0 vulnerabilities; existing ESLint deprecation notice. No lockfile change.
+- `npm run doctor`: PASS, 0 errors and the existing ignored-`AGENTS.md` warning.
+- `npm test`: PASS, 108 tests, 0 failures.
+- `npm run typecheck`: PASS.
+- `npm run lint`: PASS, 0 errors and 2 existing unused-variable warnings in `app/api/codex/ask/route.ts` and `lib/research/latex-editor-tools.mjs`.
+- `npm run check`: PASS.
+- `npm run check:full`: PASS, including the optimized production build. Next emitted dynamic-filesystem tracing warnings; no deployment-runtime claim is made from the build.
+- `git diff --check`: PASS.
+- Node `v22.23.2` was used. `GIT_CONFIG_GLOBAL=/dev/null` was scoped to test/check commands to avoid the host's global SSH signing configuration interfering with temporary fixture commits.
+
+### Browser and API scenarios
+
+- Authenticated local Codex was available at `/ide?research=default`; Ask, Draft, and Act were visible, with Act described as isolated diff → human review → explicit apply.
+- Happy path: Act proposed a one-line `.tex` edit. The source stayed unchanged until Apply; the UI showed the touched path, summary, and exact patch. Apply returned 200, updated the source, refreshed the IDE baseline, and a subsequent normal editor save succeeded without an immediate stale-write error.
+- Discard: clicked Discard on a second proposal. Proposal state was removed and source stayed unchanged. A drawer layout overlap found during this scenario was fixed; the action then worked through the UI.
+- Unsaved protection: CodeMirror and plain textarea each retained unsaved content and Act returned HTTP 409 with the save-or-reload message; no proposal or disk write occurred.
+- Stale conflict: generated a proposal against source A, externally wrote source B, and clicked Apply. Apply returned HTTP 409; source B remained byte-for-byte intact and the proposal was not merged automatically.
+- New source file: Act proposed `sections/methods.tex`; the file appeared only after explicit Apply and contained the requested planned-content placeholder.
+- BibTeX: Act proposed a four-space indentation change to an existing `.bib` title field. The reviewed patch preserved the entry key/value and introduced no author, year, DOI, URL, or other metadata; Apply succeeded.
+- Empty source: with an empty project source folder, the manuscript Act API proposed a new `main.tex`; explicit Apply returned HTTP 200 and created it.
+- Advisory diagnostics: a TeX fixture with unclosed `itemize`/document structure still produced a reviewable proposal, and the UI displayed the structural diagnostics as advisory. The proposal was discarded; the source remained unchanged.
+- Hidden source: a request to modify a hidden `main.tex` returned HTTP 422 without a proposal or source change. The hidden-source policy is now also enforced at proposal and Apply validation boundaries; the source was restored to visible afterward.
+- Combined adversarial request for README/app/package/config/AGENTS/sibling-project/IDE-state/resource changes and physical deletion returned HTTP 422 without a diff or durable changes. Automated path tests reject sibling/config/AGENTS/resource/traversal paths; automated diff tests mark physical deletion destructive and non-reviewable and invalidate outside-project changes. A direct runtime proposal containing each forbidden path was not produced because the authenticated agent refused the request.
+- Existing research Codex path-policy test still accepts only `progress/`; the research `/api/codex/act` and `/api/codex/apply` routes were not widened or merged with the manuscript routes.
+
+### Remaining verification gaps and merge status
+
+- `latexmk` is unavailable in this environment. Real pdfLaTeX/XeLaTeX/LuaLaTeX build output, BibTeX/Biber rendering, and SyncTeX compilation flows remain unverified here; structural checks are advisory only.
+- Production Codex service behavior, narrow/touch layouts, custom `manuscriptsDir`, post-apply rollback failure injection, and maximum-size/truncated patch handling were not exercised in the browser.
+- The branch is not marked merge-ready: those verification gaps remain. This checkpoint does not merge to `main`.
