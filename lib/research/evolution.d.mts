@@ -83,6 +83,7 @@ export type ManuscriptCitationProjection = {
     key: string;
     status: string;
     choices: string[];
+    start: number;
     line?: number;
     section?: string;
   }>;

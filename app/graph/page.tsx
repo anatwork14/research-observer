@@ -167,7 +167,7 @@ export default async function GraphPage({
                 <div className="relationship-index-row"><span>Committed revisions</span><strong>{manuscriptHistoryAvailable ? revisions.stats.revisions : "Unavailable"}</strong><span>{manuscriptHistoryAvailable ? "Git history" : "manuscript history unavailable"}</span></div>
                 <div className="relationship-index-row"><span>Working changes</span><strong>{manuscriptHistoryAvailable ? revisions.stats.dirtyFiles : "Unavailable"}</strong><span>not presented as revisions</span></div>
                 {manuscript.unresolved.slice(0, 12).map((item) => (
-                  <div className="relationship-index-row" key={`${item.file}-${item.key}-${item.status}`}>
+                  <div className="relationship-index-row" key={`${item.file}-${item.line ?? "?"}-${item.key}-${item.status}-${item.start}`}>
                     <span>{item.line ? `${item.file}:${item.line}` : item.file}</span><strong>{item.key}</strong><span>{[item.status, item.section].filter(Boolean).join(" · ")}</span>
                   </div>
                 ))}
