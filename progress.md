@@ -688,3 +688,54 @@ Starting branch head after `git fetch origin` and `git pull --ff-only`: `0aa6396
 - `latexmk` is unavailable in this environment. Real pdfLaTeX/XeLaTeX/LuaLaTeX build output, BibTeX/Biber rendering, and SyncTeX compilation flows remain unverified here; structural checks are advisory only.
 - Production Codex service behavior, narrow/touch layouts, custom `manuscriptsDir`, post-apply rollback failure injection, and maximum-size/truncated patch handling were not exercised in the browser.
 - The branch is not marked merge-ready: those verification gaps remain. This checkpoint does not merge to `main`.
+
+
+## 2026-09-29 checkpoint — recovery snapshots, custom manuscript root, Docker verification
+
+Repository: `https://github.com/anatwork14/research-observer.git`
+Branch: `feature/pdf-annotations-latex-ide`
+Starting remote SHA: `3b6f450641ba4b29a8cc0111675a2c450fec3926`
+Final implementation SHA for this verification: `e1b0895` (`fix: retain manuscript recovery snapshots on failure`). The follow-up checkpoint commit changes only this log. No merge to `main` was performed.
+
+### Recovery changes and checks
+
+- Apply source order remains live hash checks → `git apply --check` → second live hash check → exact source snapshot → `git apply` → source validation. On validation failure the route first tries reverse patch, then exact snapshot restore if reverse patch fails.
+- Snapshot creation now refuses to overwrite an existing snapshot. Apply success, discard, and reverse-patch rollback check snapshot cleanup and report cleanup errors; failed restoration reports manual recovery and leaves the snapshot available when restore is blocked by an unsafe parent.
+- `npm test`: PASS, **115 tests**, 0 failures. Recovery cases cover exact bytes for existing files, removal of newly created and nested files, symlinked-parent rejection, retained snapshots, and no overwrite of retained recovery state.
+- The HTTP scenario “validation failure → reverse patch failure → snapshot restore” remains integration-unverified. The route has no safe injection seam, and no production failure switch was added; helper restoration/retention behavior is covered independently.
+
+### Repository checks
+
+Executed with Node `v22.23.2` / npm `10.9.8`; test commands used `GIT_CONFIG_GLOBAL=/dev/null` to avoid the host global SSH-signing fixture hang.
+
+- `npm ci`: PASS, 513 packages added, 514 audited, 0 vulnerabilities.
+- `npm run doctor`: PASS, 0 errors and the existing ignored `AGENTS.md` warning.
+- `npm test`: PASS, 115 tests.
+- `npm run typecheck`: PASS.
+- `npm run lint`: PASS, 0 errors and 2 existing unused-variable warnings (`app/api/codex/ask/route.ts`, `lib/research/latex-editor-tools.mjs`).
+- `npm run check`: PASS.
+- `npm run check:full`: PASS, including optimized production build. Next emitted the existing dynamic-filesystem tracing warnings; build passed.
+- `git diff --check`: PASS.
+
+### Custom `manuscriptsDir`
+
+Temporarily set `manuscriptsDir` to `workspace/authored-manuscripts` and restored `research-observer.config.json` byte-for-byte afterward (restored SHA-256: `ac3ce64d3bb94b24396f0a9705a8d2712b8bf43118f9b5024c21f7438041f7d0`). The custom root was absent before the fixture and removed afterward. Default `manuscripts/default/main.tex` was confirmed absent.
+
+- Actual `/api/ide/files` create, save, Hide, Restore, Act proposal, and Apply flows passed under `workspace/authored-manuscripts/default/`.
+- An Act edit proposal and a second Act-created `chapters/act-created.tex` proposal both returned HTTP 200 and applied under the custom root. No proposal fell back to `manuscripts/`.
+- Traversal paths and resource-file creation were rejected. Automated path-policy tests cover sibling-project scope and disallowed binary/resource paths. The only configured research project in this isolated run was `default`.
+
+### LaTeX, shell escape, Docker preflight, and persistence
+
+- Host `npm run verify:latex`: expected exit 1 with the clear message `latexmk is unavailable. Run this command inside the project Docker image or install latexmk.` No host packages were installed.
+- Host shell inspection confirms generated latexmk args retain `-interaction=nonstopmode -file-line-error -synctex=1 -halt-on-error -no-shell-escape`.
+- Host has TeX Live 2026 pdfTeX, XeTeX, LuaHBTeX, BibTeX, Biber 2.22, and SyncTeX CLI available; this is not a compile or round-trip result.
+- `npm run observaire:prepare` passed using only temporary `/tmp` research, annotations, and manuscript directories.
+- `npm run observaire:prepare-volume` created `observaire-profile-verification`; the second run passed idempotently. `docker volume inspect` confirmed the disposable volume. `docker compose config` resolved the temporary host mounts and that exact state volume. The normal `observaire-profile` volume was only inspected and not used or deleted.
+- `docker compose build observaire` was attempted twice under isolated project `observaire-verification-20260929`. Both attempts stalled in the Docker apt install at the Debian bookworm arm64 package index (`8,689 kB`) without layer completion or further output and were canceled. Thus no current-branch image was produced.
+- Docker `npm run verify:latex`, engine versions/results inside the image, BibTeX/Biber rendered output, SyncTeX forward/reverse, and isolated Compose recreation persistence were **NOT TESTED** because the current image build did not complete. No claim is made for PDF citation rendering or bibliography warning-free output.
+- Tablet, portrait, and narrow-touch UI smoke was not run in this pass.
+
+### Merge readiness
+
+**Not merge-ready.** Unit/full repository checks and custom-root HTTP flows pass, but real Docker LaTeX verification, actual bibliography rendering, SyncTeX round-trip, Compose recreation persistence, and route-level rollback fallback remain unverified. Disposable host directories and the isolated state volume are cleaned after this checkpoint. The feature branch remains unmerged from `main`.
