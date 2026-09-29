@@ -12,17 +12,13 @@ function run(command, args) {
   });
 }
 
-function withPlatform(args) {
-  return platform ? ["--platform", platform, ...args] : args;
-}
-
 console.log(`[verify:latex:project-app] image: ${image}`);
 if (platform) console.log(`[verify:latex:project-app] platform: ${platform}`);
 console.log("[verify:latex:project-app] building the Observaire app target without Compose mounts or user data volumes.");
 
 const buildCode = await run("docker", [
   "build",
-  ...withPlatform([]),
+  ...(platform ? ["--platform", platform] : []),
   "--target", "app",
   "-t", image,
   ".",
@@ -42,9 +38,9 @@ if (buildCode !== 0) {
     "--cap-drop", "ALL",
     "--security-opt", "no-new-privileges",
     "--tmpfs", "/tmp:rw,exec,nosuid,size=2g",
-    "--entrypoint", "npm",
+    "--entrypoint", "node",
     image,
-    "run", "verify:latex",
+    "scripts/verify-latex-toolchain.mjs",
   ];
   const verifyCode = await run("docker", runArgs);
   if (verifyCode !== 0) {
