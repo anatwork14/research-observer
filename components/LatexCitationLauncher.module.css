@@ -22,15 +22,15 @@
 @media (max-width: 760px) {
   .launcher {
     top: auto;
-    right: 0.85rem;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 3.4rem);
+    right: 1rem;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 2.65rem);
   }
 }
 
 @media (max-width: 480px) {
   .launcher {
     right: 0.65rem;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.65rem);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 2.65rem);
     padding: 0.48rem 0.62rem;
     font-size: 0.78rem;
   }
