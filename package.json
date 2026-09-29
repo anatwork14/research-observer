@@ -24,6 +24,7 @@
     "research:compile": "node scripts/compile-research.mjs",
     "research:prepare-pdf": "node scripts/prepare-pdf-runtime.mjs",
     "verify:latex": "node scripts/verify-latex-toolchain.mjs",
+    "verify:latex:container": "node scripts/verify-latex-container.mjs",
     "doctor": "node scripts/research-doctor.mjs",
     "test": "node --test tests/*.test.mjs",
     "check": "npm run doctor && npm run test && npm run typecheck && npm run lint",
