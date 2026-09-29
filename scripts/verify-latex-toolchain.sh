@@ -106,7 +106,7 @@ if [[ "$input" != "$root/main.tex" || ! "$line" =~ ^[0-9]+$ || "$line" -lt 1 ]];
 fi
 
 first_line() {
-  "$@" 2>&1 | head -n 1
+  "$@" 2>&1 | sed -n '1p'
 }
 
 echo "[verify:latex:toolchain] PASS"
