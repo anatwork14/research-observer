@@ -1,10 +1,10 @@
-import type { ManuscriptPassage } from "./manuscript-passages.mjs";
+import type { ManuscriptPassageContext } from "./manuscript-passages.mjs";
 
 export type ManuscriptClaimAnchor = {
   claimId: string;
   markerLine: number;
   targetLine: number;
-  passage: ManuscriptPassage;
+  passage: ManuscriptPassageContext;
 };
 
 export type ManuscriptClaimIssue = {
