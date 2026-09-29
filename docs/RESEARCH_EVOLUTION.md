@@ -25,14 +25,14 @@ Canonical research objects become `research:<slug>` nodes. Existing compiler edg
 
 The projection must not upgrade a Markdown reference into `supports`, `contradicts`, `answers`, or another semantic relation.
 
-### Paper and promoted-annotation provenance
+### Local paper and promoted-annotation provenance
 
-Local paper paths become `paper:<path>` nodes.
+Canonical local paper asset paths become `paper:<path>` nodes. Folder-backed project context is part of that identity, so `Alpha Study/papers/source.pdf` and `Beta Study/papers/source.pdf` remain distinct sources even when their note-relative frontmatter values are both `papers/source.pdf`.
 
 A promoted PDF annotation is reconstructed only from the durable evidence snapshot written during promotion:
 
 ```text
-Paper
+Local PDF
   → annotated_as
 Annotation snapshot
   → promoted_to
@@ -42,6 +42,26 @@ Evidence
 The annotation snapshot may expose the stored annotation type, anchor kind, page, and reviewed region-source-text kind. Later edits to a private annotation sidecar do not rewrite this historical evidence snapshot.
 
 An evidence object without an Observaire promotion marker may still have a direct paper `source_of` edge from its canonical `source.pdf` metadata.
+
+### Reviewed external scholarly provenance
+
+Reviewed Consensus/external scholarly evidence can also expose a source node when canonical evidence metadata already contains a durable identifier.
+
+Identity precedence is:
+
+1. normalized DOI;
+2. provider paper ID;
+3. canonical HTTPS URL.
+
+The node ID is a stable hash of that already-stored identity. DOI identity takes precedence so a changed provider URL does not split one verified paper into several source nodes.
+
+```text
+External scholarly source
+  → source_of
+Evidence
+```
+
+This is provenance only. Saving or displaying an external paper must never manufacture `supports`, `contradicts`, `answers`, or another semantic research relationship.
 
 ### Citation and manuscript layer
 
@@ -69,11 +89,11 @@ Manuscript file
 Git commit
 ```
 
-Revision history is optional and read-only. It is bounded to recent commits and path-confined to the selected manuscript project.
+Revision history is optional and read-only. It is bounded to recent commits and path-confined to the selected manuscript project. Git history parsing disables rename detection so rename commits remain visible as bounded add/delete source paths instead of becoming parser-specific rename syntax.
 
 Current dirty/untracked manuscript files are reported separately. They are **not** presented as revisions because IDE save timestamps and filesystem mtimes are not semantic revision history.
 
-If Git is unavailable or the manuscript has no committed history, the rest of the graph/timeline remains functional.
+A Git repository with no first commit yet is still a valid working tree: the revision layer reports zero committed revisions while preserving dirty/untracked manuscript files. If Git itself is unavailable, the revision layer degrades without breaking the rest of the graph/timeline.
 
 ## Timeline semantics
 
@@ -84,6 +104,8 @@ Timeline chronology may use only:
 - actual Git commit timestamps for manuscript revisions.
 
 Do not invent dates from file order, numeric filename prefixes, mtimes, IDE state timestamps, or graph layout positions.
+
+Research-note `date` values are calendar dates, not instants. The UI must render them as the same calendar day in every viewer timezone. Run and Git timestamps are real instants and may be localized for display.
 
 The monthly activity strip is a visualization of these events, not a research-quality score.
 
@@ -128,7 +150,24 @@ The comparison may show:
 
 The diff is a convenience view over the two current durable Markdown objects. It does not reconstruct historical Git snapshots of research Markdown and should not be described as doing so.
 
-Large comparisons stay bounded. The UI must disclose truncation and link to the full source objects.
+Large comparisons stay bounded to 240 source lines per side. The UI must disclose truncation and link to the full source objects.
+
+## Provenance trace interaction
+
+Selecting a node in the provenance graph highlights a bounded neighborhood over the currently enabled layers. The UI uses six hops, sufficient for the intended chain:
+
+```text
+Paper/source
+  → Annotation snapshot
+  → Evidence/research object
+  → Citation occurrence
+  → Manuscript file
+  → Revision
+```
+
+Traversal is cycle-safe and treats a provenance path as navigational context, not as a new semantic assertion. Disabling a layer removes those edges from the selected trace.
+
+The inspector lists direct visible connections while canvas emphasis may extend across the bounded multi-hop trace.
 
 ## UI behavior
 
@@ -136,11 +175,15 @@ Large comparisons stay bounded. The UI must disclose truncation and link to the 
 
 1. **Research graph** — existing force-directed canonical research relationships.
 2. **Provenance** — stable-lane source → annotation → research → citation → manuscript → revision trace.
-3. **Timeline & versions** — explicit dated events, semantic version lineages, and explicit version-pair content comparison.
+3. **Timeline & versions** — explicit dated events, semantic version lineages, manuscript commit events, and explicit version-pair content comparison.
 
 The existing research graph remains first-class. The provenance graph must not replace or mutate it.
 
+The default Research graph view does not scan manuscript citations or Git history merely to render its header. Optional manuscript/Git layers are loaded only when a view needs them. If one of those scans fails, the UI says that it is unavailable rather than reporting a factual zero.
+
 The provenance SVG may be wider than a phone viewport, but horizontal scrolling must stay inside its component. It must not create document-level horizontal overflow.
+
+Large projections use a visual working-set budget of 90 rendered nodes per lane. The underlying derived projection stays complete. Selected-trace nodes, direct search matches, and high-connectivity nodes receive display priority, and lane labels disclose shown/total counts. Search is the way to narrow a large complete projection rather than removing the safety bound.
 
 ## Project scoping
 
@@ -150,14 +193,18 @@ All evolution views are scoped by the selected stable research project ID.
 - Semantic/reference edges whose endpoint leaves the selected project are excluded from the scoped evolution projection.
 - Citation resolution uses the same selected project.
 - Manuscript history is path-confined to that project's configured manuscript root.
+- Local paper identity retains the canonical project-folder asset path.
 
-Never silently merge similarly named objects from different research projects.
+Never silently merge similarly named objects or note-relative assets from different research projects.
 
 ## Performance and safety bounds
 
 - Manuscript Git history is bounded to 80 revisions.
 - Research version source comparison is bounded to 240 lines per side.
-- Citation resolution reuses the existing project-scoped citation service.
+- Citation resolution reuses the existing project-scoped citation service and scans visible editable `.tex` files only.
+- Provenance rendering is bounded to 90 nodes per lane.
+- Selected UI trace traversal is bounded to six hops; the reusable helper clamps callers to at most 12.
+- Provenance scrolling has a bounded viewport even when the SVG working set is tall.
 - No graph/timeline view writes Git history, research Markdown, manuscript source, annotations, or generated evidence.
 - A missing optional projection source must degrade that layer only; it must not break the canonical research graph.
 
@@ -167,9 +214,13 @@ At minimum, changes to this feature should verify:
 
 ```bash
 node --test tests/research-evolution.test.mjs
+node --test tests/research-evolution-consensus.test.mjs
+node --test tests/research-evolution-trace.test.mjs
+node --test tests/research-evolution-layout.test.mjs
 node --test tests/research-version-lineage.test.mjs
 node --test tests/research-version-compare.test.mjs
 node --test tests/manuscript-evolution.test.mjs
+node --test tests/manuscript-history.test.mjs
 GIT_CONFIG_GLOBAL=/dev/null npm run verify:merge-local
 git diff --check
 ```
@@ -178,11 +229,17 @@ Browser verification should exercise `/graph` in all three modes on desktop, tab
 
 - project isolation;
 - existing force graph behavior is unchanged;
+- nested-project local PDF paths remain distinct;
 - promoted Figure/Table evidence shows paper → annotation → evidence provenance;
+- saved Consensus evidence shows verified external source → evidence provenance without a fabricated semantic edge;
 - uniquely resolved citations connect to manuscript files;
 - ambiguous/missing citations do not gain guessed edges;
 - manuscript commits appear only when real history exists;
-- dirty manuscript files are not presented as revisions;
-- `supersedes` chains read oldest → newest from edge direction;
+- dirty manuscript files are not presented as revisions, including a Git repository before its first commit;
+- renamed manuscript source remains represented in revision history;
+- `supersedes` chains read oldest → newest from edge direction even when dates are missing or misleading;
+- date-only research events do not shift calendar day with timezone;
 - version diff selects only explicit same-project version pairs;
+- selected source/evidence nodes highlight the complete enabled provenance trace;
+- large synthetic projections disclose the render budget and remain searchable;
 - graph scrollers do not create page-level horizontal overflow.
