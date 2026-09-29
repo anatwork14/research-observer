@@ -7,7 +7,7 @@ import styles from "./EvolutionGraph.module.css";
 
 type EvolutionNode = {
   id: string;
-  kind: "research" | "paper" | "annotation" | "manuscript" | "passage" | "citation" | "revision";
+  kind: "research" | "paper" | "annotation" | "manuscript" | "passage" | "claim" | "citation" | "revision";
   label: string;
   research: string;
   role?: string;
@@ -17,6 +17,8 @@ type EvolutionNode = {
   page?: number;
   annotationType?: string;
   key?: string;
+  claimId?: string;
+  anchorLine?: number;
   file?: string;
   line?: number;
   lineEnd?: number;
@@ -36,25 +38,26 @@ type EvolutionEdge = {
   source: string;
   target: string;
   type: string;
-  layer: "semantic" | "reference" | "source" | "version" | "citation";
+  layer: "semantic" | "reference" | "source" | "version" | "citation" | "claim";
   explicit: boolean;
 };
 
 type NodePosition = { x: number; y: number; width: number; height: number };
 
-const LANE_ORDER = ["paper", "annotation", "research", "citation", "passage", "manuscript", "revision"] as const;
+const LANE_ORDER = ["paper", "annotation", "research", "citation", "passage", "claim", "manuscript", "revision"] as const;
 const LANE_WIDTH = 244;
 const LANE_GAP = 18;
 const NODE_WIDTH = 210;
 const NODE_HEIGHT = 52;
 const MAX_VISIBLE_PER_LANE = 90;
-const TRACE_DEPTH = 6;
+const TRACE_DEPTH = 7;
 const LANE_LABELS: Record<string, string> = {
   paper: "Papers",
   annotation: "Annotations",
   research: "Research objects",
   citation: "Citations",
   passage: "Manuscript passages",
+  claim: "Explicit claims",
   manuscript: "Manuscripts",
   revision: "Revisions",
 };
@@ -63,6 +66,7 @@ const LAYER_LABELS: Record<EvolutionEdge["layer"], string> = {
   semantic: "Semantic",
   version: "Versions & revisions",
   citation: "Citations",
+  claim: "Explicit claims",
   reference: "References",
 };
 
@@ -97,6 +101,9 @@ function visualNodeCompare(a: EvolutionNode, b: EvolutionNode) {
   if (a.kind === "passage" && b.kind === "passage") {
     return (a.file || "").localeCompare(b.file || "") || (a.line || 0) - (b.line || 0);
   }
+  if (a.kind === "claim" && b.kind === "claim") {
+    return (a.file || "").localeCompare(b.file || "") || (a.anchorLine || 0) - (b.anchorLine || 0) || a.label.localeCompare(b.label);
+  }
   return a.label.localeCompare(b.label);
 }
 
@@ -105,7 +112,7 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState("");
   const [layers, setLayers] = useState<Set<EvolutionEdge["layer"]>>(
-    new Set(["source", "semantic", "version", "citation"]),
+    new Set(["source", "semantic", "version", "citation", "claim"]),
   );
 
   const nodeById = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
@@ -137,6 +144,7 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
         node.file || "",
         node.section || "",
         node.excerpt || "",
+        node.claimId || "",
       ].some((value) => value.toLowerCase().includes(needle)))
       .map((node) => node.id));
   }, [needle, nodes]);
@@ -241,7 +249,7 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
       <div className={styles.toolbar}>
         <div>
           <span className={styles.kicker}>Provenance graph</span>
-          <strong>Trace research into cited manuscript passages and committed revisions</strong>
+          <strong>Trace research into cited passages, explicit claims, and committed revisions</strong>
           <small className={styles.scopeNote} aria-live="polite">
             {selected
               ? `${connected.size} nodes in selected trace · ${visibleEdges.length} visible edges`
@@ -257,7 +265,7 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
             setQuery(event.target.value);
             setSelected("");
           }}
-          placeholder="Filter papers, evidence, citations, passages, revisions…"
+          placeholder="Filter papers, evidence, citations, passages, claims, revisions…"
           aria-label="Filter provenance graph"
         />
         <div className={styles.layers} aria-label="Graph layers">
@@ -312,7 +320,7 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
             const isSelected = selected === id;
             const secondary = node.kind === "revision"
               ? [node.shortCommit, node.added !== undefined ? `+${node.added}` : "", node.removed !== undefined ? `−${node.removed}` : ""].filter(Boolean).join(" · ")
-              : node.kind === "passage"
+              : node.kind === "passage" || node.kind === "claim"
                 ? [node.section || "unsectioned", node.line && node.lineEnd && node.lineEnd !== node.line ? `lines ${node.line}–${node.lineEnd}` : node.line ? `line ${node.line}` : ""].filter(Boolean).join(" · ")
                 : [node.role || node.kind, node.type, node.status].filter(Boolean).join(" · ");
             return (
@@ -354,6 +362,8 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
               {selectedNode.status && <span>{selectedNode.status}</span>}
               {selectedNode.page && <span>page {selectedNode.page}</span>}
               {selectedNode.file && <span>{selectedNode.file}</span>}
+              {selectedNode.claimId && <span>claim: {selectedNode.claimId}</span>}
+              {selectedNode.anchorLine && <span>anchor line {selectedNode.anchorLine}</span>}
               {selectedNode.section && <span>{selectedNode.sectionLevel ? `${selectedNode.sectionLevel}: ` : ""}{selectedNode.section}</span>}
               {selectedNode.line && <span>{selectedNode.lineEnd && selectedNode.lineEnd !== selectedNode.line ? `lines ${selectedNode.line}–${selectedNode.lineEnd}` : `line ${selectedNode.line}`}</span>}
               {selectedNode.shortCommit && <span>{selectedNode.shortCommit}</span>}
@@ -376,12 +386,12 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
             </div>
             {selectedNode.href && (
               <button className={styles.open} type="button" onClick={() => router.push(selectedNode.href!)}>
-                {selectedNode.kind === "revision" ? "Open current manuscript" : selectedNode.kind === "passage" || selectedNode.kind === "citation" ? "Open manuscript location" : "Open source"}
+                {selectedNode.kind === "revision" ? "Open current manuscript" : selectedNode.kind === "passage" || selectedNode.kind === "citation" || selectedNode.kind === "claim" ? "Open manuscript location" : "Open source"}
               </button>
             )}
           </>
         ) : (
-          <p className={styles.empty}>Select a node to trace its source, semantic, citation, passage, manuscript, and revision path.</p>
+          <p className={styles.empty}>Select a node to trace its source, semantic, citation, passage, explicit-claim, manuscript, and revision path.</p>
         )}
       </aside>
     </section>
