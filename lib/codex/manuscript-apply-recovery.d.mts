@@ -8,6 +8,7 @@ export type ManuscriptSnapshotRestore = {
   ok: boolean;
   restored?: string[];
   error?: string;
+  cleanupError?: string;
 };
 
 export type ManuscriptRecoveryResult = {
