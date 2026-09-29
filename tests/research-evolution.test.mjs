@@ -9,6 +9,7 @@ import {
 function entry(overrides) {
   return {
     slug: overrides.slug,
+    filename: overrides.filename || `${overrides.slug}.md`,
     title: overrides.title || overrides.slug,
     research: overrides.research || "default",
     type: overrides.type || "note",
@@ -66,6 +67,7 @@ function workspace() {
         order: 4,
       }),
     ],
+    assets: [{ path: "papers/source.pdf", extension: ".pdf" }],
     graph: {
       nodes: [],
       edges: [
@@ -106,6 +108,39 @@ test("evolution projection preserves paper to annotation to evidence provenance"
   assert.ok(projection.edges.some((edge) => edge.source === "paper:papers/source.pdf" && edge.target === "annotation:ann-figure-1" && edge.type === "annotated_as"));
   assert.ok(projection.edges.some((edge) => edge.source === "annotation:ann-figure-1" && edge.target === "research:evidence-figure" && edge.type === "promoted_to"));
   assert.ok(projection.edges.some((edge) => edge.source === "research:evidence-figure" && edge.target === "research:hypothesis-v2" && edge.type === "supports"));
+});
+
+test("nested project source paths resolve to canonical distinct paper identities", () => {
+  const fixture = {
+    entries: [
+      entry({
+        slug: "alpha-evidence",
+        filename: "Alpha Study/01_evidence.md",
+        research: "alpha",
+        type: "evidence",
+        source: { kind: "pdf", pdf: "papers/source.pdf", page: 2 },
+      }),
+      entry({
+        slug: "beta-evidence",
+        filename: "Beta Study/01_evidence.md",
+        research: "beta",
+        type: "evidence",
+        source: { kind: "pdf", pdf: "papers/source.pdf", page: 3 },
+      }),
+    ],
+    assets: [
+      { path: "Alpha Study/papers/source.pdf", extension: ".pdf" },
+      { path: "Beta Study/papers/source.pdf", extension: ".pdf" },
+    ],
+    graph: { nodes: [], edges: [] },
+    experiments: [],
+  };
+
+  const alpha = buildResearchEvolutionProjection(fixture, { projectId: "alpha" });
+  const beta = buildResearchEvolutionProjection(fixture, { projectId: "beta" });
+  assert.ok(alpha.nodes.some((node) => node.id === "paper:Alpha Study/papers/source.pdf"));
+  assert.ok(beta.nodes.some((node) => node.id === "paper:Beta Study/papers/source.pdf"));
+  assert.ok(!alpha.nodes.some((node) => node.id === "paper:Beta Study/papers/source.pdf"));
 });
 
 test("supersedes relationships become explicit version lineages", () => {
