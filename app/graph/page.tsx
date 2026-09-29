@@ -14,6 +14,7 @@ import {
 import { buildManuscriptRevisionProjection } from "@/lib/research/manuscript-evolution.mjs";
 import { listManuscriptRevisions } from "@/lib/research/manuscript-history.mjs";
 import { buildResearchVersionComparisons } from "@/lib/research/version-compare.mjs";
+import { orderVersionLineages } from "@/lib/research/version-lineage.mjs";
 
 type GraphView = "research" | "provenance" | "timeline";
 
@@ -48,7 +49,11 @@ export default async function GraphPage({
   const entriesBySlug = new Map(workspace.entries.map((entry) => [entry.slug, entry]));
   const navEntries = workspace.entries.map(({ slug, order, title, status }) => ({ slug, order, title, status }));
 
-  const researchEvolution = buildResearchEvolutionProjection(workspace, { projectId });
+  const baseResearchEvolution = buildResearchEvolutionProjection(workspace, { projectId });
+  const researchEvolution = {
+    ...baseResearchEvolution,
+    lineages: orderVersionLineages(baseResearchEvolution.lineages, baseResearchEvolution.edges, baseResearchEvolution.nodes),
+  };
   const versionComparisons = buildResearchVersionComparisons(workspace, { projectId });
   const [citationResult, historyResult] = await Promise.allSettled([
     loadManuscriptCitationProjection({ projectId }),
