@@ -25,4 +25,19 @@ This directory contains durable, project-scoped manuscript source. It is intenti
 - Bibliography setup must preserve an existing BibTeX style. If no classic BibTeX configuration exists, the explicit setup action may add a basic `plain` style plus `\bibliography{...}`; never silently change a user's existing style.
 - When `biblatex` is detected, use `\addbibresource{...}` and `\printbibliography` instead of mixing in classic BibTeX commands.
 - If a different classic `\bibliography{...}` is already configured, do not silently rewrite it to another library; surface the conflict for explicit user editing.
-- Citation insertion and bibliography setup in the current textarea use a temporary client adapter. When the editor migrates to CodeMirror, replace only that adapter; keep the citation/bibliography service contracts unchanged.
+- Citation insertion and bibliography setup must go through the shared editor adapter so CodeMirror and the plain textarea preserve the same service contracts.
+
+## Codex manuscript Act/review
+
+- Manuscript Act is a separate workflow from the existing research Codex Act route. Never widen the research-only `progress/` path guard to cover manuscript source.
+- `/api/codex/manuscript-act` snapshots the selected project's visible editable sources into an isolated detached worktree. Hidden files, resources, `.observaire-ide.json`, generated output, and unrelated projects are out of scope.
+- If the active browser editor contains unsaved source that differs from disk, Act must refuse to prepare a proposal until the user saves or reloads. The reviewed baseline must exactly match durable source.
+- Codex may create or modify only `.tex`, `.bib`, `.sty`, `.cls`, and `.bst` files inside the selected manuscript project. Binary/resource edits, sibling-project changes, AGENTS/config/code changes, renames, and physical deletions invalidate the proposal.
+- A manuscript proposal stores a bounded human-reviewable patch plus frozen per-file baseline hashes. Proposal storage under `.research-observer/codex-drafts/` is transient review state, not manuscript source.
+- The UI must display the exact patch and touched files before enabling **Apply reviewed changes**. Advisory LaTeX structure diagnostics may be shown, but they are not a substitute for the real compiler.
+- `/api/codex/manuscript-apply` must verify proposal kind, patch SHA-256, path scope, non-destructive status, reviewability, and all frozen live file hashes before applying.
+- If any touched live source changed after review, apply must fail with a stale/conflict response and require a new proposal.
+- Apply must use `git apply --check` before mutation, validate resulting manuscript sources, and reverse the patch if post-apply source validation fails.
+- Discard deletes only the transient proposal. It never changes manuscript files.
+- A successful apply should reload/reopen the IDE from disk so editor base hashes are refreshed rather than continuing with stale browser state.
+- Manuscript Act remains local-development only until an authenticated production agent execution service is explicitly designed and enabled.
