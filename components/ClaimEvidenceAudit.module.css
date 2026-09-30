@@ -10,7 +10,8 @@
 }
 
 .intro,
-.panelHeader {
+.panelHeader,
+.filterHeading {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -18,18 +19,130 @@
 }
 
 .intro h2,
-.panelHeader h2 {
+.panelHeader h2,
+.filterHeading h2 {
   margin: 3px 0 0;
   font: 600 22px/1.15 var(--serif);
 }
 
 .intro p,
-.panelHeader p {
+.panelHeader p,
+.filterHeading p {
   max-width: 720px;
   margin: 0;
   color: var(--muted);
   font-size: 10px;
   line-height: 1.6;
+}
+
+.filterPanel {
+  min-width: 0;
+  padding: 18px;
+  border-radius: 14px;
+}
+
+.filterForm {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(130px, 1fr)) minmax(210px, 1.4fr) auto;
+  gap: 10px;
+  align-items: end;
+  margin-top: 14px;
+}
+
+.filterForm label {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.filterForm label > span {
+  color: var(--muted);
+  font: 8px/1.2 var(--mono);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.filterForm select,
+.filterForm input {
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  background: var(--surface-strong);
+  font-size: 10px;
+}
+
+.filterForm select:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 42%, transparent);
+  outline-offset: 2px;
+}
+
+.searchField input {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.filterActions {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  min-width: max-content;
+}
+
+.filterActions button,
+.filterActions a {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 11px;
+  border-radius: 8px;
+  font-size: 9px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.filterActions button {
+  border: 1px solid var(--accent-deep);
+  color: var(--surface-strong);
+  background: var(--accent-deep);
+}
+
+.filterActions a {
+  border: 1px solid var(--line);
+  color: var(--muted);
+  background: var(--surface-strong);
+}
+
+.activeFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.activeFilters a {
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 30px;
+  padding: 5px 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--line));
+  border-radius: 999px;
+  color: var(--accent-deep);
+  background: var(--accent-wash);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  font: 8px/1.3 var(--mono);
+}
+
+.activeFilters a span {
+  font-size: 12px;
+  line-height: 1;
 }
 
 .projectCoverage {
@@ -171,6 +284,7 @@
 
 .evidenceLinks a,
 .relationTags span,
+.relationTags a,
 .tableRow em,
 .compactList em,
 .issue em {
@@ -184,7 +298,8 @@
   font-style: normal;
 }
 
-.relationTags span[data-relation="contradicts"] {
+.relationTags span[data-relation="contradicts"],
+.relationTags a[data-relation="contradicts"] {
   border: 1px solid color-mix(in srgb, var(--warm) 48%, var(--line));
 }
 
@@ -232,9 +347,20 @@
   line-height: 1.6;
 }
 
+@media (max-width: 1200px) {
+  .filterForm {
+    grid-template-columns: repeat(3, minmax(150px, 1fr));
+  }
+
+  .searchField {
+    grid-column: span 2;
+  }
+}
+
 @media (max-width: 980px) {
   .intro,
-  .panelHeader {
+  .panelHeader,
+  .filterHeading {
     display: grid;
     gap: 8px;
   }
@@ -250,16 +376,43 @@
   .projectRow > span {
     grid-column: 1 / -1;
   }
+
+  .filterForm {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .searchField {
+    grid-column: 1 / -1;
+  }
+
+  .filterActions {
+    min-width: 0;
+  }
 }
 
 @media (max-width: 620px) {
-  .auditPanel {
+  .auditPanel,
+  .filterPanel {
     padding: 14px;
   }
 
-  .projectRow {
+  .projectRow,
+  .filterForm {
     grid-template-columns: 1fr;
     gap: 7px;
+  }
+
+  .searchField {
+    grid-column: auto;
+  }
+
+  .filterActions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filterActions > * {
+    min-width: 0;
   }
 
   .compactList a,
