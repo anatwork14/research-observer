@@ -26,3 +26,14 @@ test("five Insights tabs fit normal widths and retain the two-column mobile layo
   assert.match(css, /grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\)/);
   assert.match(css, /@media \(max-width: 620px\)[\s\S]*repeat\(2, minmax\(0, 1fr\)\)/);
 });
+
+test("Claim audit keeps visible lists bounded and avoids unsupported-claim scoring language", async () => {
+  const source = await fs.readFile(path.join(root, "components/ClaimEvidenceAudit.tsx"), "utf8");
+  assert.match(source, /audit\.claims\.slice\(0, 80\)/);
+  assert.match(source, /claimCount === 0\)\.slice\(0, 40\)/);
+  assert.match(source, /audit\.issues\.slice\(0, 40\)/);
+  assert.match(source, /evidenceReuse\.slice\(0, 12\)/);
+  assert.match(source, /not a quality score/);
+  assert.match(source, /not a judgment of scientific support/);
+  assert.doesNotMatch(source, /unsupported Claim/i);
+});
