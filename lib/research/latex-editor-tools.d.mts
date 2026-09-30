@@ -33,4 +33,5 @@ export function wrapLatexSelection(value: string, selectionStart: number, select
 export function insertLatexEnvironment(value: string, selectionStart: number, selectionEnd: number, environment: string): LatexEditorTransform;
 export function insertLatexSection(value: string, selectionStart: number, selectionEnd: number, command?: string): LatexEditorTransform;
 export function insertObservaireClaimAnchor(value: string, selectionStart: number): LatexEditorTransform;
+export function insertObservaireClaimEvidenceRelation(value: string, selectionStart: number, selectionEnd?: number): LatexEditorTransform;
 export function latexEditorCommands(): Array<{ id: string; label: string; group: string; shortcut?: string }>;
