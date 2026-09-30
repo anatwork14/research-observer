@@ -9,25 +9,27 @@ import {
 test("claim-evidence parser accepts the explicit three-token contract", () => {
   const source = [
     "% observaire:claim-evidence robustness-under-drift supports evidence-robustness",
-    "% observaire:claim-evidence robustness-under-drift contextualizes evidence-domain-shift",
+    "% observaire:claim-evidence robustness-under-drift contextualizes 010-evidence-domain-shift",
   ].join("\n");
   const result = parseManuscriptClaimEvidenceRelations(source);
   assert.deepEqual(result.issues, []);
   assert.deepEqual(result.relations, [
     { claimId: "robustness-under-drift", relation: "supports", evidenceSlug: "evidence-robustness", line: 1 },
-    { claimId: "robustness-under-drift", relation: "contextualizes", evidenceSlug: "evidence-domain-shift", line: 2 },
+    { claimId: "robustness-under-drift", relation: "contextualizes", evidenceSlug: "010-evidence-domain-shift", line: 2 },
   ]);
 });
 
 test("relation vocabulary is intentionally small and explicit", () => {
   assert.deepEqual([...MANUSCRIPT_CLAIM_EVIDENCE_RELATIONS], ["supports", "contradicts", "contextualizes", "qualifies"]);
-  const result = parseManuscriptClaimEvidenceRelations("% observaire:claim-evidence c1 proves evidence-a");
+  const result = parseManuscriptClaimEvidenceRelations("% observaire:claim-evidence result proves evidence-a");
   assert.equal(result.relations.length, 0);
   assert.equal(result.issues[0].type, "unsupported-relation");
 });
 
-test("parser rejects malformed IDs and extra tokens instead of guessing", () => {
+test("parser rejects placeholders, malformed IDs, and extra tokens instead of guessing", () => {
   const source = [
+    "% observaire:claim-evidence claim-id supports evidence-a",
+    "% observaire:claim-evidence claim-one supports evidence-slug",
     "% observaire:claim-evidence Claim-One supports evidence-a",
     "% observaire:claim-evidence claim-one supports Evidence_A",
     "% observaire:claim-evidence claim-one supports evidence-a because-important",
@@ -36,6 +38,8 @@ test("parser rejects malformed IDs and extra tokens instead of guessing", () => 
   const result = parseManuscriptClaimEvidenceRelations(source);
   assert.equal(result.relations.length, 0);
   assert.deepEqual(result.issues.map((issue) => issue.type), [
+    "invalid-claim-id",
+    "invalid-evidence-slug",
     "invalid-claim-id",
     "invalid-evidence-slug",
     "invalid-directive",
