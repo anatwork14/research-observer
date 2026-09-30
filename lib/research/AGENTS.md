@@ -2,7 +2,7 @@
 
 These instructions apply to implementation under `lib/research/` and complement the repository-root `AGENTS.md`.
 
-For graph/timeline/version work, also read `docs/RESEARCH_EVOLUTION.md`. For explicit manuscript Claim work, also read `docs/MANUSCRIPT_CLAIMS.md`. For authored Claim↔Evidence semantics, also read `docs/CLAIM_EVIDENCE_RELATIONS.md`.
+For graph/timeline/version work, also read `docs/RESEARCH_EVOLUTION.md`. For explicit manuscript Claim work, also read `docs/MANUSCRIPT_CLAIMS.md`. For authored Claim↔Evidence semantics, also read `docs/CLAIM_EVIDENCE_RELATIONS.md`. For Claim↔Evidence analytics, also read `docs/CLAIM_EVIDENCE_AUDIT.md`.
 
 ## Canonical-data boundary
 
@@ -10,6 +10,7 @@ For graph/timeline/version work, also read `docs/RESEARCH_EVOLUTION.md`. For exp
 - Evolution/provenance/timeline data are derived projections and must remain rebuildable from canonical research/manuscript/Git sources.
 - Explicit manuscript Claim identity is authored in saved `.tex` comments; no separate Claim database is authoritative.
 - Explicit Claim↔Evidence semantics are authored in saved `.tex` comments; no relationship sidecar/database is authoritative.
+- Claim↔Evidence audit analytics are derived from the validated Claim projection plus canonical research objects; no audit database or score is authoritative.
 - Generated `.research-observer/` and `public/_research/` data are never authoritative.
 
 ## Graph semantics
@@ -59,6 +60,21 @@ For graph/timeline/version work, also read `docs/RESEARCH_EVOLUTION.md`. For exp
 - Citation paths and Claim↔Evidence semantic edges are independent facts. Neither may manufacture the other.
 - AI may draft a proposal in a future review workflow, but durable semantics still require an explicit saved/reviewed directive.
 
+## Claim ↔ Evidence audit analytics
+
+- Build audit analytics only from canonical research objects and the already-validated manuscript Claim projection. Do not parse `.tex` again or implement another relationship resolver inside analytics.
+- `0 Evidence targets` means zero valid authored Claim↔Evidence directives for that Claim in saved visible manuscript source. It does not mean scientifically unsupported, false, low confidence, or uncited.
+- Canonical Evidence with zero Claim links is an inventory observation, not an error.
+- Do not create a composite quality, confidence, truth, readiness, credibility, or manuscript score from coverage counts.
+- Distinct-Evidence coverage deduplicates canonical Evidence identity. Multiple authored relation types between the same Claim/Evidence pair count as one distinct Evidence target but multiple relationship edges.
+- Metrics may count factual overlap such as Claims containing both explicit `supports` and `contradicts`; do not convert that overlap into an automatic verdict.
+- Invalid, duplicate, unresolved, cross-project, or wrong-type relationship directives stay issues and must not contribute to valid coverage counts beyond the one deduplicated valid edge allowed by the projection contract.
+- Multi-project audits remain project-scoped. Identical Claim IDs in different projects are separate identities.
+- If a selected project has no available visible editable manuscript Claim projection, report that project as unavailable. Never display missing manuscript data as factual zero Claims.
+- Preserve saved-source semantics: unsaved editor text and hidden sources remain outside the live audit until saved/restored.
+- Other Insights views must not pay for Claim/manuscript scanning. Keep the audit loader lazy to `view=claims`.
+- Underlying audit results may be complete while rendered lists/charts are bounded. Do not truncate service data merely to satisfy UI limits.
+
 ## Manuscript navigation
 
 - Citation/Passage/Claim deep links may request a file and positive line in `/ide`.
@@ -101,13 +117,14 @@ Keep expensive derived work bounded. Current contracts include:
 - project-scoped Claim/Claim↔Evidence scanning: visible editable `.tex` files only;
 - passage excerpt: bounded literal source text only;
 - provenance UI: maximum 90 rendered nodes per lane before search/focus prioritization;
-- selected provenance trace: maximum 7 hops in the UI (service helper accepts a bounded maximum of 12).
+- selected provenance trace: maximum 7 hops in the UI (service helper accepts a bounded maximum of 12);
+- Claim audit rendered rows: 80 Claims, 40 unlinked Evidence, 40 issues, and 12 Evidence-reach bars in the first UI pass.
 
 Do not remove bounds to make one large fixture pass. The underlying derived projection remains complete even when the UI renders a bounded working set.
 
 ## Verification
 
-For evolution work, run focused tests plus the repository gate:
+For evolution and Claim-semantics work, run focused tests plus the repository gate:
 
 ```bash
 node --test tests/research-evolution.test.mjs
@@ -122,6 +139,8 @@ node --test tests/manuscript-claim-projection.test.mjs
 node --test tests/manuscript-claim-relations.test.mjs
 node --test tests/manuscript-claim-relation-collision.test.mjs
 node --test tests/manuscript-claim-evidence-projection.test.mjs
+node --test tests/claim-evidence-audit.test.mjs
+node --test tests/claim-evidence-audit-loading.test.mjs
 node --test tests/latex-claim-anchor-ui.test.mjs
 node --test tests/latex-provenance-navigation.test.mjs
 node --test tests/research-version-lineage.test.mjs
