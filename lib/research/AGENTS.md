@@ -2,13 +2,14 @@
 
 These instructions apply to implementation under `lib/research/` and complement the repository-root `AGENTS.md`.
 
-For graph/timeline/version work, also read `docs/RESEARCH_EVOLUTION.md`. For explicit manuscript Claim work, also read `docs/MANUSCRIPT_CLAIMS.md`.
+For graph/timeline/version work, also read `docs/RESEARCH_EVOLUTION.md`. For explicit manuscript Claim work, also read `docs/MANUSCRIPT_CLAIMS.md`. For authored Claim↔Evidence semantics, also read `docs/CLAIM_EVIDENCE_RELATIONS.md`.
 
 ## Canonical-data boundary
 
 - `progress/` remains the canonical indexed research source. Never create a second hand-maintained graph, timeline, citation, passage, claim, or version database.
 - Evolution/provenance/timeline data are derived projections and must remain rebuildable from canonical research/manuscript/Git sources.
 - Explicit manuscript Claim identity is authored in saved `.tex` comments; no separate Claim database is authoritative.
+- Explicit Claim↔Evidence semantics are authored in saved `.tex` comments; no relationship sidecar/database is authoritative.
 - Generated `.research-observer/` and `public/_research/` data are never authoritative.
 
 ## Graph semantics
@@ -40,9 +41,23 @@ For graph/timeline/version work, also read `docs/RESEARCH_EVOLUTION.md`. For exp
 - A valid unique Claim may exist without any citation. Do not invent a research/evidence edge for an uncited Claim.
 - Citation and Claim projections must converge on the same deterministic Passage identity when they refer to the same saved block.
 - Duplicate, invalid, and orphan anchors are health issues. Do not auto-rename, choose a duplicate winner, or manufacture a fallback target.
-- Claim projection may create only structural provenance edges such as `anchors_claim` and `part_of`.
+- Claim projection may create only structural provenance edges such as `anchors_claim` and `part_of` unless a separate valid explicit Claim↔Evidence directive exists.
 - Claim presence or citation proximity never implies `supports`, `contradicts`, `confirms`, `answers`, or any other Claim↔Evidence semantic relation.
 - Lightweight active-editor diagnostics may surface malformed/orphan Claim anchors, but project-wide duplicate detection belongs to the project-level projection.
+
+## Explicit Claim ↔ Evidence relationships
+
+- Create Claim↔Evidence semantics only from a saved `% observaire:claim-evidence <claim-id> <relation> <evidence-slug>` directive.
+- The directive names both endpoints explicitly. Never resolve endpoints from proximity, current selection, citation key, title similarity, DOI, alias guessing, or nearby prose.
+- Supported relationship types are deliberately limited to `supports`, `contradicts`, `contextualizes`, and `qualifies` until the contract is deliberately expanded.
+- The Claim endpoint must resolve to one valid unique Claim in the selected manuscript project.
+- The Evidence endpoint must resolve by exact canonical slug to a same-project canonical research object with `type: evidence`.
+- Literature/citation candidates do not automatically qualify as Evidence for this semantic contract.
+- A valid relationship produces one `claim-evidence` graph edge directed Evidence→Claim with the authored relationship type.
+- Malformed, unresolved, cross-project, non-Evidence, or duplicate directives remain health issues. Do not create fallback semantic edges.
+- Duplicate exact directives may collapse to one derived edge but must remain visible as duplicate health.
+- Citation paths and Claim↔Evidence semantic edges are independent facts. Neither may manufacture the other.
+- AI may draft a proposal in a future review workflow, but durable semantics still require an explicit saved/reviewed directive.
 
 ## Manuscript navigation
 
@@ -83,7 +98,7 @@ Keep expensive derived work bounded. Current contracts include:
 - manuscript Git history: maximum 80 revisions;
 - research source diff: maximum 240 lines per side;
 - project-scoped citation scanning: visible editable `.tex` files only;
-- project-scoped Claim scanning: visible editable `.tex` files only;
+- project-scoped Claim/Claim↔Evidence scanning: visible editable `.tex` files only;
 - passage excerpt: bounded literal source text only;
 - provenance UI: maximum 90 rendered nodes per lane before search/focus prioritization;
 - selected provenance trace: maximum 7 hops in the UI (service helper accepts a bounded maximum of 12).
@@ -104,6 +119,9 @@ node --test tests/research-evolution-claims.test.mjs
 node --test tests/manuscript-passages.test.mjs
 node --test tests/manuscript-claims.test.mjs
 node --test tests/manuscript-claim-projection.test.mjs
+node --test tests/manuscript-claim-relations.test.mjs
+node --test tests/manuscript-claim-relation-collision.test.mjs
+node --test tests/manuscript-claim-evidence-projection.test.mjs
 node --test tests/latex-claim-anchor-ui.test.mjs
 node --test tests/latex-provenance-navigation.test.mjs
 node --test tests/research-version-lineage.test.mjs
