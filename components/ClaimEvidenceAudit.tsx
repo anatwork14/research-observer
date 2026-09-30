@@ -1,6 +1,11 @@
 import Link from "next/link";
+import { ClaimEvidenceAuditFilters, claimAuditFilterHref } from "./ClaimEvidenceAuditFilters";
 import { DonutChart, HorizontalBarChart, InsightCard } from "./ResearchAnalyticsCharts";
 import type { ClaimEvidenceAudit } from "@/lib/research/claim-evidence-audit.mjs";
+import {
+  filterClaimEvidenceAudit,
+  type ClaimEvidenceAuditFilters as ClaimAuditFilters,
+} from "@/lib/research/claim-evidence-audit-filters.mjs";
 import styles from "./ClaimEvidenceAudit.module.css";
 
 const RELATION_TYPES = ["supports", "contradicts", "contextualizes", "qualifies"] as const;
@@ -18,10 +23,19 @@ function projectHref(projectId: string) {
   return `/graph?${params.toString()}`;
 }
 
-export function ClaimEvidenceAuditView({ audit }: { audit: ClaimEvidenceAudit }) {
+export function ClaimEvidenceAuditView({
+  audit,
+  filters = {},
+  researchScope = [],
+}: {
+  audit: ClaimEvidenceAudit;
+  filters?: ClaimAuditFilters;
+  researchScope?: string[];
+}) {
   const hasAudit = audit.availableProjects > 0;
   const linkedPercent = ratio(audit.totals.claimsWithEvidence, audit.totals.claims);
-  const claimRows = audit.claims.slice(0, 80);
+  const filtered = filterClaimEvidenceAudit(audit, filters);
+  const claimRows = filtered.claims.slice(0, 80);
   const unlinkedEvidence = audit.evidence.filter((item) => item.claimCount === 0).slice(0, 40);
   const issueRows = audit.issues.slice(0, 40);
 
@@ -128,10 +142,25 @@ export function ClaimEvidenceAuditView({ audit }: { audit: ClaimEvidenceAudit })
             </InsightCard>
           </section>
 
+          <ClaimEvidenceAuditFilters
+            filters={filtered.filters}
+            options={filtered.options}
+            researchScope={researchScope}
+            matchedClaims={filtered.matchedClaims}
+            totalClaims={filtered.totalClaims}
+            activeFilters={filtered.activeFilters}
+          />
+
           <section className={`${styles.auditPanel} panel`}>
             <header className={styles.panelHeader}>
               <div><span className="kicker">Claim audit</span><h2>Explicit Claim coverage</h2></div>
-              <p>{audit.claims.length > claimRows.length ? `Showing ${claimRows.length} of ${audit.claims.length} Claims; unlinked Claims are surfaced first.` : `${audit.claims.length} valid Claims in the audited scope.`}</p>
+              <p>
+                {filtered.activeFilters > 0
+                  ? `${filtered.matchedClaims} of ${filtered.totalClaims} Claims match the active drill-down filters${filtered.matchedClaims > claimRows.length ? `; showing the first ${claimRows.length}` : ""}.`
+                  : audit.claims.length > claimRows.length
+                    ? `Showing ${claimRows.length} of ${audit.claims.length} Claims; unlinked Claims are surfaced first.`
+                    : `${audit.claims.length} valid Claims in the audited scope.`}
+              </p>
             </header>
             <div className={styles.claimTable}>
               <div className={styles.tableHeader}><span>Claim</span><span>Evidence targets</span><span>Authored relations</span><span>Source</span></div>
@@ -150,14 +179,25 @@ export function ClaimEvidenceAuditView({ audit }: { audit: ClaimEvidenceAudit })
                     </div>
                     <div className={styles.relationTags}>
                       {summary.length ? summary.map((item) => (
-                        <span data-relation={item.type} key={item.type}>{item.type}{item.count > 1 ? ` ×${item.count}` : ""}</span>
+                        <Link
+                          data-relation={item.type}
+                          href={claimAuditFilterHref(researchScope, filtered.filters, { relation: item.type })}
+                          key={item.type}
+                          title={`Show Claims with ${item.type}`}
+                        >
+                          {item.type}{item.count > 1 ? ` ×${item.count}` : ""}
+                        </Link>
                       )) : <em>None</em>}
                     </div>
                     <div><span>{claim.file || "manuscript"}</span><small>{claim.line ? `line ${claim.line}` : "saved source"}</small></div>
                   </div>
                 );
               })}
-              {!claimRows.length && <p className={styles.empty}>No valid explicit manuscript Claims were found in the selected audited projects.</p>}
+              {!claimRows.length && (
+                <p className={styles.empty}>
+                  {filtered.activeFilters > 0 ? "No explicit Claims match the active drill-down filters." : "No valid explicit manuscript Claims were found in the selected audited projects."}
+                </p>
+              )}
             </div>
           </section>
 
