@@ -1,14 +1,20 @@
 import type { ClaimEvidenceAudit, ClaimEvidenceAuditClaim } from "./claim-evidence-audit.mjs";
 
 export type ClaimEvidenceAuditFilters = {
-  relation?: "supports" | "contradicts" | "contextualizes" | "qualifies" | "";
-  coverage?: "none" | "one" | "multiple" | "linked" | "";
+  relation?: string;
+  coverage?: string;
   file?: string;
   section?: string;
   query?: string;
 };
 
-export type NormalizedClaimEvidenceAuditFilters = Required<ClaimEvidenceAuditFilters>;
+export type NormalizedClaimEvidenceAuditFilters = {
+  relation: "supports" | "contradicts" | "contextualizes" | "qualifies" | "";
+  coverage: "none" | "one" | "multiple" | "linked" | "";
+  file: string;
+  section: string;
+  query: string;
+};
 
 export const CLAIM_AUDIT_COVERAGE_FILTERS: readonly ["none", "one", "multiple", "linked"];
 
