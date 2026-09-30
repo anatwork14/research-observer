@@ -1,6 +1,12 @@
 .shell {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
+}
+
+.shell > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .intro,

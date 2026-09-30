@@ -27,12 +27,19 @@ test("five Insights tabs fit normal widths and retain the two-column mobile layo
   assert.match(css, /@media \(max-width: 620px\)[\s\S]*repeat\(2, minmax\(0, 1fr\)\)/);
 });
 
+test("Claim audit grid contains its internally scrolling table at narrow widths", async () => {
+  const css = await fs.readFile(path.join(root, "components/ClaimEvidenceAudit.module.css"), "utf8");
+  assert.match(css, /\.shell\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/s);
+  assert.match(css, /\.shell\s*>\s*\*\s*\{[^}]*min-width:\s*0[^}]*max-width:\s*100%/s);
+});
+
 test("Claim audit keeps visible lists bounded and avoids unsupported-claim scoring language", async () => {
   const source = await fs.readFile(path.join(root, "components/ClaimEvidenceAudit.tsx"), "utf8");
   assert.match(source, /audit\.claims\.slice\(0, 80\)/);
   assert.match(source, /claimCount === 0\)\.slice\(0, 40\)/);
   assert.match(source, /audit\.issues\.slice\(0, 40\)/);
   assert.match(source, /evidenceReuse\.slice\(0, 12\)/);
+  assert.match(source, /audit\.evidenceReuse\.length > 12[\s\S]*Showing 12 of \{audit\.evidenceReuse\.length\} linked Evidence objects/);
   assert.match(source, /not a quality score/);
   assert.match(source, /not a judgment of scientific support/);
   assert.doesNotMatch(source, /unsupported Claim/i);

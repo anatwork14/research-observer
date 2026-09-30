@@ -120,6 +120,11 @@ export function ClaimEvidenceAuditView({ audit }: { audit: ClaimEvidenceAudit })
               className="wide"
             >
               <HorizontalBarChart data={audit.evidenceReuse.slice(0, 12)} ariaLabel="Distinct Claims per linked Evidence object" />
+              {audit.evidenceReuse.length > 12 && (
+                <small className={styles.more}>
+                  Showing 12 of {audit.evidenceReuse.length} linked Evidence objects; audit counts include all results.
+                </small>
+              )}
             </InsightCard>
           </section>
 
