@@ -2,6 +2,8 @@
 
 Observaire manuscript Claims are **explicit author-authored identities** embedded in saved LaTeX source. They are not extracted, summarized, classified, or inferred by AI.
 
+For explicit authored semantics between Claims and canonical Evidence, also read `docs/CLAIM_EVIDENCE_RELATIONS.md`.
+
 ## Syntax
 
 A claim anchor is a standalone LaTeX comment placed before the prose passage it identifies:
@@ -57,7 +59,7 @@ Observaire never auto-renames a duplicate or malformed claim ID.
 
 The anchor attaches to the next substantive saved LaTeX prose passage.
 
-Blank lines, comment-only lines, other Observaire claim markers, and standalone section-heading commands may occur between the marker and prose. The nearest explicit LaTeX heading remains structural metadata for the Claim/Passage; it is not part of the claim ID.
+Blank lines, comment-only lines, other Observaire claim markers, and standalone section/structural commands may occur between the marker and prose. The nearest explicit LaTeX heading remains structural metadata for the Claim/Passage; it is not part of the claim ID.
 
 The derived projection stores only source facts:
 
@@ -104,36 +106,54 @@ A Claim may exist without any citation. In that case Observaire still shows the 
 
 Multiple explicit Claim IDs may deliberately anchor the same Passage. They remain separate Claim nodes that share one literal Passage identity.
 
-## What a Claim anchor does NOT mean
+## Claim identity is not Claim ↔ Evidence semantics
 
-An anchor identifies a manuscript claim. It does not state that any nearby research object:
+A Claim anchor identifies a manuscript claim. By itself it does not state that any nearby research object:
 
 - supports the Claim;
 - contradicts the Claim;
-- confirms the Claim;
-- answers the Claim;
-- proves the Claim;
-- is used as evidence for the Claim.
+- contextualizes the Claim;
+- qualifies the Claim;
+- confirms or proves the Claim.
 
 Citation proximity is not semantic relationship metadata.
 
 Observaire must never create those relationships from prose wording, citation occurrence, AI interpretation, polarity, or passage position.
 
-If Claim↔Evidence semantics are added later, they require a separate explicit user-authored relationship contract and their own review/validation rules.
+Claim↔Evidence semantics now have a **separate explicit contract**:
+
+```tex
+% observaire:claim robustness-under-drift
+% observaire:claim-evidence robustness-under-drift supports evidence-robustness
+Our method remains stable under distribution shift.
+```
+
+That directive names both endpoints explicitly and is validated separately. See `docs/CLAIM_EVIDENCE_RELATIONS.md`.
+
+A valid relationship is derived independently of the citation path:
+
+```text
+Canonical Evidence
+  → supports|contradicts|contextualizes|qualifies
+Explicit Claim
+```
+
+The existence of this edge does not fabricate a citation, and a citation does not fabricate this edge.
 
 ## Duplicate, invalid, and orphan anchors
 
-Project-level claim scanning reports issues instead of guessing:
+Project-level claim scanning reports issues instead of guessing.
 
 ### Duplicate
 
-The same ID occurs more than once among the scanned manuscript sources.
+The same Claim ID occurs more than once among the scanned manuscript sources.
 
 Result:
 
 - no Claim node is created for that ID;
 - all duplicate occurrences are reported in Trace health;
-- no occurrence is silently selected as canonical.
+- no occurrence is silently selected as canonical;
+- authored Claim↔Evidence relationships referencing that duplicate Claim remain unresolved and create no semantic edge.
 
 ### Invalid ID
 
@@ -159,7 +179,9 @@ Cross-file duplicate detection is a project-level check. The lightweight active-
 
 ## Hidden files
 
-Live claim projection scans visible editable `.tex` manuscript sources, matching the live citation-projection boundary. Hidden sources are excluded from the live graph and re-enter projection after Restore.
+Live Claim projection scans visible editable `.tex` manuscript sources, matching the live citation-projection boundary. Hidden sources are excluded from the live graph and re-enter projection after Restore.
+
+Claim↔Evidence directives in hidden files are excluded by the same live projection boundary.
 
 Hide remains non-destructive and preserves source bytes.
 
@@ -171,7 +193,7 @@ Only visible editable saved source files can be opened from provenance deep link
 
 ## UI behavior
 
-The Provenance view has a dedicated **Explicit claims** lane and relationship toggle between Passage and Manuscript.
+The Provenance view has a dedicated **Explicit claims** lane and structural relationship toggle between Passage and Manuscript. Authored Claim↔Evidence relationships use their own independent graph layer toggle.
 
 Claim nodes expose:
 
@@ -195,15 +217,20 @@ The claim-anchor palette command is an editor transform only. It:
 4. does not create graph state until the source is saved and re-projected;
 5. does not alter compilation semantics.
 
-Malformed/orphan anchors may surface as lightweight advisory editor diagnostics. `latexmk` remains authoritative for LaTeX build correctness.
+The editor also provides an **Insert Claim ↔ Evidence relation** template command. That command writes only explicit placeholders/default syntax and never chooses Evidence or relationship meaning from manuscript prose or citations.
+
+Malformed/orphan Claim anchors and malformed Claim↔Evidence syntax may surface as lightweight advisory editor diagnostics. Canonical target/project/type validation remains project-level. `latexmk` remains authoritative for LaTeX build correctness.
 
 ## Verification
 
-Focused verification should include:
+Focused Claim verification should include:
 
 ```bash
 node --test tests/manuscript-claims.test.mjs
 node --test tests/manuscript-claim-projection.test.mjs
+node --test tests/manuscript-claim-relations.test.mjs
+node --test tests/manuscript-claim-relation-collision.test.mjs
+node --test tests/manuscript-claim-evidence-projection.test.mjs
 node --test tests/research-evolution-claims.test.mjs
 node --test tests/latex-claim-anchor-ui.test.mjs
 node --test tests/latex-editor-tools.test.mjs
@@ -211,15 +238,16 @@ node --test tests/latex-editor-tools.test.mjs
 
 Browser verification should confirm:
 
-- command-palette insertion in CodeMirror and plain editor;
-- placeholder warning before replacement;
-- warning clears after a valid unique ID is saved;
+- command-palette Claim and Claim↔Evidence insertion in CodeMirror and plain editor;
+- placeholder warnings before replacement;
 - Claim lane appears only in Provenance;
-- unique claim IDs produce one Claim node;
+- unique Claim IDs produce one Claim node;
 - duplicate IDs produce health issues and no guessed Claim node;
 - an uncited Claim remains visible without an inferred research edge;
 - Citation and Claim projections converge on one shared Passage node;
-- full Paper→Annotation→Evidence→Citation→Passage→Claim→Manuscript→Revision trace works;
-- disabling the Claims relationship layer removes Claim edges from the trace;
+- valid explicit Claim↔Evidence directives connect only same-project canonical Evidence objects;
+- Literature/citation proximity without a directive creates no Claim semantic edge;
+- full Paper→Annotation→Evidence→Citation→Passage→Claim→Manuscript→Revision trace still works;
+- disabling the Claims structural layer or Claim↔Evidence semantic layer changes only the relevant edges;
 - Claim deep links stay project/path/visibility confined;
 - mobile/tablet graph containment remains intact.
