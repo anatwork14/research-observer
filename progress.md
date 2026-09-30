@@ -907,3 +907,47 @@ Starting SHA: `cb674d47a205f4051382ce378092c039e0fe65f8` (clean and aligned with
 ### Remaining boundary
 
 **Merge-ready: no for this verification pass.** Local quality gates pass and the feature-only checkpoint is ready to review. Unsaved-source isolation, selected-trace priority under the large-graph budget, full Research Graph interactions, citation insertion, and actual browser SyncTeX remain unverified. These limits do not change the saved-source-only implementation contract. The feature branch remains unmerged from `main`.
+
+## 2026-09-30 verification checkpoint — explicit manuscript Claim anchors
+
+Repository: `https://github.com/anatwork14/research-observer`
+
+Branch: `feature/research-graph-timeline` (no merge to `main`).
+
+Starting SHA: `74b0c6018b5710b79eac9d172117d9a159f4e59b` (clean). Final verified implementation SHA: `08b46be109d964539e6100ab8b9515892a294617`. The documentation-only checkpoint commit follows the implementation commit. `origin/main...HEAD` before these commits was `0 118`; the branch was `31` commits ahead of the prior checkpoint `c5de5f3df46714f3a480cf9c8fdd9c634e8e8543`.
+
+### Fix
+
+- `08b46be` — `Fix orphan manuscript claim detection`. Claim passage lookup now skips standalone LaTeX structural commands (document/environment boundaries and common title, contents, page-break, and bibliography commands) after an anchor. If no substantive passage follows, the anchor remains an orphan issue instead of becoming a Claim attached to a structural command.
+- Added a regression covering comment/heading/environment/document structure between an anchor and prose, plus an anchor immediately before `\end{document}`. No Claim↔Evidence semantic relationships were added.
+
+### Automated gates
+
+- Node `v22.23.3`, npm `10.9.9`; `npm ci` passed earlier in this pass on Node 22 (513 packages, 0 vulnerabilities; ESLint deprecation notice only).
+- Claim-focused suites: 26/26 passed across six requested files. Passage/provenance suites: 14/14 passed across five requested files. Combined: 40/40.
+- `GIT_CONFIG_GLOBAL=/dev/null npm run verify:merge-local`: PASS after the fix; 181/181 unit tests, typecheck, lint, production build, and 2/2 workflow tests.
+- Standalone `GIT_CONFIG_GLOBAL=/dev/null npm run check:full`: PASS after the fix; 181/181 unit tests, typecheck, lint, and production build.
+- `git diff --check`: PASS. TypeScript generated edits in `next-env.d.ts` and `tsconfig.json` were restored after builds.
+- Lint: 0 errors, 2 existing warnings (`app/api/codex/ask/route.ts:63` and `lib/research/latex-editor-tools.mjs:32`). Each production build succeeded and emitted 22 existing Turbopack dynamic-filesystem tracing warnings. Doctor reports the existing ignored `AGENTS.md` note warning.
+
+### Browser and runtime evidence
+
+- CodeMirror command inserted `% observaire:claim claim-id` above the active line, selected only `claim-id`, left the editor dirty/unsaved, and surfaced the placeholder advisory. Replacing it with `robust-under-shift` cleared that issue. Plain textarea command showed the same insertion/selection/dirty behavior. The comment was absent from compiled PDF text.
+- Saved valid unique Claim `primary-generalization-result` appeared after reloading Provenance. Inspector showed file, marker line, prose line, section, and literal excerpt. After moving and saving the same Claim, its identity stayed stable and its anchor/prose lines rebuilt to 14/15. Opening Claim and Passage locations targeted marker and prose lines respectively in CodeMirror and plain editor.
+- A saved `claim-id` placeholder, uppercase/underscore/space IDs, duplicate same-file IDs, duplicate cross-file IDs, and orphan anchors appeared as invalid/duplicate/orphan health diagnostics; invalid, duplicate, and orphan occurrences did not create Claim nodes. Same-file and cross-file duplicate locations were both reported. The structure-only orphan case discovered during browser testing was fixed and its regression passed.
+- Heading/comment gaps resolved the following prose and `Evaluation` section. Two stacked IDs shared one Passage. An uncited Claim remained visible without a fabricated Research/Evidence edge. A Claim passage with an unresolved `missingKey` retained Citation→Passage→Claim context without a guessed research edge; one Passage identity was shared by citation and Claim projection in automated tests.
+- Automated trace coverage verifies the seven-hop Claim-aware structural path capability; the full eight-node/seven-edge Paper→Annotation→Evidence→Citation→Passage→Claim→Manuscript→Revision trace was not assembled in one browser fixture. Claim-layer disable/re-enable and the absence of inferred Claim semantic edges were verified in browser/projection tests.
+- Health listed Claim totals/issues with file, line, and issue kinds alongside citation and revision state. Search surfaced by Claim ID, filename, heading, and excerpt. The 111-valid-Claim fixture initially rendered 90 in the Claim lane; searching for `qa-bulk-105` surfaced an item beyond the initial set. Selected trace prioritization under the cap and bounded page-height behavior were not fully verified together.
+- Claim scans were present in Provenance only; Research Graph displayed its ordinary typed/reference/node summary and Timeline did not include Claim nodes. Hiding the synthetic TeX file removed its Claims while its SHA-256 stayed identical; restoring it returned the file. Two projects containing the same Claim ID remained separately scoped through project URLs and IDE deep links.
+- Unsaved-vs-saved isolation passed: a separate Provenance tab did not show editor-only unsaved Claim text; after save/reload the Claim appeared. Filename-only Provenance search surfaced the file's nodes.
+- CSS viewports 390×844, 768×1024, 1024×768, and 1280×800 each had document `scrollWidth <= clientWidth`; wide graph content scrolled inside its own graph scroller. The selected mobile Claim inspector fit its width and wrapped metadata/excerpt.
+- Research Graph drag, pin/unpin, pan, and zoom worked with the one-node canonical fixture. Local neighborhood, relation query, semantic/reference filter effects, and project switching were not meaningfully exercised because the fixture had no typed relationships and only the default research project.
+- No verified scholarly candidate was available for a browser citation insertion/save/reload check; no source was fabricated. Actual Docker LaTeX build passed. Browser SyncTeX forward editor→PDF and reverse PDF→editor to `main.tex:14` succeeded. Browser console inspection in the isolated Chrome session returned no warnings/errors. The disabled Codex endpoint returned an expected 503 during QA; this is not evidence for Codex-provider behavior.
+
+### 52-point report status
+
+The attached 52-point report is recorded as follows: 1 starting branch/SHA confirmed; 2 contracts read; 3 dependency install/runtime passed; 4 focused suites 26+14 passed; 5 merge-local/check:full/diff gates passed; 6 compile-safe syntax passed; 7 CodeMirror command passed; 8 plain editor transform and responsive widths passed; 9 placeholder diagnostic passed; 10 valid Claim passed; 11 Claim/Passage deep links passed in both editor modes; 12 uncited Claim passed; 13 convergence passed at projection/test level; 14 unresolved citation behavior passed; 15 same-file duplicate passed; 16 cross-file duplicate passed; 17 invalid/valid ID rules passed; 18 orphan detection passed after fix; 19 heading/comment gap passed; 20 stacked Claim projection passed; 21 full trace verified by automated trace coverage, not assembled in the browser; 22 Claim layer toggle passed; 23 no inferred semantic Claim edges passed; 24 health panel passed; 25 search and initial 90-node bound passed; 26 Provenance-only Claim scan passed; 27 hide/restore passed with identical source hash; 28 project URL/data isolation passed; 29 saved-vs-unsaved passed; 30 freshness passed; 31 filename search passed; 32 >100 Claim rendering/search passed, selected-trace priority not fully verified; 33 all four viewport overflow checks passed; 34 drag/pin/pan/zoom passed, local neighborhood/filter/query/project-switch behaviors incomplete; 35 citation insertion not verified; 36 actual compile and SyncTeX forward/reverse passed; 37 isolated browser console clear; 38 structural orphan defect fixed; 39 no Claim↔Evidence semantics added; 40 this checkpoint appended; 41–48 are enumerated in the final report; 49 remaining warnings/gaps are documented; 50 merge-ready: no; 51 this file updated; 52 nothing merged to `main`.
+
+### Remaining boundary
+
+**Merge-ready: no for this verification pass.** The local gates pass and the narrow parser defect is fixed. Browser citation insertion, a single live eight-node/seven-edge trace, selected-trace priority at the 90-node cap, and Research Graph relation/filter/project-switch behaviors remain incomplete or only test-covered. The feature branch is pushed without merging to `main`.
