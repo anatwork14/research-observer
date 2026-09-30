@@ -79,6 +79,26 @@ test("invalid and orphan claim anchors surface issues without invented targets",
   assert.deepEqual(result.issues.map((issue) => issue.type), ["invalid-id", "invalid-id", "invalid-id", "orphan"]);
 });
 
+test("claim anchors skip structural document commands and report a trailing anchor as orphan", () => {
+  const content = [
+    "% observaire:claim before-structure",
+    "",
+    "% explanatory comment",
+    "\\subsection{Evaluation}",
+    "\\begin{itemize}",
+    "\\end{itemize}",
+    "\\end{document}",
+    "% observaire:claim trailing-anchor",
+    "\\end{document}",
+  ].join("\n");
+  const result = parseManuscriptClaimAnchors(content);
+  assert.equal(result.claims.length, 0);
+  assert.deepEqual(result.issues.map((issue) => [issue.type, issue.claimId]), [
+    ["orphan", "before-structure"],
+    ["orphan", "trailing-anchor"],
+  ]);
+});
+
 test("claim node identity is stable within project and explicit ID", () => {
   assert.equal(manuscriptClaimNodeId("default", "robustness-under-drift"), "claim:default:robustness-under-drift");
 });
