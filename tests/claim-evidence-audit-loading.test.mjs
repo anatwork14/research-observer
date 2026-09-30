@@ -63,17 +63,31 @@ test("Claim drilldown filters are URL-backed and preserved across project scope 
   assert.match(page, /section:\s*one\(params\.claimSection\)/);
   assert.match(page, /query:\s*one\(params\.claimQ\)/);
   assert.match(page, /scopeHref\(view, toggled\(project\.id\), base, compare, view === "claims" \? claimFilters : undefined\)/);
+  assert.match(page, /key === "claims" \? claimFilters : undefined/);
   assert.match(controls, /<form className=\{styles\.filterForm\} action="\/insights" method="get">/);
+  assert.match(controls, /researchScope\.length > 0 && <input type="hidden" name="research"/);
+  assert.match(controls, /claimAuditFilterHref\(researchScope, filters, clearFilters\)/);
   for (const name of ["claimRelation", "claimCoverage", "claimFile", "claimSection", "claimQ"]) {
     assert.match(controls, new RegExp(`name="${name}"`));
   }
   assert.doesNotMatch(controls, /"use client"/);
 });
 
+test("preserved file and section filters remain visible after project scope changes", async () => {
+  const controls = await fs.readFile(path.join(root, "components/ClaimEvidenceAuditFilters.tsx"), "utf8");
+  assert.match(controls, /function preserveSelectedOption/);
+  assert.match(controls, /const fileOptions = preserveSelectedOption\(options\.files, filters\.file\)/);
+  assert.match(controls, /const sectionOptions = preserveSelectedOption\(options\.sections, filters\.section\)/);
+  assert.match(controls, /0 && item\.value === filters\.file \? " in current scope"/);
+  assert.match(controls, /0 && item\.value === filters\.section \? " in current scope"/);
+});
+
 test("relation tags link back into the authored-relation drilldown", async () => {
   const source = await fs.readFile(path.join(root, "components/ClaimEvidenceAudit.tsx"), "utf8");
   const controls = await fs.readFile(path.join(root, "components/ClaimEvidenceAuditFilters.tsx"), "utf8");
+  const css = await fs.readFile(path.join(root, "components/ClaimEvidenceAudit.module.css"), "utf8");
   assert.match(source, /claimAuditFilterHref\(researchScope, filtered\.filters, \{ relation: item\.type \}\)/);
   assert.match(source, /<ClaimEvidenceAuditFilters/);
   assert.match(controls, /Charts above remain complete-scope context/);
+  assert.match(css, /\.relationTags a/);
 });
