@@ -2,7 +2,7 @@
 
 Observaire's research-evolution views are **derived projections** over existing durable sources. They do not introduce a new research database and must never become a second source of truth.
 
-For the explicit manuscript Claim syntax and validation rules, also read `docs/MANUSCRIPT_CLAIMS.md`.
+For explicit manuscript Claim syntax and validation rules, also read `docs/MANUSCRIPT_CLAIMS.md`. For authored Claim↔Evidence semantics, also read `docs/CLAIM_EVIDENCE_RELATIONS.md`.
 
 ## Durable sources
 
@@ -10,7 +10,7 @@ The projection may read from four existing durable domains:
 
 1. `progress/` — canonical research Markdown, typed relationships, dates, paper paths, experiment definitions and results.
 2. `annotations/` — annotation sidecars. The evolution projection does not scan private sidecars directly for semantic graph edges; promoted evidence carries the durable annotation snapshot marker needed for public provenance.
-3. `manuscripts/` — current saved LaTeX/BibTeX manuscript source used to resolve visible citation tokens, literal passage context, and explicit manuscript Claim anchors.
+3. `manuscripts/` — current saved LaTeX/BibTeX manuscript source used to resolve visible citation tokens, literal passage context, explicit manuscript Claim anchors, and explicit Claim↔Evidence directives.
 4. Git history — optional committed manuscript revision history. Git commits are read-only history; they are not a replacement for manuscript source.
 
 Generated `.research-observer/` and `public/_research/` data are never authoritative evolution sources.
@@ -138,9 +138,55 @@ Explicit Claim
 Manuscript
 ```
 
-Claim identity does **not** create a Claim↔Evidence semantic relationship. Citation proximity does not mean support, contradiction, confirmation, proof, or evidence use. If those semantics are added later, they require a separate explicit user-authored relationship contract.
+Claim identity does **not** create a Claim↔Evidence semantic relationship. Citation proximity does not mean support, contradiction, confirmation, proof, or evidence use.
 
 Duplicate, malformed, reserved-placeholder, and orphan anchors remain health issues and do not produce guessed Claim nodes. Claim scanning is project-scoped and limited to visible editable `.tex` sources.
+
+### Explicit Claim ↔ Evidence semantic layer
+
+Claim↔Evidence meaning is authored separately from Claim identity and citation structure:
+
+```tex
+% observaire:claim robustness-under-drift
+% observaire:claim-evidence robustness-under-drift supports evidence-robustness
+Our method remains stable under distribution shift \cite{smith2025}.
+```
+
+The directive names both endpoints and the relationship explicitly:
+
+```text
+<claim-id> <relation> <evidence-slug>
+```
+
+Supported relations are intentionally limited to:
+
+```text
+supports
+contradicts
+contextualizes
+qualifies
+```
+
+A valid directive requires:
+
+- one valid unique explicit Claim in the selected manuscript project;
+- an exact canonical research slug;
+- a target in the same selected research project;
+- a target with `type: evidence`.
+
+The derived edge is directed:
+
+```text
+Canonical Evidence
+  → supports|contradicts|contextualizes|qualifies
+Explicit Claim
+```
+
+This edge belongs to the independent `claim-evidence` graph layer. It is not a canonical research frontmatter relationship and it is not a citation edge.
+
+Literature/citation proximity does not qualify as Evidence semantics. Invalid, missing, cross-project, non-Evidence, malformed, and duplicate directives remain relationship health issues rather than being guessed or normalized.
+
+Duplicate exact directives collapse to at most one graph edge but remain visible as duplicate health.
 
 ### Manuscript deep links
 
@@ -244,6 +290,16 @@ Paper/source
   → Revision
 ```
 
+A valid authored Claim↔Evidence edge may also provide a direct semantic route:
+
+```text
+Evidence
+  → authored relation
+Claim
+```
+
+This shortcut does not replace or imply the citation path.
+
 Traversal is cycle-safe and treats a provenance path as navigational context, not as a new semantic assertion. Disabling a layer removes those edges from the selected trace.
 
 The inspector lists direct visible connections while canvas emphasis may extend across the bounded multi-hop trace. Passage and Claim inspectors may show the literal bounded excerpt and source location; they must not manufacture Claim↔Evidence meaning from that text.
@@ -253,12 +309,12 @@ The inspector lists direct visible connections while canvas emphasis may extend 
 `/graph` has three complementary views:
 
 1. **Research graph** — existing force-directed canonical research relationships.
-2. **Provenance** — stable-lane source → annotation → research → citation → passage → explicit Claim → manuscript → revision trace.
+2. **Provenance** — stable-lane source → annotation → research → citation → passage → explicit Claim → manuscript → revision trace, plus separately authored Claim↔Evidence semantic edges.
 3. **Timeline & versions** — explicit dated events, semantic version lineages, manuscript commit events, and explicit version-pair content comparison.
 
 The existing research graph remains first-class. The provenance graph must not replace or mutate it.
 
-The default Research graph view does not scan manuscript citations, Claims, or Git history merely to render its header. Claim scanning is Provenance-only. Optional manuscript/Git layers are loaded only when a view needs them. If one of those scans fails, the UI says that it is unavailable rather than reporting a factual zero.
+The default Research graph view does not scan manuscript citations, Claims, Claim↔Evidence directives, or Git history merely to render its header. Claim/Claim↔Evidence scanning is Provenance-only. Optional manuscript/Git layers are loaded only when a view needs them. If one of those scans fails, the UI says that it is unavailable rather than reporting a factual zero.
 
 The provenance SVG may be wider than a phone viewport, but horizontal scrolling must stay inside its component. It must not create document-level horizontal overflow.
 
@@ -270,7 +326,8 @@ All evolution views are scoped by the selected stable research project ID.
 
 - Research nodes must belong to the selected project.
 - Semantic/reference edges whose endpoint leaves the selected project are excluded from the scoped evolution projection.
-- Citation, passage, and Claim resolution use the same selected project.
+- Citation, passage, Claim, and Claim↔Evidence resolution use the same selected project.
+- Claim↔Evidence targets must be exact same-project canonical `type:evidence` objects.
 - Manuscript history is path-confined to that project's configured manuscript root.
 - Local paper identity retains the canonical project-folder asset path.
 
@@ -281,7 +338,7 @@ Never silently merge similarly named objects, Claim IDs, manuscript paths, or no
 - Manuscript Git history is bounded to 80 revisions.
 - Research version source comparison is bounded to 240 lines per side.
 - Citation resolution reuses the existing project-scoped citation service and scans visible editable `.tex` files only.
-- Claim scanning is project-scoped to visible editable `.tex` files and runs only for Provenance.
+- Claim and Claim↔Evidence scanning are project-scoped to visible editable `.tex` files and run only for Provenance.
 - Passage excerpts are bounded literal strings derived from saved `.tex` source.
 - Provenance rendering is bounded to 90 nodes per lane.
 - Selected UI trace traversal is bounded to seven hops; the reusable helper clamps callers to at most 12.
@@ -304,6 +361,9 @@ node --test tests/research-evolution-claim-loading.test.mjs
 node --test tests/manuscript-passages.test.mjs
 node --test tests/manuscript-claims.test.mjs
 node --test tests/manuscript-claim-projection.test.mjs
+node --test tests/manuscript-claim-relations.test.mjs
+node --test tests/manuscript-claim-relation-collision.test.mjs
+node --test tests/manuscript-claim-evidence-projection.test.mjs
 node --test tests/latex-claim-anchor-ui.test.mjs
 node --test tests/latex-provenance-navigation.test.mjs
 node --test tests/research-version-lineage.test.mjs
@@ -328,8 +388,11 @@ Browser verification should exercise `/graph` in all three modes on desktop, tab
 - duplicate, invalid, reserved-placeholder, and orphan Claim anchors remain health issues;
 - uncited Claims remain visible without a fabricated research/evidence edge;
 - Citation and Claim layers converge on the same Passage node when they target the same saved block;
+- valid explicit Claim↔Evidence directives create only same-project canonical Evidence→Claim edges;
+- malformed, duplicate, unresolved, non-Evidence, and cross-project Claim↔Evidence directives remain health issues;
+- citations/prose without an explicit Claim↔Evidence directive create no semantic Claim edge;
 - the full Paper→Annotation→Evidence→Citation→Passage→Claim→Manuscript→Revision path can be traced with seven hops;
-- disabling the Explicit claims layer removes Claim edges from the selected trace;
+- disabling the Explicit claims structural layer or Claim↔Evidence semantic layer removes only the relevant edges;
 - Claim `Open manuscript location` opens the explicit marker line while Passage navigation opens prose;
 - Passage/Claim inspector text is literal bounded saved-source text, not an AI summary or inferred relation;
 - hidden manuscript sources do not become reachable through provenance deep links;
