@@ -951,3 +951,42 @@ The attached 52-point report is recorded as follows: 1 starting branch/SHA confi
 ### Remaining boundary
 
 **Merge-ready: no for this verification pass.** The local gates pass and the narrow parser defect is fixed. Browser citation insertion, a single live eight-node/seven-edge trace, selected-trace priority at the 90-node cap, and Research Graph relation/filter/project-switch behaviors remain incomplete or only test-covered. The feature branch is pushed without merging to `main`.
+
+## 2026-09-30 final focused acceptance — provenance graph, citations, and browser regression
+
+Repository: `https://github.com/anatwork14/research-observer`
+
+Branch: `feature/research-graph-timeline` (pushed only to this branch; no merge to `main`).
+
+Starting SHA: `64735456f81c4fbdab75762d4cebb167c1a6df5e` (clean). Starting `origin/main...HEAD`: `0 120`; `origin/feature/research-graph-timeline` matched the starting SHA. Final implementation SHA: `ed44096073dcf6ad2344ee63de2c7da5b3526562`. The checkpoint documentation commit follows this implementation commit.
+
+### Fixes
+
+- `ed44096` — preserve the selected `research` and other query parameters when changing PDF pages; only the `page` value changes. Added two direct regression tests.
+- The browser pass found a Timeline hydration mismatch: server and browser formatted the same commit instant in UTC and Asia/Ho_Chi_Minh. Timeline instants now format deterministically in UTC with an explicit UTC label; date-only values remain date-only. Added a timezone-formatting regression test.
+
+### Disposable browser fixture and interactions
+
+- Created two `[TEST ONLY]` projects in an independent temporary clone; neither replaced nor modified real research. Project A had 7 Research Graph nodes, 4 typed relationships, 1 Markdown reference edge, a `supersedes` pair, Literature and promoted PDF Evidence. Project B reused `main.tex` and Claim ID `final-qa-claim` to check project isolation and included 112 Claim/Passage pairs for the graph cap.
+- Research Graph interactions passed: drag, pin, drag a second node while the pinned node stayed fixed, unpin, pan, zoom in/out, reset, and local-neighborhood depth. Typed-link and Markdown-reference toggles filtered independently; the `investigates` relation query narrowed the graph; switching A→B→A restored each project's nodes. The research view displayed only research nodes/typed/reference edges and did not run manuscript citation or Claim scans.
+- Citation drawer found the canonical test Literature candidate with title, author, year, and DOI. Insertion and bibliography configuration used the UI. It wrote `references.bib`; citation references resolved to that bibliography and its Literature source. A promoted PDF Evidence candidate was also inserted from the UI and resolved to the promoted Evidence note and local PDF.
+- Built the saved test manuscript from a real local test PDF annotation. Provenance selected Paper trace reached 8 nodes across the seven-hop chain: Paper → Annotation → Evidence → Citation → Passage → Claim → Manuscript → Revision. The graph reports 13 visible edges because the fixture also has direct citation/manuscript and passage/manuscript links; the source-to-revision spine itself has seven transitions. A Revision came from one committed A manuscript source revision.
+- Claim layer off removed Claim nodes/edges and reduced the Paper trace from 8 to 7 nodes; re-enabling restored it. Citation layer off reduced the Paper trace to its 3-node Paper/Annotation/Evidence source branch, while a separately selected Claim retained its Passage and Manuscript direct links. Re-enabling Citations restored the eight-node trace.
+- Direct-only inspector connections were checked for Evidence (annotation and citation), Claim (passage and manuscript), and Passage (citation, Claim, and manuscript). Claim deep link opened `main.tex` at marker line 4; Passage deep link opened the prose at line 5.
+- Large graph displayed 188 of 232 total nodes, including 90 of 112 per Claim and Passage lane, with a fixed 560px SVG viewport and 1,930px document height. Searching `qa-bulk-105` (outside the initial 90) retained that Claim plus adjacent Passage and `large-claims.tex`; its inspector listed only the two direct Claim links. This verifies selected-trace priority within the lane cap.
+- Clear-selection removed the selected trace and returned normal emphasis without navigation. Keyboard Tab moved focus between graph nodes; Enter selected and Space cleared the selected Claim.
+- Unsaved Claim remained absent from a separate Provenance view; after UI save/reload it appeared. Test source was restored to the committed state before cleanup.
+- A/B project switch isolated graph nodes, Claims, citations, manuscripts, and revisions despite matching file and Claim IDs.
+- Browser SyncTeX passed after the QA manuscript change: forward source line 5 → PDF page 1 and reverse PDF text → `main.tex:5`. The app service verifier also passed all three TeX engines, BibTeX, Biber, and a SyncTeX round trip.
+- No stored reviewed Consensus provider fixture was available; Consensus provenance was not browser-tested. Deterministic Consensus evidence/provenance tests passed; provider credentials were not fabricated.
+- Final browser console checks across Research Graph, Provenance, Timeline, and IDE showed no hydration, React key, SVG, rerender, editor-loop, or unexpected request errors. The disabled Codex endpoint produced the expected 503 during the disposable session.
+
+### Cleanup, gates, and decision
+
+- Removed the temporary QA clone, its two test projects, the copied PDF/annotation/manuscripts, the owned QA container, and the QA image tag. Real research folders were untouched.
+- `GIT_CONFIG_GLOBAL=/dev/null npm run verify:merge-local`: PASS — 184/184 unit tests, typecheck, lint, production build, and 2/2 workflow tests.
+- `GIT_CONFIG_GLOBAL=/dev/null npm run check:full`: PASS — 184/184 unit tests, typecheck, lint, and production build.
+- `npm run verify:latex:project-app`: PASS — pdfLaTeX, XeLaTeX, LuaLaTeX, BibTeX, Biber, and SyncTeX.
+- `git diff --check`: PASS. Build-generated edits to `next-env.d.ts` and `tsconfig.json` were restored.
+- Existing warnings: two ESLint warnings, 22 Turbopack dynamic-filesystem tracing warnings, and the Doctor warning for ignored root `AGENTS.md`; no new lint or build errors.
+- **Merge-ready: yes.** The requested branch is pushed for review, and remains unmerged to `main`.
