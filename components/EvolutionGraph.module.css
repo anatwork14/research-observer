@@ -139,6 +139,7 @@
 
 .layer_source { stroke: color-mix(in srgb, var(--warm) 58%, var(--line)); }
 .layer_semantic { stroke: color-mix(in srgb, var(--accent) 68%, var(--line)); }
+.layer_claim-evidence { stroke: color-mix(in srgb, var(--warm) 72%, var(--accent-deep)); stroke-width: 2; }
 .layer_version { stroke: color-mix(in srgb, #6f7fcf 74%, var(--line)); stroke-dasharray: 6 4; }
 .layer_citation { stroke: color-mix(in srgb, #8d63c7 70%, var(--line)); }
 .layer_claim { stroke: color-mix(in srgb, var(--accent-deep) 62%, #a676c8); stroke-width: 1.8; }
