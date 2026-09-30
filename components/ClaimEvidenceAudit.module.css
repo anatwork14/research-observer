@@ -1,0 +1,253 @@
+.shell {
+  display: grid;
+  gap: 18px;
+}
+
+.intro,
+.panelHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.intro h2,
+.panelHeader h2 {
+  margin: 3px 0 0;
+  font: 600 22px/1.15 var(--serif);
+}
+
+.intro p,
+.panelHeader p {
+  max-width: 720px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.projectCoverage {
+  display: grid;
+  gap: 12px;
+}
+
+.projectRow {
+  display: grid;
+  grid-template-columns: minmax(150px, .8fr) minmax(220px, 1.5fr) minmax(150px, .7fr);
+  gap: 14px;
+  align-items: center;
+}
+
+.projectRow > div:first-child,
+.tableRow > div,
+.compactList a > span,
+.issue > span {
+  min-width: 0;
+}
+
+.projectRow strong,
+.tableRow strong,
+.tableRow a,
+.compactList strong {
+  color: var(--ink);
+  font-size: 10px;
+}
+
+.projectRow small,
+.tableRow small,
+.compactList small,
+.issue small,
+.more {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.projectRow > span {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.coverageBar {
+  display: flex;
+  height: 18px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--canvas);
+}
+
+.coverageBar i {
+  display: block;
+  min-width: 0;
+}
+
+.linked {
+  background: var(--accent-deep);
+}
+
+.unlinked {
+  background: color-mix(in srgb, var(--muted) 24%, var(--surface-strong));
+}
+
+.unavailable {
+  justify-self: start;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--canvas);
+}
+
+.auditPanel {
+  padding: 18px;
+  border-radius: 14px;
+}
+
+.claimTable {
+  display: grid;
+  margin-top: 14px;
+  overflow-x: auto;
+}
+
+.tableHeader,
+.tableRow {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.2fr) minmax(220px, 1.5fr) minmax(190px, 1fr) minmax(150px, .8fr);
+  gap: 14px;
+  min-width: 820px;
+  padding: 10px 0;
+  align-items: start;
+}
+
+.tableHeader {
+  border-bottom: 1px solid var(--line-strong);
+  color: var(--muted);
+  font: 8px/1.3 var(--mono);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.tableRow {
+  border-bottom: 1px solid var(--line);
+}
+
+.tableRow a {
+  text-decoration: none;
+}
+
+.tableRow a:hover {
+  color: var(--accent-deep);
+}
+
+.evidenceLinks,
+.relationTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.evidenceLinks a,
+.relationTags span,
+.tableRow em,
+.compactList em,
+.issue em {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  padding: 4px 6px;
+  border-radius: 999px;
+  color: var(--accent-deep);
+  background: var(--accent-wash);
+  font: 8px/1.35 var(--mono);
+  font-style: normal;
+}
+
+.relationTags span[data-relation="contradicts"] {
+  border: 1px solid color-mix(in srgb, var(--warm) 48%, var(--line));
+}
+
+.twoColumn {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.compactList {
+  display: grid;
+  gap: 7px;
+  margin-top: 14px;
+}
+
+.compactList a,
+.issue {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  color: inherit;
+  background: color-mix(in srgb, var(--canvas) 74%, transparent);
+  text-decoration: none;
+}
+
+.compactList a:hover {
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--line));
+  background: var(--accent-wash);
+}
+
+.issue em {
+  flex: 0 1 auto;
+  text-align: right;
+}
+
+.empty {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+@media (max-width: 980px) {
+  .intro,
+  .panelHeader {
+    display: grid;
+    gap: 8px;
+  }
+
+  .twoColumn {
+    grid-template-columns: 1fr;
+  }
+
+  .projectRow {
+    grid-template-columns: minmax(130px, .7fr) minmax(190px, 1.3fr);
+  }
+
+  .projectRow > span {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 620px) {
+  .auditPanel {
+    padding: 14px;
+  }
+
+  .projectRow {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+
+  .compactList a,
+  .issue {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .issue em {
+    text-align: left;
+  }
+}
