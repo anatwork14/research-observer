@@ -425,3 +425,13 @@
     text-align: left;
   }
 }
+
+@media (pointer: coarse) {
+  .filterForm select,
+  .filterForm input,
+  .filterActions button,
+  .filterActions a,
+  .activeFilters a {
+    min-height: 44px;
+  }
+}
