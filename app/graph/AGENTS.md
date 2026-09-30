@@ -1,15 +1,18 @@
 # Graph and timeline UI contract
 
-This directory renders derived research-evolution views. Read `docs/RESEARCH_EVOLUTION.md` before changing graph/timeline behavior, and `docs/MANUSCRIPT_CLAIMS.md` before changing explicit manuscript Claim behavior.
+This directory renders derived research-evolution views. Read `docs/RESEARCH_EVOLUTION.md` before changing graph/timeline behavior, `docs/MANUSCRIPT_CLAIMS.md` before changing explicit manuscript Claim behavior, and `docs/CLAIM_EVIDENCE_RELATIONS.md` before changing authored Claim↔Evidence semantics.
 
 - Keep the existing force-directed **Research graph** available. Provenance and Timeline are complementary views, not replacements.
 - Project scope comes from the selected stable research project ID and must be preserved in graph-view/filter navigation.
-- Provenance edges are visualizations of already-resolved source, semantic, citation, passage-location, explicit-claim, or revision relationships. The UI must not manufacture missing semantic edges.
+- Provenance edges are visualizations of already-resolved source, semantic, citation, passage-location, explicit-claim, authored Claim↔Evidence, or revision relationships. The UI must not manufacture missing semantic edges.
 - Manuscript Passage nodes are literal saved `.tex` blocks around citation occurrences and/or explicit Claim anchors. They may display file/line/section and a bounded literal excerpt, but must never be relabeled or interpreted as semantic claims.
 - Explicit manuscript Claim nodes exist only when the author writes a valid unique `% observaire:claim <id>` marker in saved visible editable `.tex` source.
 - Claim nodes must remain visually and semantically distinct from canonical research nodes whose role happens to be `claim`.
-- Claim projection may show only structural `Passage → anchors_claim → Claim → part_of → Manuscript` provenance. Do not infer Claim↔Evidence semantics from citations or prose.
-- Duplicate, invalid, or orphan Claim anchors stay visible as health issues; do not choose a duplicate winner or auto-correct IDs.
+- Claim structure may show only `Passage → anchors_claim → Claim → part_of → Manuscript` unless a valid explicit Claim↔Evidence directive separately authorizes a semantic edge.
+- Authored Claim↔Evidence edges exist only for strict `% observaire:claim-evidence <claim-id> <relation> <evidence-slug>` directives whose Claim and canonical same-project `type:evidence` target both validate.
+- Keep the authored Claim↔Evidence graph layer independently toggleable from canonical research semantics, citations, and Claim structure.
+- Never infer Claim↔Evidence meaning from citation proximity, prose wording, annotation type, AI interpretation, or graph distance.
+- Duplicate, invalid, orphan, malformed, unresolved, cross-project, and non-Evidence endpoints stay visible as health issues; do not guess or auto-correct them.
 - Multiple citations in the same saved passage may share one Passage node. Citation and Claim layers referring to the same block must converge on the same Passage identity.
 - Ambiguous/missing citation keys must remain visibly unresolved rather than being attached to a guessed research object. They may still expose literal saved-source location context.
 - Semantic version lineages come only from explicit same-project `supersedes` edges. Display direction is oldest→newest even though stored edge direction is newer→older.
