@@ -48,6 +48,18 @@
 .projectRow strong,
 .tableRow strong,
 .tableRow a,
+.compactList strong,
+.issue strong,
+.projectRow small,
+.tableRow small,
+.compactList small,
+.issue small {
+  overflow-wrap: anywhere;
+}
+
+.projectRow strong,
+.tableRow strong,
+.tableRow a,
 .compactList strong {
   color: var(--ink);
   font-size: 10px;
@@ -68,6 +80,7 @@
 .projectRow > span {
   color: var(--muted);
   font-size: 9px;
+  overflow-wrap: anywhere;
 }
 
 .coverageBar {
@@ -107,8 +120,10 @@
 
 .claimTable {
   display: grid;
+  max-width: 100%;
   margin-top: 14px;
   overflow-x: auto;
+  overscroll-behavior-inline: contain;
 }
 
 .tableHeader,
