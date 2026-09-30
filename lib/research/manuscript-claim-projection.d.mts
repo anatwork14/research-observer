@@ -2,7 +2,7 @@ import type { EvolutionEdge, EvolutionNode } from "./evolution.mjs";
 import type { ManuscriptClaimIssue } from "./manuscript-claims.mjs";
 import type { ManuscriptClaimEvidenceParseIssue, ManuscriptClaimEvidenceRelationType } from "./manuscript-claim-relations.mjs";
 
-export type ManuscriptClaimRelationIssue = ManuscriptClaimEvidenceParseIssue | {
+export type ManuscriptClaimRelationIssue = (ManuscriptClaimEvidenceParseIssue & { file?: string }) | {
   type: "duplicate-relation" | "claim-unresolved" | "evidence-missing" | "evidence-cross-project" | "evidence-type";
   file?: string;
   line?: number;
