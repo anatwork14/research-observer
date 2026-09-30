@@ -57,9 +57,11 @@ test("all-unavailable Claim scopes do not render factual zero KPI cards", async 
 test("Claim drilldown filters are URL-backed and preserved across project scope changes", async () => {
   const page = await fs.readFile(path.join(root, "app/insights/page.tsx"), "utf8");
   const controls = await fs.readFile(path.join(root, "components/ClaimEvidenceAuditFilters.tsx"), "utf8");
-  assert.match(page, /claimRelation:\s*one\(params\.claimRelation\)/);
-  assert.match(page, /claimCoverage:\s*one\(params\.claimCoverage\)/);
-  assert.match(page, /claimFile:\s*claimFilters|claimFile/);
+  assert.match(page, /relation:\s*one\(params\.claimRelation\)/);
+  assert.match(page, /coverage:\s*one\(params\.claimCoverage\)/);
+  assert.match(page, /file:\s*one\(params\.claimFile\)/);
+  assert.match(page, /section:\s*one\(params\.claimSection\)/);
+  assert.match(page, /query:\s*one\(params\.claimQ\)/);
   assert.match(page, /scopeHref\(view, toggled\(project\.id\), base, compare, view === "claims" \? claimFilters : undefined\)/);
   assert.match(controls, /<form className=\{styles\.filterForm\} action="\/insights" method="get">/);
   for (const name of ["claimRelation", "claimCoverage", "claimFile", "claimSection", "claimQ"]) {
@@ -70,6 +72,8 @@ test("Claim drilldown filters are URL-backed and preserved across project scope 
 
 test("relation tags link back into the authored-relation drilldown", async () => {
   const source = await fs.readFile(path.join(root, "components/ClaimEvidenceAudit.tsx"), "utf8");
+  const controls = await fs.readFile(path.join(root, "components/ClaimEvidenceAuditFilters.tsx"), "utf8");
   assert.match(source, /claimAuditFilterHref\(researchScope, filtered\.filters, \{ relation: item\.type \}\)/);
-  assert.match(source, /Charts above remain complete-scope context|<ClaimEvidenceAuditFilters/);
+  assert.match(source, /<ClaimEvidenceAuditFilters/);
+  assert.match(controls, /Charts above remain complete-scope context/);
 });
