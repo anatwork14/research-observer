@@ -990,3 +990,94 @@ Starting SHA: `64735456f81c4fbdab75762d4cebb167c1a6df5e` (clean). Starting `orig
 - `git diff --check`: PASS. Build-generated edits to `next-env.d.ts` and `tsconfig.json` were restored.
 - Existing warnings: two ESLint warnings, 22 Turbopack dynamic-filesystem tracing warnings, and the Doctor warning for ignored root `AGENTS.md`; no new lint or build errors.
 - **Merge-ready: yes.** The requested branch is pushed for review, and remains unmerged to `main`.
+
+## 2026-09-30 explicit Claim↔Evidence acceptance pass
+
+Repository: `https://github.com/anatwork14/research-observer`
+Branch: `feature/claim-evidence-relations` (push target only; no merge to `main`).
+
+- Starting SHA: `d58d70e6ce03ee06b9ac5a89bb0f79fb2d261379`; initial worktree clean. `origin/main` was `48801218a77c4d91e160939518a0dc34de0fdde4`, and `origin/main...HEAD` was `0 28`. The feature remote matched the starting SHA before checkpoint work and still matched at the pre-push fetch.
+- No source-code fix was needed or made. This pass creates a documentation-only checkpoint commit; its resulting SHA is reported in the final task report. The verified implementation/source SHA remains `d58d70e6ce03ee06b9ac5a89bb0f79fb2d261379`.
+- Runtime/install: Node `v22.23.3`, npm `10.9.9`; `GIT_CONFIG_GLOBAL=/dev/null npm ci` passed (513 packages, 0 vulnerabilities). Existing npm output included the ESLint 9.39.5 deprecation notice.
+- Focused suites: 14 files, 58/58 tests passed. Counts: claim relations 4; relation collision 1; claim-evidence projection 6; claims 6; claim projection 5; evolution claims 3; claim loading 2; LaTeX editor tools 11; claim-anchor UI 2; evolution 7; evolution trace 2; evolution passages 3; evolution Consensus 2; manuscript passages 4.
+- `GIT_CONFIG_GLOBAL=/dev/null npm run verify:merge-local`: PASS, including `check:full` and 2/2 workflow tests. Standalone `GIT_CONFIG_GLOBAL=/dev/null npm run check:full`: PASS, 198/198 unit tests, typecheck, lint, and production build. Lint had 0 errors and 2 existing warnings (`_T`, `offsetAtLine`). Build succeeded with 22 existing Turbopack dynamic-filesystem tracing warnings. Doctor reports the existing ignored-root-`AGENTS.md` warning. Build-generated `next-env.d.ts` and `tsconfig.json` changes were restored.
+- `git diff --check`: PASS after checkpoint authoring. No application files changed.
+
+### Parser, projection, UI, and provenance evidence
+
+A disposable isolated QA worktree and synthetic QA project were used; test-only files and the QA worktree were removed after restoring the manuscript and hidden-file state. No real research source was edited. The browser dev server was stopped. The contract remained the exact author directive `% observaire:claim-evidence <claim-id> <relation> <evidence-slug>` and the only accepted relations were `supports`, `contradicts`, `contextualizes`, and `qualifies`.
+
+- Strict directive parsing and the collision regression passed: a Claim↔Evidence marker is not misread as a Claim anchor. Natural-language wording and citation proximity alone did not create authored Claim↔Evidence edges.
+- All four allowed relations projected as distinct explicit `layer=claim-evidence` Evidence→Claim edges. Unsupported `proves`, `confirms`, `refutes`, and `answers` each produced `unsupported-relation` and no edge. A numeric-leading canonical ID (`010-evidence-result`) resolved successfully.
+- Literature targets were rejected with `evidence-type`, including a cited Literature object; missing Evidence produced `evidence-missing`; cross-project Evidence produced `evidence-cross-project`. Missing and duplicate Claim endpoints produced `claim-unresolved` and no semantic edge; duplicate Claim occurrences did not resolve arbitrarily.
+- An exact duplicate directive yielded one graph edge and two duplicate-relation health occurrences. Two different authored relations for one Claim/Evidence pair remained two edges. Citation→Passage→Claim context coexisted with explicit Evidence→Claim semantics; removing the directive left the citation route without a semantic edge.
+- IDE command-palette helper inserted the placeholder in CodeMirror and plain textarea modes, selected `claim-id`, marked the editor dirty, and did not save automatically. Placeholder endpoints appeared in advisory/Trace health diagnostics. Selecting an existing Claim ID reused only that selected ID and selected `evidence-slug`; no Evidence was inferred. The plain editor and CodeMirror checks were done at desktop viewport size; narrow-screen editor behavior remains unverified.
+- Claim↔Evidence layer disable/enable removed/restored only authored semantic edges while retaining nodes and citation paths. Disabling canonical Research semantics left Claim↔Evidence edges intact. Trace health showed separate Claim and Evidence-link issue rows with source file/line, Claim, relation, Evidence slug, and issue type where available.
+- Unsaved editor text did not enter the saved projection. Hiding the manuscript removed its live Claims/semantic edges without changing the source SHA; restoring it returned the source. Saving `supports`→`qualifies` replaced the prior edge. Deleting the Evidence object or changing it to Literature removed affected edges and surfaced `evidence-missing` or `evidence-type`. Two project fixtures remained isolated.
+- Research Graph contained no manuscript Claim nodes/Claim↔Evidence edges; Timeline contained no Claim nodes/events. Both regressions passed in the browser.
+- Desktop document dimensions were `clientWidth=1633`, `scrollWidth=1633`; graph content overflow stayed inside its graph scroller. The browser viewport override did not change the actual viewport, so 390×844, 768×1024, and 1024×768 document-overflow checks are **NOT VERIFIED**.
+- In a synthetic disposable fixture, the complete eight-node/seven-transition provenance path Paper→Annotation→Evidence→Citation→Passage→Claim→Manuscript→Revision coexisted with a direct Evidence→supports→Claim shortcut. This proves the fixture projection/browser path, not any real paper claim.
+- Citation/BibTeX resolution and compile smoke passed on the synthetic manuscript. Direct pdfLaTeX, BibTeX, and SyncTeX checks passed: forward source line 19→PDF page 1; reverse PDF→`main.tex` line 37. `latexmk` was unavailable on the host, and the full container app verifier was not run.
+- Browser console warning/error collection across Research Graph, Provenance, Timeline, and IDE returned no entries. The dev server logged the expected disabled Codex manuscript endpoint 503; it is not counted as a defect.
+
+### 59-point acceptance status
+
+1. Starting SHA — PASS, `d58d70e6ce03ee06b9ac5a89bb0f79fb2d261379`.
+2. Final verified source SHA — PASS, unchanged source SHA; documentation checkpoint commit SHA is in the final report.
+3. Commits created — one documentation-only progress checkpoint; no code commit.
+4. Worktree clean — PASS after commit (build-generated edits restored).
+5. Claim-evidence parser tests — PASS, 4/4.
+6. Parser collision test — PASS, 1/1.
+7. Claim-evidence projection tests — PASS, 6/6.
+8. Total unit tests — PASS, 198/198.
+9. Typecheck — PASS.
+10. Lint — PASS, 0 errors, 2 existing warnings.
+11. Production build — PASS, 22 existing Turbopack tracing warnings.
+12. `verify:merge-local` — PASS; workflow tests 2/2.
+13. `check:full` — PASS, 198/198.
+14. `git diff --check` — PASS.
+15. CodeMirror relation insertion — PASS at desktop size; dirty only, no autosave.
+16. Plain-editor relation insertion — PASS at desktop size; dirty only, no autosave.
+17. Placeholder diagnostics — PASS in editor advisory and Trace health.
+18. Selected Claim-ID reuse — PASS; only selected Claim ID reused, Evidence placeholder selected.
+19. `supports` — PASS.
+20. `contradicts` — PASS.
+21. `contextualizes` — PASS.
+22. `qualifies` — PASS.
+23. Unsupported relation — PASS; four arbitrary verbs rejected with no edge.
+24. Numeric-leading canonical Evidence ID — PASS.
+25. Literature target rejection — PASS, including cited Literature.
+26. Missing Evidence target — PASS, `evidence-missing`.
+27. Cross-project Evidence rejection — PASS, `evidence-cross-project`.
+28. Missing Claim rejection — PASS, `claim-unresolved`.
+29. Duplicate Claim rejection — PASS, unresolved and no edge.
+30. Duplicate exact relationship — PASS, one edge plus two duplicate health occurrences.
+31. Multiple distinct authored relations — PASS, two distinct edges.
+32. Citation without directive — PASS, no semantic edge.
+33. Strong prose without directive — PASS, no semantic edge.
+34. Citation plus authored semantics — PASS, independent routes coexist.
+35. Claim↔Evidence layer toggle — PASS.
+36. Research semantic layer independence — PASS.
+37. Trace-health display — PASS for separate rows and available source/endpoint details.
+38. Unsaved relationship isolation — PASS.
+39. Hidden source behavior — PASS; source hash unchanged and restore returned projection.
+40. Relationship freshness — PASS; old relation removed, new relation present.
+41. Evidence deletion/type-change — PASS; correct issue and no edge.
+42. Project isolation — PASS in two-project fixture.
+43. Research Graph regression — PASS; no manuscript Claim semantics.
+44. Timeline regression — PASS; no Claim nodes/events.
+45. 390×844 — NOT VERIFIED; viewport override did not apply.
+46. 768×1024 — NOT VERIFIED; viewport override did not apply.
+47. 1024×768 — NOT VERIFIED; viewport override did not apply.
+48. Desktop — PASS at 1633×828.
+49. Document overflow — PASS on desktop only; narrow viewports not verified.
+50. Full provenance plus semantic shortcut — PASS in synthetic QA fixture, 8 nodes/7 transitions plus shortcut.
+51. Citation regression — PASS for synthetic citation/BibTeX resolution and compile.
+52. SyncTeX forward — PASS, source line 19 to PDF page 1.
+53. SyncTeX reverse — PASS, PDF back to `main.tex:37`.
+54. Browser console — PASS, no collected browser warnings/errors on four views.
+55. Defects found/fixed — none in repository code; no speculative changes.
+56. Remaining blockers/warnings — exact narrow viewport checks and narrow editor behavior not verified; `latexmk` and full container verifier unavailable/not run; existing lint/build/doctor warnings; expected disabled-Codex 503.
+57. Merge-ready — **NO** for this pass because required narrow viewport behavior remains unverified.
+58. `progress.md` updated — YES.
+59. Nothing merged to `main` — CONFIRMED; push only to `feature/claim-evidence-relations`.
