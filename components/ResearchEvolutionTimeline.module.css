@@ -362,6 +362,12 @@
   .event {
     grid-template-columns: 1fr;
   }
+  .event strong {
+    overflow: visible;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    white-space: normal;
+  }
   .event time { grid-row: auto; }
   .dot { left: -18px; }
 }

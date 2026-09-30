@@ -333,3 +333,27 @@
     max-height: 210px;
   }
 }
+
+@media (pointer: coarse) {
+  .layers button,
+  .open,
+  .connections button {
+    min-height: 44px;
+  }
+
+  .inspectorHeader > div {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .inspectorHeader strong {
+    overflow-wrap: anywhere;
+  }
+
+  .inspectorHeader button {
+    flex: 0 0 44px;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+  }
+}

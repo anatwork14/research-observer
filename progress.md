@@ -1081,3 +1081,24 @@ A disposable isolated QA worktree and synthetic QA project were used; test-only 
 57. Merge-ready — **NO** for this pass because required narrow viewport behavior remains unverified.
 58. `progress.md` updated — YES.
 59. Nothing merged to `main` — CONFIRMED; push only to `feature/claim-evidence-relations`.
+
+## 2026-09-30 responsive browser verification follow-up
+
+Repository: `https://github.com/anatwork14/research-observer`
+
+Branch: `feature/claim-evidence-relations`; push target only. No merge to `main`.
+
+- Starting SHA: `1197501a37c7cda35ee3c35fb6d12e6602ccaa95`; `origin/main` remained `48801218a77c4d91e160939518a0dc34de0fdde4`. Final checkpoint SHA is recorded by the commit containing this entry.
+- Used an isolated disposable QA worktree and synthetic-only Evidence, Literature, manuscript, and PDF fixtures. No real research was edited. Chromium was driven through Playwright with configured viewports and touch emulation; each page reported the requested `innerWidth`, `innerHeight`, document client dimensions, and `scrollWidth`.
+- Actual viewport matrix: 390×844, 768×1024, and 1024×768. For Provenance and IDE, each document reported `scrollWidth/clientWidth` of 390/390, 768/768, and 1024/1024 respectively. Research Graph and Timeline at 390×844 also reported 390/390. Browser emulation only; no physical tablet was used.
+- Provenance passed at all three sizes. The graph SVG remains inside its own horizontal scroller. At 390px, health rows stack and wrap long Claim/relation/Evidence IDs and issue types. At 768px and 1024px, the health grid fits the page. Claim and Evidence inspectors fit; the long Claim ID wraps. Touch targets for the Claim↔Evidence layer, clear selection, and connection/open-source controls are at least 44px high/tall where applicable.
+- At all three sizes, Claim↔Evidence toggled off/on. Only the authored semantic edge disappeared and returned; Claim structural and citation paths remained. The internal graph content scrolls without document-level overflow.
+- At 390×844, plain-editor relation insertion created `% observaire:claim-evidence claim-id supports evidence-slug`, selected `claim-id`, marked the editor dirty, and did not autosave. The placeholder warning remained available in editor Problems and Trace health. Selected-ID reuse inserted the selected Claim ID and selected `evidence-slug` for replacement. Before explicit save the separate Provenance projection still had one edge; after saving the valid test directive it had two. The synthetic manuscript was restored afterward.
+- Trace Health displayed `evidence-missing`, `evidence-type`, `claim-unresolved`, and `duplicate-relation` with file/line, Claim ID, relation, Evidence slug, and issue type. No row widened the document.
+- Research Graph loaded at 390×844 with its existing controls, no Claim↔Evidence layer control/Claim node, and no page overflow. Timeline had no Claim↔Evidence controls and no page overflow. Its long dated synthetic title originally clipped at one line; the small-screen title rule now wraps it to two lines (`clientWidth=259`, `scrollWidth=259`, height 24px) at 390×844.
+- Browser console/page-error/HTTP collection across Provenance, IDE, Research Graph, and Timeline found no page exceptions or React/SVG/editor warnings. The only console error was the expected HTTP 503 from disabled `/api/codex/manuscript-act` in the IDE (`RESEARCH_OBSERVER_CODEX=0`).
+- Responsive fixes: health-row grid uses constrained columns, wraps long endpoint/type text, and stacks on narrow screens; coarse-pointer graph controls have usable target sizes and the long-ID inspector header can shrink/wrap; Timeline card titles wrap at mobile widths. Relationship semantics were not changed.
+- `GIT_CONFIG_GLOBAL=/dev/null npm run verify:merge-local`: PASS; includes the full check/build and workflow suite (2/2).
+- `GIT_CONFIG_GLOBAL=/dev/null npm run check:full`: PASS, 198/198 unit tests, typecheck, lint, and production build. Lint had 0 errors and 2 existing warnings (`_T`, `offsetAtLine`); build emitted 22 existing Turbopack dynamic-filesystem tracing warnings. Doctor retains the ignored root `AGENTS.md` warning.
+- `git diff --check`: PASS. Build-generated changes to `next-env.d.ts` and `tsconfig.json` were restored.
+- **Merge-ready: yes.** All requested responsive browser checks passed; push only to `feature/claim-evidence-relations`. Nothing was merged to `main`.
