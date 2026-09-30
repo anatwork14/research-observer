@@ -54,7 +54,7 @@ export function ClaimEvidenceAuditView({ audit }: { audit: ClaimEvidenceAudit })
               title="Distinct Evidence targets per Claim"
               description="Counts unique canonical Evidence targets, regardless of how many relationship types connect the same pair."
             >
-              <DonutChart data={audit.coverage} ariaLabel="Distinct Evidence targets per explicit Claim" centerLabel="claims" />
+              <DonutChart data={audit.coverage} ariaLabel="Distinct Evidence targets per explicit Claim" />
             </InsightCard>
 
             <InsightCard
@@ -127,25 +127,28 @@ export function ClaimEvidenceAuditView({ audit }: { audit: ClaimEvidenceAudit })
             </header>
             <div className={styles.claimTable}>
               <div className={styles.tableHeader}><span>Claim</span><span>Evidence targets</span><span>Authored relations</span><span>Source</span></div>
-              {claimRows.map((claim) => (
-                <div className={styles.tableRow} key={claim.nodeId}>
-                  <div>
-                    {claim.href ? <Link href={claim.href}>{claim.claimId}</Link> : <strong>{claim.claimId}</strong>}
-                    <small>{claim.projectLabel}{claim.section ? ` · ${claim.section}` : ""}</small>
+              {claimRows.map((claim) => {
+                const summary = relationSummary(claim.relationCounts);
+                return (
+                  <div className={styles.tableRow} key={claim.nodeId}>
+                    <div>
+                      {claim.href ? <Link href={claim.href}>{claim.claimId}</Link> : <strong>{claim.claimId}</strong>}
+                      <small>{claim.projectLabel}{claim.section ? ` · ${claim.section}` : ""}</small>
+                    </div>
+                    <div className={styles.evidenceLinks}>
+                      {claim.evidenceTargets.length ? claim.evidenceTargets.map((item) => (
+                        <Link href={`/progress/${item.slug}`} key={item.slug}>{item.title}</Link>
+                      )) : <em>0 authored Evidence targets</em>}
+                    </div>
+                    <div className={styles.relationTags}>
+                      {summary.length ? summary.map((item) => (
+                        <span data-relation={item.type} key={item.type}>{item.type}{item.count > 1 ? ` ×${item.count}` : ""}</span>
+                      )) : <em>None</em>}
+                    </div>
+                    <div><span>{claim.file || "manuscript"}</span><small>{claim.line ? `line ${claim.line}` : "saved source"}</small></div>
                   </div>
-                  <div className={styles.evidenceLinks}>
-                    {claim.evidenceTargets.length ? claim.evidenceTargets.map((item) => (
-                      <Link href={`/progress/${item.slug}`} key={item.slug}>{item.title}</Link>
-                    )) : <em>0 authored Evidence targets</em>}
-                  </div>
-                  <div className={styles.relationTags}>
-                    {relationSummary(claim.relationCounts).length ? relationSummary(claim.relationCounts).map((item) => (
-                      <span data-relation={item.type} key={item.type}>{item.type}{item.count > 1 ? ` ×${item.count}` : ""}</span>
-                    )) : <em>None</em>}
-                  </div>
-                  <div><span>{claim.file || "manuscript"}</span><small>{claim.line ? `line ${claim.line}` : "saved source"}</small></div>
-                </div>
-              ))}
+                );
+              })}
               {!claimRows.length && <p className={styles.empty}>No valid explicit manuscript Claims were found in the selected audited projects.</p>}
             </div>
           </section>
