@@ -16,6 +16,7 @@ import { ResearchVersionExplorer } from "@/components/ResearchVersionExplorer";
 import { buildResearchAnalytics } from "@/lib/research/analytics.mjs";
 import { loadClaimEvidenceAudit } from "@/lib/research/claim-evidence-audit.mjs";
 import { getResearchWorkspace } from "@/lib/progress";
+import styles from "./InsightsPage.module.css";
 
 export const dynamic = "force-dynamic";
 
@@ -92,7 +93,7 @@ export default async function InsightsPage({
         </header>
 
         <section className="intelligence-controls panel">
-          <nav className="intelligence-view-tabs" aria-label="Research intelligence view">
+          <nav className={`intelligence-view-tabs ${styles.tabs}`} aria-label="Research intelligence view">
             {([
               ["overview", "Overview"],
               ["analytics", "Analytics"],
