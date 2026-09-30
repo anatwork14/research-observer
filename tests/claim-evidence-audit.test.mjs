@@ -42,6 +42,19 @@ function alphaProjection() {
   });
 }
 
+function betaProjection() {
+  const workspace = workspaceFixture();
+  return buildManuscriptClaimProjection({
+    projectId: "beta",
+    mainFile: "main.tex",
+    files: [{
+      file: "main.tex",
+      content: "% observaire:claim claim-one\n% observaire:claim-evidence claim-one contextualizes evidence-beta\nBeta claim prose.",
+    }],
+    researchEntries: workspace.entries,
+  });
+}
+
 test("claim evidence audit counts authored targets without inventing a quality score", () => {
   const workspace = workspaceFixture();
   const audit = buildClaimEvidenceAudit({
@@ -148,4 +161,26 @@ test("invalid authored directives remain audit issues and are excluded from vali
   assert.equal(audit.totals.relationIssues, 2);
   assert.deepEqual(new Set(audit.issues.map((issue) => issue.type)), new Set(["evidence-missing", "claim-unresolved"]));
   assert.equal(audit.claims[0].evidenceCount, 0);
+});
+
+test("same Claim IDs stay project-scoped and the selected research scope controls the audit", () => {
+  const workspace = workspaceFixture();
+  const states = [
+    { projectId: "alpha", available: true, projection: alphaProjection() },
+    { projectId: "beta", available: true, projection: betaProjection() },
+  ];
+
+  const combined = buildClaimEvidenceAudit({ workspace, researchIds: ["alpha", "beta"], projectStates: states });
+  const shared = combined.claims.filter((claim) => claim.claimId === "claim-one");
+  assert.equal(shared.length, 2);
+  assert.deepEqual(new Set(shared.map((claim) => claim.projectId)), new Set(["alpha", "beta"]));
+  assert.equal(combined.relationMix.find((item) => item.key === "contextualizes").value, 1);
+
+  const betaOnly = buildClaimEvidenceAudit({ workspace, researchIds: ["beta"], projectStates: states });
+  assert.equal(betaOnly.totals.claims, 1);
+  assert.equal(betaOnly.totals.relations, 1);
+  assert.equal(betaOnly.claims[0].projectId, "beta");
+  assert.equal(betaOnly.evidence[0].slug, "evidence-beta");
+  assert.equal(betaOnly.evidence[0].claimCount, 1);
+  assert.deepEqual(betaOnly.researchIds, ["beta"]);
 });
