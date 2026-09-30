@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ClaimEvidenceAuditView } from "@/components/ClaimEvidenceAudit";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
 import {
   ActivityLineChart,
@@ -13,11 +14,12 @@ import {
 import { ResearchTimeline } from "@/components/ResearchTimeline";
 import { ResearchVersionExplorer } from "@/components/ResearchVersionExplorer";
 import { buildResearchAnalytics } from "@/lib/research/analytics.mjs";
+import { loadClaimEvidenceAudit } from "@/lib/research/claim-evidence-audit.mjs";
 import { getResearchWorkspace } from "@/lib/progress";
 
 export const dynamic = "force-dynamic";
 
-type View = "overview" | "analytics" | "timeline" | "versions";
+type View = "overview" | "analytics" | "claims" | "timeline" | "versions";
 
 function one(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -51,8 +53,11 @@ export default async function InsightsPage({
   const workspace = await getResearchWorkspace();
   const requested = projectSelection(params.research);
   const rawView = one(params.view);
-  const view: View = rawView === "analytics" || rawView === "timeline" || rawView === "versions" ? rawView : "overview";
+  const view: View = rawView === "analytics" || rawView === "claims" || rawView === "timeline" || rawView === "versions" ? rawView : "overview";
   const analytics = buildResearchAnalytics(workspace, requested);
+  const claimAudit = view === "claims"
+    ? await loadClaimEvidenceAudit({ workspace, researchIds: analytics.researchIds })
+    : null;
   const navEntries = workspace.entries.map(({ slug, order, title, status }) => ({ slug, order, title, status }));
   const availableProjects = workspace.projects.filter((project) => project.notes > 0);
   const explicitlyScoped = requested.length > 0;
@@ -77,10 +82,10 @@ export default async function InsightsPage({
         <header className="collection-heading intelligence-heading">
           <div>
             <p className="eyebrow">Research intelligence</p>
-            <h1>See the portfolio, evolution, and evidence structure.</h1>
+            <h1>See the portfolio, evolution, evidence structure, and authored Claim coverage.</h1>
             <p>
               Explore one research project or several at once. Charts stay linked to the same project scope,
-              while Timeline and Versions reveal how ideas evolve instead of flattening research into a single score.
+              while Claims audits only explicit manuscript semantics and never turns missing links into an automatic quality judgment.
             </p>
           </div>
           <span className="collection-count">{analytics.projects.length} project{analytics.projects.length === 1 ? "" : "s"} · {analytics.totals.notes} objects</span>
@@ -91,6 +96,7 @@ export default async function InsightsPage({
             {([
               ["overview", "Overview"],
               ["analytics", "Analytics"],
+              ["claims", "Claims"],
               ["timeline", "Timeline"],
               ["versions", "Versions"],
             ] as Array<[View, string]>).map(([key, label]) => (
@@ -195,6 +201,8 @@ export default async function InsightsPage({
           </section>
         )}
 
+        {view === "claims" && claimAudit && <ClaimEvidenceAuditView audit={claimAudit} />}
+
         {view === "timeline" && (
           <section className="intelligence-timeline">
             <div className="intelligence-section-intro">
@@ -216,7 +224,7 @@ export default async function InsightsPage({
         )}
       </main>
 
-      <footer className="site-footer"><span>OBSERVAIRE</span><span>Portfolio · Analytics · Timeline · Versions</span></footer>
+      <footer className="site-footer"><span>OBSERVAIRE</span><span>Portfolio · Analytics · Claims · Timeline · Versions</span></footer>
     </div>
   );
 }
