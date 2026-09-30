@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { formatEvolutionDate } from "@/lib/research/evolution-date.mjs";
 import styles from "./ResearchEvolutionTimeline.module.css";
 
 type EvolutionNode = {
@@ -42,22 +43,6 @@ type EvolutionLineage = {
 
 function monthKey(value: string) {
   return value.slice(0, 7);
-}
-
-function readableDate(value: string) {
-  const date = new Date(value);
-  const dateOnly = value.endsWith("T00:00:00.000Z");
-  const options: Intl.DateTimeFormatOptions = {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-  };
-  if (dateOnly) options.timeZone = "UTC";
-  else {
-    options.hour = "2-digit";
-    options.minute = "2-digit";
-  }
-  return new Intl.DateTimeFormat(undefined, options).format(date);
 }
 
 function eventLabel(event: TimelineEvent) {
@@ -179,7 +164,7 @@ export function ResearchEvolutionTimeline({
                       disabled={!node?.href}
                     >
                       <span className={styles.dot} />
-                      <time>{readableDate(event.at)}</time>
+                      <time dateTime={event.at}>{formatEvolutionDate(event.at)}</time>
                       <strong>{eventLabel(event)}</strong>
                       <small>{[event.kind, node?.role || node?.type, node?.shortCommit, event.status].filter(Boolean).join(" · ")}</small>
                     </button>

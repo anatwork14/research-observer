@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import type { PdfRelatedNote } from "@/components/PdfReader";
 import { CodexPanel } from "@/components/CodexPanel";
 import { EvidenceCaptureDialog } from "@/components/EvidenceCaptureDialog";
+import { pdfPageHref } from "@/lib/research/pdf-page-navigation.mjs";
 
 pdfjs.GlobalWorkerOptions.workerSrc = "/_research/pdfjs/pdf.worker.min.mjs";
 
@@ -115,6 +116,7 @@ export default function PdfReaderInner({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const query = useSearchParams().toString();
   const stageRef = useRef<HTMLDivElement>(null);
   const copyResetRef = useRef<number | null>(null);
   const [pdf, setPdf] = useState<PdfDocumentLike | null>(null);
@@ -171,8 +173,8 @@ export default function PdfReaderInner({
     setSelection("");
     setCopyStatus("");
     if (panel === "text" || panel === "agent") setTextLoading(true);
-    router.replace(`${pathname}?page=${next}`, { scroll: false });
-  }, [numPages, panel, pathname, router]);
+    router.replace(pdfPageHref(pathname, query, next), { scroll: false });
+  }, [numPages, panel, pathname, query, router]);
 
   useEffect(() => {
     if (!pdf || (panel !== "text" && panel !== "agent")) return;
