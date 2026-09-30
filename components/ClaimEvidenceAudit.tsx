@@ -19,6 +19,7 @@ function projectHref(projectId: string) {
 }
 
 export function ClaimEvidenceAuditView({ audit }: { audit: ClaimEvidenceAudit }) {
+  const hasAudit = audit.availableProjects > 0;
   const linkedPercent = ratio(audit.totals.claimsWithEvidence, audit.totals.claims);
   const claimRows = audit.claims.slice(0, 80);
   const unlinkedEvidence = audit.evidence.filter((item) => item.claimCount === 0).slice(0, 40);
@@ -37,16 +38,18 @@ export function ClaimEvidenceAuditView({ audit }: { audit: ClaimEvidenceAudit })
         </p>
       </div>
 
-      <section className="intelligence-kpis" aria-label="Claim and Evidence audit statistics">
-        <article className="panel"><span>Explicit Claims</span><strong>{audit.totals.claims}</strong><small>valid saved Claim anchors</small></article>
-        <article className="panel"><span>With authored Evidence</span><strong>{audit.totals.claimsWithEvidence}</strong><small>{linkedPercent}% of audited Claims</small></article>
-        <article className="panel"><span>No authored Evidence link</span><strong>{audit.totals.claimsWithoutEvidence}</strong><small>not a judgment of scientific support</small></article>
-        <article className="panel"><span>Authored semantic links</span><strong>{audit.totals.relations}</strong><small>four explicit relation types</small></article>
-        <article className="panel"><span>Evidence linked to Claims</span><strong>{audit.totals.linkedEvidence}</strong><small>{audit.totals.evidenceWithoutClaimLinks} canonical Evidence not linked</small></article>
-        <article className="panel"><span>Audit issues</span><strong>{audit.totals.claimIssues + audit.totals.relationIssues}</strong><small>{audit.totals.relationIssues} relationship issues</small></article>
-      </section>
+      {hasAudit && (
+        <section className="intelligence-kpis" aria-label="Claim and Evidence audit statistics">
+          <article className="panel"><span>Explicit Claims</span><strong>{audit.totals.claims}</strong><small>valid saved Claim anchors</small></article>
+          <article className="panel"><span>With authored Evidence</span><strong>{audit.totals.claimsWithEvidence}</strong><small>{linkedPercent}% of audited Claims</small></article>
+          <article className="panel"><span>No authored Evidence link</span><strong>{audit.totals.claimsWithoutEvidence}</strong><small>not a judgment of scientific support</small></article>
+          <article className="panel"><span>Authored semantic links</span><strong>{audit.totals.relations}</strong><small>four explicit relation types</small></article>
+          <article className="panel"><span>Evidence linked to Claims</span><strong>{audit.totals.linkedEvidence}</strong><small>{audit.totals.evidenceWithoutClaimLinks} canonical Evidence not linked in audited projects</small></article>
+          <article className="panel"><span>Audit issues</span><strong>{audit.totals.claimIssues + audit.totals.relationIssues}</strong><small>{audit.totals.relationIssues} relationship issues</small></article>
+        </section>
+      )}
 
-      {audit.availableProjects > 0 ? (
+      {hasAudit ? (
         <>
           <section className="insight-chart-grid analytics">
             <InsightCard
