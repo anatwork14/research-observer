@@ -74,7 +74,19 @@ export default async function GraphPage({
     nodes: [],
     edges: [],
     issues: [],
-    stats: { manuscriptFiles: 0, claims: 0, claimIssues: 0, duplicates: 0, invalid: 0, orphan: 0 },
+    relationIssues: [],
+    stats: {
+      manuscriptFiles: 0,
+      claims: 0,
+      claimIssues: 0,
+      duplicates: 0,
+      invalid: 0,
+      orphan: 0,
+      relations: 0,
+      relationIssues: 0,
+      relationDuplicates: 0,
+      relationUnresolved: 0,
+    },
   };
   let citationAvailable = view === "research" ? null : false;
   let claimAvailable = view === "provenance" ? false : null;
@@ -85,7 +97,7 @@ export default async function GraphPage({
 
   if (view !== "research") {
     const claimRequest = view === "provenance"
-      ? loadManuscriptClaimProjection({ projectId })
+      ? loadManuscriptClaimProjection({ projectId, researchEntries: workspace.entries })
       : Promise.resolve<ManuscriptClaimProjection | null>(null);
     const [citationResult, historyResult, claimResult] = await Promise.allSettled([
       loadManuscriptCitationProjection({ projectId }),
@@ -116,16 +128,16 @@ export default async function GraphPage({
         <header className="collection-heading">
           <div>
             <p className="eyebrow">Research evolution</p>
-            <h1>Trace how sources become evidence, citations, manuscript passages, explicit claims, and revisions.</h1>
+            <h1>Trace sources, evidence, citations, explicit manuscript claims, and revisions.</h1>
             <p>
-              Keep the force-directed semantic graph for research relationships, switch to provenance to follow source-to-manuscript paths,
-              or use the timeline to compare dated research, explicit semantic versions, and real committed manuscript revisions. Passage context is literal saved LaTeX structure; Claim nodes exist only when the manuscript author writes an explicit <code>% observaire:claim ...</code> anchor.
+              Keep the force-directed semantic graph for canonical research relationships, switch to provenance to follow source-to-manuscript paths and explicitly authored Claim↔Evidence semantics,
+              or use the timeline to compare dated research, explicit semantic versions, and real committed manuscript revisions. Passage context is literal saved LaTeX structure; Claim nodes and Claim↔Evidence links exist only when the manuscript author writes their explicit Observaire directives.
             </p>
           </div>
           <span className="collection-count">
             {view === "research"
               ? `${typedCount} typed · ${referenceCount} references · ${projectGraphNodes.length} nodes`
-              : `${evolution.stats.researchNodes} research · ${evolution.stats.annotationNodes} annotations · ${citationAvailable ? `${evolution.stats.citationNodes} citations · ${evolution.stats.passageNodes} passages` : "citation scan unavailable"}${view === "provenance" ? claimAvailable ? ` · ${evolution.stats.claimNodes} explicit claims` : " · claim scan unavailable" : ""} · ${manuscriptHistoryAvailable ? `${evolution.stats.revisionNodes} revisions` : "Git history unavailable"} · ${evolution.stats.timelineEvents} dated events`}
+              : `${evolution.stats.researchNodes} research · ${evolution.stats.annotationNodes} annotations · ${citationAvailable ? `${evolution.stats.citationNodes} citations · ${evolution.stats.passageNodes} passages` : "citation scan unavailable"}${view === "provenance" ? claimAvailable ? ` · ${evolution.stats.claimNodes} explicit claims · ${claims.stats.relations} claim-evidence links` : " · claim scan unavailable" : ""} · ${manuscriptHistoryAvailable ? `${evolution.stats.revisionNodes} revisions` : "Git history unavailable"} · ${evolution.stats.timelineEvents} dated events`}
           </span>
         </header>
 
@@ -176,18 +188,27 @@ export default async function GraphPage({
             <EvolutionGraph nodes={evolution.nodes} edges={evolution.edges} />
             <section className="graph-index panel">
               <div className="dashboard-card-heading">
-                <div><span className="kicker">Trace health</span><h2>Manuscript linkage, explicit claims, and revision state</h2></div>
+                <div><span className="kicker">Trace health</span><h2>Manuscript linkage, authored Claim semantics, and revision state</h2></div>
               </div>
               <div className="relationship-index">
                 <div className="relationship-index-row"><span>Citation scan</span><strong>{citationAvailable ? "Available" : "Unavailable"}</strong><span>{citationAvailable ? `${manuscript.stats.citations} occurrences` : "research graph remains usable"}</span></div>
                 <div className="relationship-index-row"><span>Passages</span><strong>{citationAvailable ? manuscript.stats.passages : "—"}</strong><span>literal saved LaTeX blocks</span></div>
-                <div className="relationship-index-row"><span>Explicit claims</span><strong>{claimAvailable ? claims.stats.claims : "—"}</strong><span>user-authored claim anchors only</span></div>
+                <div className="relationship-index-row"><span>Explicit claims</span><strong>{claimAvailable ? claims.stats.claims : "—"}</strong><span>user-authored Claim anchors only</span></div>
                 <div className="relationship-index-row"><span>Claim issues</span><strong>{claimAvailable ? claims.stats.claimIssues : "—"}</strong><span>{claimAvailable ? "duplicate, invalid, or orphan anchors" : "claim scan unavailable"}</span></div>
-                <div className="relationship-index-row"><span>Resolved</span><strong>{citationAvailable ? manuscript.stats.resolved : "—"}</strong><span>citation links</span></div>
-                <div className="relationship-index-row"><span>Ambiguous</span><strong>{citationAvailable ? manuscript.stats.ambiguous : "—"}</strong><span>require explicit choice</span></div>
-                <div className="relationship-index-row"><span>Missing</span><strong>{citationAvailable ? manuscript.stats.missing : "—"}</strong><span>not linked</span></div>
+                <div className="relationship-index-row"><span>Claim ↔ evidence</span><strong>{claimAvailable ? claims.stats.relations : "—"}</strong><span>explicit manuscript directives only</span></div>
+                <div className="relationship-index-row"><span>Evidence-link issues</span><strong>{claimAvailable ? claims.stats.relationIssues : "—"}</strong><span>{claimAvailable ? "malformed, duplicate, or unresolved authored links" : "claim scan unavailable"}</span></div>
+                <div className="relationship-index-row"><span>Resolved citations</span><strong>{citationAvailable ? manuscript.stats.resolved : "—"}</strong><span>citation links</span></div>
+                <div className="relationship-index-row"><span>Ambiguous citations</span><strong>{citationAvailable ? manuscript.stats.ambiguous : "—"}</strong><span>require explicit choice</span></div>
+                <div className="relationship-index-row"><span>Missing citations</span><strong>{citationAvailable ? manuscript.stats.missing : "—"}</strong><span>not linked</span></div>
                 <div className="relationship-index-row"><span>Committed revisions</span><strong>{manuscriptHistoryAvailable ? revisions.stats.revisions : "Unavailable"}</strong><span>{manuscriptHistoryAvailable ? "Git history" : "manuscript history unavailable"}</span></div>
                 <div className="relationship-index-row"><span>Working changes</span><strong>{manuscriptHistoryAvailable ? revisions.stats.dirtyFiles : "Unavailable"}</strong><span>not presented as revisions</span></div>
+                {claims.relationIssues.slice(0, 12).map((item, index) => (
+                  <div className="relationship-index-row" key={`claim-evidence-${item.file ?? "?"}-${item.line ?? "?"}-${item.claimId ?? "?"}-${item.evidenceSlug ?? "?"}-${item.type}-${index}`}>
+                    <span>{item.line ? `${item.file ?? "manuscript"}:${item.line}` : item.file ?? "manuscript"}</span>
+                    <strong>{[item.claimId, item.relation, item.evidenceSlug].filter(Boolean).join(" ") || "invalid relation"}</strong>
+                    <span>{item.type}</span>
+                  </div>
+                ))}
                 {claims.issues.slice(0, 12).map((item, index) => (
                   <div className="relationship-index-row" key={`claim-${item.file ?? "?"}-${item.line ?? "?"}-${item.claimId ?? "?"}-${item.type}-${index}`}>
                     <span>{item.line ? `${item.file ?? "manuscript"}:${item.line}` : item.file ?? "manuscript"}</span><strong>{item.claimId ?? "invalid claim"}</strong><span>{item.type}</span>
