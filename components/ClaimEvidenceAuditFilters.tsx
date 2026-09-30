@@ -1,5 +1,11 @@
+"use client";
+
+import { useEffect, useRef } from "react";
 import Link from "next/link";
-import type { NormalizedClaimEvidenceAuditFilters } from "@/lib/research/claim-evidence-audit-filters.mjs";
+import {
+  claimAuditFilterHref,
+  type NormalizedClaimEvidenceAuditFilters,
+} from "@/lib/research/claim-evidence-audit-filters.mjs";
 import styles from "./ClaimEvidenceAudit.module.css";
 
 const RELATIONS = ["supports", "contradicts", "contextualizes", "qualifies"] as const;
@@ -15,28 +21,23 @@ type Options = {
   sections: Array<{ value: string; count: number }>;
 };
 
-export function claimAuditFilterHref(
-  researchScope: string[],
-  filters: NormalizedClaimEvidenceAuditFilters,
-  patch: Partial<NormalizedClaimEvidenceAuditFilters> = {},
-) {
-  const next = { ...filters, ...patch };
-  const params = new URLSearchParams({ view: "claims" });
-  if (researchScope.length) params.set("research", researchScope.join(","));
-  if (next.relation) params.set("claimRelation", next.relation);
-  if (next.coverage) params.set("claimCoverage", next.coverage);
-  if (next.file) params.set("claimFile", next.file);
-  if (next.section) params.set("claimSection", next.section);
-  if (next.query) params.set("claimQ", next.query);
-  return `/insights?${params.toString()}`;
-}
-
 function preserveSelectedOption(
   options: Array<{ value: string; count: number }>,
   selected: string,
 ) {
   if (!selected || options.some((item) => item.value === selected)) return options;
   return [{ value: selected, count: 0 }, ...options];
+}
+
+function syncFilterControls(form: HTMLFormElement | null, search: string) {
+  if (!form) return;
+  const params = new URLSearchParams(search);
+  for (const name of ["claimRelation", "claimCoverage", "claimFile", "claimSection", "claimQ"]) {
+    const field = form.elements.namedItem(name);
+    if (field instanceof HTMLInputElement || field instanceof HTMLSelectElement) {
+      field.value = params.get(name) ?? "";
+    }
+  }
 }
 
 export function ClaimEvidenceAuditFilters({
@@ -54,6 +55,25 @@ export function ClaimEvidenceAuditFilters({
   totalClaims: number;
   activeFilters: number;
 }) {
+  const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    const syncFromUrl = () => syncFilterControls(formRef.current, window.location.search);
+    const scheduleSync = () => {
+      window.requestAnimationFrame(syncFromUrl);
+      window.setTimeout(syncFromUrl, 0);
+    };
+    window.addEventListener("pageshow", scheduleSync);
+    window.addEventListener("popstate", scheduleSync);
+    syncFromUrl();
+    return () => {
+      window.removeEventListener("pageshow", scheduleSync);
+      window.removeEventListener("popstate", scheduleSync);
+    };
+  }, []);
+  useEffect(() => {
+    syncFilterControls(formRef.current, window.location.search);
+  }, [filters.relation, filters.coverage, filters.file, filters.section, filters.query]);
+
   const clearFilters: NormalizedClaimEvidenceAuditFilters = {
     relation: "",
     coverage: "",
@@ -84,7 +104,7 @@ export function ClaimEvidenceAuditFilters({
         </p>
       </div>
 
-      <form className={styles.filterForm} action="/insights" method="get">
+      <form ref={formRef} className={styles.filterForm} action="/insights" method="get">
         <input type="hidden" name="view" value="claims" />
         {researchScope.length > 0 && <input type="hidden" name="research" value={researchScope.join(",")} />}
 

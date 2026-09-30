@@ -64,13 +64,25 @@ test("Claim drilldown filters are URL-backed and preserved across project scope 
   assert.match(page, /query:\s*one\(params\.claimQ\)/);
   assert.match(page, /scopeHref\(view, toggled\(project\.id\), base, compare, view === "claims" \? claimFilters : undefined\)/);
   assert.match(page, /key === "claims" \? claimFilters : undefined/);
-  assert.match(controls, /<form className=\{styles\.filterForm\} action="\/insights" method="get">/);
+  assert.match(controls, /<form ref=\{formRef\} className=\{styles\.filterForm\} action="\/insights" method="get">/);
   assert.match(controls, /researchScope\.length > 0 && <input type="hidden" name="research"/);
   assert.match(controls, /claimAuditFilterHref\(researchScope, filters, clearFilters\)/);
   for (const name of ["claimRelation", "claimCoverage", "claimFile", "claimSection", "claimQ"]) {
     assert.match(controls, new RegExp(`name="${name}"`));
   }
-  assert.doesNotMatch(controls, /"use client"/);
+});
+
+test("Claim filter controls resync from the URL after browser history navigation", async () => {
+  const controls = await fs.readFile(path.join(root, "components/ClaimEvidenceAuditFilters.tsx"), "utf8");
+  assert.match(controls, /^"use client"/);
+  assert.match(controls, /form\.elements\.namedItem\(name\)/);
+  assert.match(controls, /function syncFilterControls\(form: HTMLFormElement \| null, search: string\)/);
+  assert.match(controls, /new URLSearchParams\(search\)/);
+  assert.match(controls, /\[filters\.relation, filters\.coverage, filters\.file, filters\.section, filters\.query\]/);
+  assert.match(controls, /requestAnimationFrame\(syncFromUrl\)/);
+  assert.match(controls, /setTimeout\(syncFromUrl, 0\)/);
+  assert.match(controls, /addEventListener\("pageshow", scheduleSync\)/);
+  assert.match(controls, /addEventListener\("popstate", scheduleSync\)/);
 });
 
 test("preserved file and section filters remain visible after project scope changes", async () => {

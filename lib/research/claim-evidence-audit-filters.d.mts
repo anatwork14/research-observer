@@ -20,6 +20,12 @@ export const CLAIM_AUDIT_COVERAGE_FILTERS: readonly ["none", "one", "multiple", 
 
 export function normalizeClaimEvidenceAuditFilters(filters?: ClaimEvidenceAuditFilters): NormalizedClaimEvidenceAuditFilters;
 
+export function claimAuditFilterHref(
+  researchScope: string[],
+  filters: NormalizedClaimEvidenceAuditFilters,
+  patch?: Partial<NormalizedClaimEvidenceAuditFilters>,
+): string;
+
 export function claimEvidenceAuditFilterOptions(audit: ClaimEvidenceAudit): {
   files: Array<{ value: string; count: number }>;
   sections: Array<{ value: string; count: number }>;

@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { filterClaimEvidenceAudit, normalizeClaimEvidenceAuditFilters } from "../lib/research/claim-evidence-audit-filters.mjs";
+import {
+  claimAuditFilterHref,
+  filterClaimEvidenceAudit,
+  normalizeClaimEvidenceAuditFilters,
+} from "../lib/research/claim-evidence-audit-filters.mjs";
 
 function auditFixture() {
   const base = {
@@ -104,4 +108,22 @@ test("reports matching count separately from the complete audit total", () => {
   assert.equal(filtered.totalClaims, 3);
   assert.equal(filtered.matchedClaims, 1);
   assert.equal(filtered.activeFilters, 2);
+});
+
+test("filter drill-down URLs preserve project scope and every unmodified filter", () => {
+  const href = claimAuditFilterHref(["alpha", "beta"], {
+    relation: "supports",
+    coverage: "one",
+    file: "chapters/results.tex",
+    section: "Results",
+    query: "orbit signal",
+  }, { relation: "contradicts" });
+  const params = new URLSearchParams(href.split("?", 2)[1]);
+  assert.equal(params.get("view"), "claims");
+  assert.equal(params.get("research"), "alpha,beta");
+  assert.equal(params.get("claimRelation"), "contradicts");
+  assert.equal(params.get("claimCoverage"), "one");
+  assert.equal(params.get("claimFile"), "chapters/results.tex");
+  assert.equal(params.get("claimSection"), "Results");
+  assert.equal(params.get("claimQ"), "orbit signal");
 });

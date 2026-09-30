@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { ClaimEvidenceAuditFilters, claimAuditFilterHref } from "./ClaimEvidenceAuditFilters";
+import { ClaimEvidenceAuditFilters } from "./ClaimEvidenceAuditFilters";
 import { DonutChart, HorizontalBarChart, InsightCard } from "./ResearchAnalyticsCharts";
 import type { ClaimEvidenceAudit } from "@/lib/research/claim-evidence-audit.mjs";
 import {
+  claimAuditFilterHref,
   filterClaimEvidenceAudit,
   type ClaimEvidenceAuditFilters as ClaimAuditFilters,
 } from "@/lib/research/claim-evidence-audit-filters.mjs";
