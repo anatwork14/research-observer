@@ -52,8 +52,11 @@ test("LaTeX analysis surfaces malformed claim anchors but accepts a valid explic
 });
 
 test("LaTeX analysis surfaces malformed claim-evidence directives but accepts the strict syntax", () => {
-  const invalid = analyzeLatexDocument("% observaire:claim-evidence claim-id proves evidence-a");
-  assert.ok(invalid.diagnostics.some((item) => item.code === "observaire-claim-evidence-unsupported-relation"));
+  const placeholder = analyzeLatexDocument("% observaire:claim-evidence claim-id supports evidence-a");
+  assert.ok(placeholder.diagnostics.some((item) => item.code === "observaire-claim-evidence-invalid-claim-id"));
+
+  const unsupported = analyzeLatexDocument("% observaire:claim-evidence robust-under-shift proves evidence-a");
+  assert.ok(unsupported.diagnostics.some((item) => item.code === "observaire-claim-evidence-unsupported-relation"));
 
   const valid = analyzeLatexDocument("% observaire:claim-evidence robust-under-shift supports evidence-a");
   assert.equal(valid.diagnostics.some((item) => item.code.startsWith("observaire-claim-evidence-")), false);
@@ -94,7 +97,7 @@ test("claim anchor insertion is compile-safe and requires the author to replace 
   assert.equal(inserted.content.slice(inserted.selectionStart, inserted.selectionEnd), "claim-id");
 });
 
-test("claim-evidence insertion never invents IDs or relation type", () => {
+test("claim-evidence insertion uses explicit placeholders instead of inventing IDs", () => {
   const source = "The result is robust.";
   const inserted = insertObservaireClaimEvidenceRelation(source, 0, 0);
   assert.equal(inserted.content, "% observaire:claim-evidence claim-id supports evidence-slug\nThe result is robust.");
