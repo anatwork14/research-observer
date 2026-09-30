@@ -50,7 +50,7 @@ export type EvolutionEdge = {
   source: string;
   target: string;
   type: string;
-  layer: "semantic" | "reference" | "source" | "version" | "citation" | "claim";
+  layer: "semantic" | "reference" | "source" | "version" | "citation" | "claim" | "claim-evidence";
   explicit: boolean;
 };
 
