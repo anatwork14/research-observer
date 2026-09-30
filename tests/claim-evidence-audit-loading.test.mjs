@@ -37,3 +37,11 @@ test("Claim audit keeps visible lists bounded and avoids unsupported-claim scori
   assert.match(source, /not a judgment of scientific support/);
   assert.doesNotMatch(source, /unsupported Claim/i);
 });
+
+test("all-unavailable Claim scopes do not render factual zero KPI cards", async () => {
+  const source = await fs.readFile(path.join(root, "components/ClaimEvidenceAudit.tsx"), "utf8");
+  assert.match(source, /const hasAudit = audit\.availableProjects > 0/);
+  assert.match(source, /\{hasAudit && \(\s*<section className="intelligence-kpis"/);
+  assert.match(source, /No visible editable manuscript source was available to audit/);
+  assert.match(source, /Claim coverage is not reported as zero/);
+});
