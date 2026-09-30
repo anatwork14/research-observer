@@ -1136,3 +1136,46 @@ Branch: `feature/claim-evidence-audit`; push target only. No merge to `main`.
 - Browser console, page errors, and failed-request collection across responsive Claims pages and existing Insights tabs returned no entries. The unsupported-score check found no composite score; explanatory copy explicitly says authored coverage is not a quality score.
 - Defects fixed: Claim audit grid intrinsic sizing widened the document to 866px at 390 and 876px at 768 before the fix; constrained the grid and its children so the table now scrolls internally. Evidence-reach previously truncated 13 series to 12 without disclosure; added a `Showing 12 of 13` notice and regression coverage. No relationship vocabulary or inference behavior changed.
 - **Merge-ready: yes for this checkpoint.** Feature branch only; `main` was not merged or modified by this task. Existing lint/Doctor/Turbopack warnings above are non-blocking.
+
+
+## 2026-10-01 Claim↔Evidence audit filter and drill-down checkpoint
+
+Repository: `https://github.com/anatwork14/research-observer`
+
+Branch: `feature/claim-evidence-audit-filters`; push target only. Do not merge to `main`.
+
+- Starting HEAD: `e7a68a9f21a2aac3bfe120ccbdcfad4ef49ccffe`. Base and fetched `origin/main`: `863d962d140a99e3d5f4f2bbea9ff7afa61f03e6`. Before changes, branch was 15 ahead / 0 behind and clean. Verified implementation commit: `86a4d682d8507d95980c92ab45eb2805b966b572`; the following checkpoint commit updates only this record.
+- Runtime: Node v22.23.3 and npm 10.9.9. Installed dependencies were already present in the isolated worktree. Eleven disposable QA fixture directories across `progress/` and `manuscripts/` were removed; no real research source remains modified.
+- Focused test totals: URL filter logic 6/6; Claims loading/UI regressions 10/10; Claim audit 4/4; semantic relation/projection suites 22/22. Combined focused/regression total: 42/42.
+- Full unit suite: 218/218. Workflow tests: 2/2. `npm run verify:merge-local`: PASS. Standalone `npm run check:full`: PASS, including typecheck, lint, and production build. `git diff --check`: PASS.
+- Lint: 0 errors, 2 existing unused-variable warnings (`_T`, `offsetAtLine`). Doctor: 0 errors and 1 existing ignored-root `AGENTS.md` warning. Production build emitted existing dynamic-filesystem tracing warnings. `npm audit` reports one critical advisory affecting the installed Next.js 16.3.3 version; this dependency issue is unrelated to the filter defect and was left unchanged.
+- Browser QA used only the disposable synthetic projects. Claims baseline in Alpha: 5 Claims, 4 Claims with authored Evidence targets, 6 valid authored relation links, and 3 canonical Evidence notes. Charts/KPIs remained complete-scope context while table rows reflected filters.
+
+### Filter and navigation results
+
+- Coverage filters: `none` returned 1 Claim, `one` returned 3, `multiple` returned 1, and `linked` returned 4. A Claim with supports and contradicts to one Evidence remained coverage `one`.
+- Relation filters: supports 2; contradicts 1; contextualizes 1; qualifies 2. These filters matched the explicitly authored relation types.
+- Combined relation, coverage, exact file, exact section, and text filters used AND semantics and displayed correct `N of M Claims match` counts. Exact `chapters/results.tex` matched; basename-only `results.tex` did not.
+- Search was case-insensitive and matched Claim ID, Evidence title, Evidence slug, manuscript filename, section, literal passage text, and project label. No semantic/AI search was introduced.
+- Unsupported `claimRelation=proves` and `claimCoverage=excellent` normalized to no filter, with no error, alias, or inferred meaning.
+- File and section option counts stayed based on the full audit scope while filters were active. A valid no-match combination showed `0 of N`, the explicit no-match message, and retained the complete audit context.
+- A shared URL containing all five filter parameters reopened in another tab with identical rows and controls. Browser Back/Forward restored both rows and selected controls.
+- Switching Alpha → Beta → Alpha+Beta → All Projects preserved filters in Claims view and updated scope counts (Alpha 1/5, Beta 1/1, Alpha+Beta 2/6, All 108/112 for the active test filters).
+- On Beta, preserved absent file and section values remained visible with `0 in current scope`; they did not silently reset. Each active-filter chip removed only its own filter. Clear all retained project scope and Claims view.
+- Switching Overview, Analytics, Timeline, and Versions removed Claim-only parameters; returning to Claims did not resurrect stale filters.
+- Relation-tag drill-down set the selected authored relation and preserved other active filters. Tag styling remained pill-shaped.
+- All-unavailable Gamma showed the unavailable explanation without factual zero KPI cards or false filter results. Available Empty showed a measured 0-Claim audit.
+- The 105-Claim fixture returned all 105 service Claims to the filter, and the UI showed 105/105 matches with only the first 80 rows rendered and an accurate disclosure.
+- Static lazy-loading tests passed: filter query changes reuse the already-built audit and do not trigger a second manuscript Claim scan.
+
+### Responsive, source-integrity, and regression results
+
+- Actual viewport matrix: 390×844, 768×1024, 1024×768, and 1280×800. Filter grid columns were 1, 2, 3, and 6 respectively. At every size document `scrollWidth` equaled `clientWidth`; the narrow Claim table used internal horizontal scrolling. Five Insights tabs and controls remained reachable.
+- Long file, section, and search values remained contained; active chips wrapped and the page did not widen.
+- Touch/coarse-pointer runtime emulation was unavailable. Source CSS specifies 44px minimum targets for coarse-pointer filter controls, buttons, and chips; this is a source-level check only.
+- Unsaved manuscript edits did not change the Claims audit. Saving a synthetic Claim↔Evidence edit changed the audit; restoring the source returned the original SHA-256 and counts.
+- Claims filtering exposed no write, auto-link, relation inference, score adjustment, or AI recommendation action. Overview, Analytics, Timeline, and Versions smoke checks passed.
+- A concrete browser defect was fixed: browser history and relation-tag client navigation updated the URL/rows while leaving filter controls stale. The controls now resynchronize from URL state on history events and filter-prop changes. Regression tests cover history synchronization and URL drill-down preservation.
+- A fresh post-fix browser tab reported no console errors or warnings. The earlier disabled Codex manuscript-act 503 occurred only during the separate saved-source IDE check with Codex disabled; it is expected and unrelated.
+- Build-generated `next-env.d.ts` and `tsconfig.json` changes were restored. No synthetic QA fixtures remain.
+- Merge readiness: application code passed requested local gates; push this checkpoint only to `feature/claim-evidence-audit-filters`. Nothing was merged to `main`.
