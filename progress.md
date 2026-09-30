@@ -1102,3 +1102,37 @@ Branch: `feature/claim-evidence-relations`; push target only. No merge to `main`
 - `GIT_CONFIG_GLOBAL=/dev/null npm run check:full`: PASS, 198/198 unit tests, typecheck, lint, and production build. Lint had 0 errors and 2 existing warnings (`_T`, `offsetAtLine`); build emitted 22 existing Turbopack dynamic-filesystem tracing warnings. Doctor retains the ignored root `AGENTS.md` warning.
 - `git diff --check`: PASS. Build-generated changes to `next-env.d.ts` and `tsconfig.json` were restored.
 - **Merge-ready: yes.** All requested responsive browser checks passed; push only to `feature/claim-evidence-relations`. Nothing was merged to `main`.
+
+## 2026-09-30 Claim↔Evidence audit analytics checkpoint
+
+Repository: `https://github.com/anatwork14/research-observer`
+
+Branch: `feature/claim-evidence-audit`; push target only. No merge to `main`.
+
+- Starting SHA: `146d4fb510216a923640dfa8c4d6228c43b67484`. `origin/main` was `b7e3c3f50b74f4737a20640083b43e789372a196`; branch was 20 commits ahead and 0 behind. Verified implementation SHA: `99cdb9e54b7b315f12693fdb167014ff297a3171`. This entry is a docs-only checkpoint after that tested implementation commit.
+- Runtime/install: Node `v22.23.3`, npm `10.9.9`; `npm ci` passed with 513 packages and 0 vulnerabilities. No real research was edited. Six disposable QA projects and manuscript roots were removed after the browser/service checks.
+- Focused tests: Claim audit 4/4; Claims loading/layout/bounds 6/6; related Claim↔Evidence semantics 25/25 across relations 4, collision 1, projection 6, anchors 6, Claim projection 5, and evolution Claims 3. Total focused checks: 35/35.
+- Repository gates: `GIT_CONFIG_GLOBAL=/dev/null npm run verify:merge-local` passed with 208/208 unit tests and 2/2 workflow tests. Standalone `check:full` passed with 208/208 tests, typecheck, lint, and production build. Lint had 0 errors and 2 existing unused-variable warnings (`_T`, `offsetAtLine`); Doctor retained the ignored root `AGENTS.md` warning; Turbopack emitted 22 existing dynamic-filesystem tracing warnings. `git diff --check` passed. Generated `next-env.d.ts` and `tsconfig.json` edits were restored.
+
+### Synthetic audit results
+
+- Alpha had 4 explicit Claims, 3 with authored Evidence, 1 without an authored Evidence link, 6 valid authored semantic links, 2 linked canonical Evidence objects, and 6 audit issues. Coverage was 0 targets: 1 Claim, 1 target: 2 Claims, 2+ targets: 1 Claim.
+- Alpha relation mix: supports 3, contradicts 1, contextualizes 1, qualifies 1. Claim signals overlapped factually: supports 3 Claims, contradicts 1, both supports and contradicts 1, contextualizes 1, qualifies 1. The mixed Claim had one distinct Evidence target despite two relationship types. `evidence-a` reached 3 distinct Claims across 5 authored links.
+- The valid unlinked Alpha Evidence appeared under `No authored Claim link`; it was not marked erroneous, bad, irrelevant, or weak. Missing Evidence, wrong-type Literature, unresolved Claim, and duplicate directives appeared as issues and did not inflate valid coverage. Duplicate exact directives remained one valid derived edge with duplicate issue rows.
+- The prose-only Claim cited `someKey` and used supportive wording but remained at 0 authored Evidence targets and created no Claim↔Evidence semantic link.
+- Beta's same `claim-one` ID remained project-isolated: Beta-only scope showed 1 Claim, 1 contextualizes link, and its own canonical Evidence. Alpha+Beta aggregated to 5 Claims, 7 authored links, 4 Claims with Evidence, 1 without, 3 linked Evidence objects, with Alpha's single unlinked Evidence and 6 Alpha issues. Toggling projects kept the Claims tab active and updated counts.
+- Gamma had canonical Evidence and a hidden `.tex` source, so it was reported Unavailable and contributed no factual zero counts. In Gamma-only scope there were no audit KPI cards or coverage charts, and the Open Provenance link and canonical Evidence route worked. An Empty project with a visible `.tex` file and no Claims was available and correctly showed 0 Claims.
+- The 105-Claim fixture returned all 105 Claims from the service, with 105 valid links, 58 canonical Evidence objects, 45 unlinked Evidence, 45 issues, and 13 linked Evidence-reach series. The UI rendered 80 Claim rows, 40 unlinked Evidence rows, 40 issue rows, and 12 bars with explicit `Showing N of M` disclosure for each truncated list/chart.
+- Claim links opened `/ide?research=alpha-audit-qa&file=main.tex&line=3`; Evidence links opened `/progress/evidence-a` with the canonical note title. The audit surface rendered no buttons or automatic-link/inference actions.
+
+### Source boundaries, existing views, and browser checks
+
+- In the 390px plain IDE, inserting a directive enabled Save but left the on-disk source and separate Claims audit unchanged. Saving changed the audit from 6 to 7 links and from 3 to 4 Claims with Evidence; the original synthetic source was restored.
+- Hiding Alpha's source removed its live audit and showed Unavailable; the source SHA-256 stayed unchanged. Restore returned the original counts. Editing one saved `supports` directive to `qualifies` changed those relation counts from 3/1 to 2/2; restoring the source returned them to 3/1.
+- Static lazy-loading regression passed. `/insights`, Analytics, Timeline, and Versions loaded successfully without Claim audit KPIs for the unavailable Gamma scope. Claims loaded the audit. Existing overview, analytics, timeline, and versions content and project scope controls rendered.
+- Browser viewport matrix: 390×844, 768×1024, 1024×768, and 1280×800. Every Claims page reported document `scrollWidth/clientWidth` equal to viewport width. At 390 and 768, the Claim table scrolled within its own container (820px table content); 1024 and desktop table content fit. Five tabs were visible: two-column layout at 390px and five columns at tablet/desktop widths. Alpha/Beta/Gamma coverage rows remained visible, including a distinct Gamma Unavailable badge.
+- Long valid Claim/Evidence IDs and issue details wrapped at 390px; document width remained 390px, relation tags remained visible, and scrolling the table exposed the source and line column. Long Evidence titles stayed within their chips.
+- Local browser DOM-ready timings were about 376–424 ms for the existing views on Gamma and 712 ms for the 105-Claim view, which rendered 80 bounded rows. These are local development smoke timings, not production performance claims.
+- Browser console, page errors, and failed-request collection across responsive Claims pages and existing Insights tabs returned no entries. The unsupported-score check found no composite score; explanatory copy explicitly says authored coverage is not a quality score.
+- Defects fixed: Claim audit grid intrinsic sizing widened the document to 866px at 390 and 876px at 768 before the fix; constrained the grid and its children so the table now scrolls internally. Evidence-reach previously truncated 13 series to 12 without disclosure; added a `Showing 12 of 13` notice and regression coverage. No relationship vocabulary or inference behavior changed.
+- **Merge-ready: yes for this checkpoint.** Feature branch only; `main` was not merged or modified by this task. Existing lint/Doctor/Turbopack warnings above are non-blocking.
