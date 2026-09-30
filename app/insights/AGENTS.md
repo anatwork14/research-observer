@@ -27,10 +27,22 @@ The Claims view is additive. Do not make Overview, Analytics, Timeline, or Versi
 - Projects whose manuscript Claim projection is unavailable must be labeled unavailable rather than displayed as factual zero Claims.
 - Keep project scope aligned with the existing `/insights?research=...` controls.
 
+## Claim drill-down filters
+
+- Claim filters are read-only views over the complete audit result; they do not mutate manuscript source or canonical research state.
+- Keep filter state URL-backed with `claimRelation`, `claimCoverage`, `claimFile`, `claimSection`, and `claimQ` so drill-downs are reproducible/shareable.
+- Normalize unsupported query values to no filter. Never reinterpret an unknown relation or coverage token.
+- Relation filters use only the existing authored vocabulary. Coverage filters operate on distinct canonical Evidence-target count, not relationship-edge count.
+- File/section filters use exact saved manuscript metadata. Text search may match literal Claim/Evidence/source context only.
+- Complete-scope KPI/chart totals stay visibly separate from filtered Claim-row counts. A filtered `12 of 105` result must not overwrite or masquerade as a new total of 12 Claims.
+- Project-scope changes while remaining on Claims preserve Claim filters. Switching to a non-Claims Insights view drops Claim-only parameters.
+- Do not add automatic relationship writes, AI recommendations, auto-fix actions, or score changes as a side effect of filtering.
+
 ## Navigation
 
 - Claim rows may link back to the existing guarded IDE Claim location.
 - Evidence rows/targets may link to canonical `/progress/<slug>` routes.
+- Relation tags may link into the same URL-backed Claim drill-down for that exact authored relation.
 - Do not add write actions to the audit surface. Editing relationships remains an explicit manuscript-authoring action.
 
 ## Bounds and responsive behavior
@@ -39,8 +51,12 @@ The underlying audit may remain complete while rendered lists are bounded. Keep 
 
 Wide tables/charts may scroll inside their own containers but must not create document-level horizontal overflow.
 
-Verify the Claims view at narrow mobile, tablet portrait/landscape, and desktop widths. Project scope controls, charts, Claim rows, Evidence rows, issue rows, and unavailable-project notices must remain reachable and readable.
+Filter controls must remain reachable at narrow mobile and tablet widths. Prefer responsive grid collapse over document-level horizontal scrolling for the filter form itself.
+
+Verify the Claims view at narrow mobile, tablet portrait/landscape, and desktop widths. Project scope controls, filters, charts, Claim rows, Evidence rows, issue rows, and unavailable-project notices must remain reachable and readable.
 
 ## Performance
 
 Only `view=claims` may invoke the manuscript Claim audit loader. Preserve the lazy-loading boundary with regression coverage.
+
+Filtering should operate on the already-built audit result. Do not trigger a second manuscript scan solely because a Claim filter changed.
