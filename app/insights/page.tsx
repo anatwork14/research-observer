@@ -15,6 +15,10 @@ import { ResearchTimeline } from "@/components/ResearchTimeline";
 import { ResearchVersionExplorer } from "@/components/ResearchVersionExplorer";
 import { buildResearchAnalytics } from "@/lib/research/analytics.mjs";
 import { loadClaimEvidenceAudit } from "@/lib/research/claim-evidence-audit.mjs";
+import {
+  normalizeClaimEvidenceAuditFilters,
+  type NormalizedClaimEvidenceAuditFilters,
+} from "@/lib/research/claim-evidence-audit-filters.mjs";
 import { getResearchWorkspace } from "@/lib/progress";
 import styles from "./InsightsPage.module.css";
 
@@ -31,12 +35,25 @@ function projectSelection(value: string | string[] | undefined) {
   return raw ? raw.split(",").map((item) => item.trim()).filter(Boolean) : [];
 }
 
-function scopeHref(view: View, ids: string[], base?: string, compare?: string) {
+function scopeHref(
+  view: View,
+  ids: string[],
+  base?: string,
+  compare?: string,
+  claimFilters?: NormalizedClaimEvidenceAuditFilters,
+) {
   const params = new URLSearchParams();
   if (view !== "overview") params.set("view", view);
   if (ids.length) params.set("research", ids.join(","));
   if (view === "versions" && base) params.set("base", base);
   if (view === "versions" && compare) params.set("compare", compare);
+  if (view === "claims" && claimFilters) {
+    if (claimFilters.relation) params.set("claimRelation", claimFilters.relation);
+    if (claimFilters.coverage) params.set("claimCoverage", claimFilters.coverage);
+    if (claimFilters.file) params.set("claimFile", claimFilters.file);
+    if (claimFilters.section) params.set("claimSection", claimFilters.section);
+    if (claimFilters.query) params.set("claimQ", claimFilters.query);
+  }
   const query = params.toString();
   return `/insights${query ? `?${query}` : ""}`;
 }
@@ -55,6 +72,13 @@ export default async function InsightsPage({
   const requested = projectSelection(params.research);
   const rawView = one(params.view);
   const view: View = rawView === "analytics" || rawView === "claims" || rawView === "timeline" || rawView === "versions" ? rawView : "overview";
+  const claimFilters = normalizeClaimEvidenceAuditFilters({
+    relation: one(params.claimRelation),
+    coverage: one(params.claimCoverage),
+    file: one(params.claimFile),
+    section: one(params.claimSection),
+    query: one(params.claimQ),
+  });
   const analytics = buildResearchAnalytics(workspace, requested);
   const claimAudit = view === "claims"
     ? await loadClaimEvidenceAudit({ workspace, researchIds: analytics.researchIds })
@@ -65,6 +89,7 @@ export default async function InsightsPage({
   const selected = new Set(analytics.researchIds);
   const base = one(params.base);
   const compare = one(params.compare);
+  const claimResearchScope = explicitlyScoped ? analytics.researchIds : [];
 
   function toggled(projectId: string) {
     if (!explicitlyScoped) return [projectId];
@@ -101,7 +126,18 @@ export default async function InsightsPage({
               ["timeline", "Timeline"],
               ["versions", "Versions"],
             ] as Array<[View, string]>).map(([key, label]) => (
-              <Link key={key} href={scopeHref(key, explicitlyScoped ? analytics.researchIds : [], base, compare)} className={view === key ? "active" : undefined} aria-current={view === key ? "page" : undefined}>
+              <Link
+                key={key}
+                href={scopeHref(
+                  key,
+                  explicitlyScoped ? analytics.researchIds : [],
+                  base,
+                  compare,
+                  key === "claims" ? claimFilters : undefined,
+                )}
+                className={view === key ? "active" : undefined}
+                aria-current={view === key ? "page" : undefined}
+              >
                 {label}
               </Link>
             ))}
@@ -109,11 +145,11 @@ export default async function InsightsPage({
 
           <div className="research-scope" aria-label="Research project scope">
             <span>Scope</span>
-            <Link href={scopeHref(view, [], base, compare)} className={!explicitlyScoped ? "active" : undefined}>All projects</Link>
+            <Link href={scopeHref(view, [], base, compare, view === "claims" ? claimFilters : undefined)} className={!explicitlyScoped ? "active" : undefined}>All projects</Link>
             {availableProjects.map((project) => (
               <Link
                 key={project.id}
-                href={scopeHref(view, toggled(project.id), base, compare)}
+                href={scopeHref(view, toggled(project.id), base, compare, view === "claims" ? claimFilters : undefined)}
                 className={explicitlyScoped && selected.has(project.id) ? "active" : undefined}
                 title={project.description}
               >
@@ -202,7 +238,9 @@ export default async function InsightsPage({
           </section>
         )}
 
-        {view === "claims" && claimAudit && <ClaimEvidenceAuditView audit={claimAudit} />}
+        {view === "claims" && claimAudit && (
+          <ClaimEvidenceAuditView audit={claimAudit} filters={claimFilters} researchScope={claimResearchScope} />
+        )}
 
         {view === "timeline" && (
           <section className="intelligence-timeline">
