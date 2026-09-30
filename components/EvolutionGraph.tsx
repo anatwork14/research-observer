@@ -38,7 +38,7 @@ type EvolutionEdge = {
   source: string;
   target: string;
   type: string;
-  layer: "semantic" | "reference" | "source" | "version" | "citation" | "claim";
+  layer: "semantic" | "reference" | "source" | "version" | "citation" | "claim" | "claim-evidence";
   explicit: boolean;
 };
 
@@ -63,7 +63,8 @@ const LANE_LABELS: Record<string, string> = {
 };
 const LAYER_LABELS: Record<EvolutionEdge["layer"], string> = {
   source: "Source provenance",
-  semantic: "Semantic",
+  semantic: "Research semantics",
+  "claim-evidence": "Claim ↔ evidence",
   version: "Versions & revisions",
   citation: "Citations",
   claim: "Explicit claims",
@@ -112,7 +113,7 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState("");
   const [layers, setLayers] = useState<Set<EvolutionEdge["layer"]>>(
-    new Set(["source", "semantic", "version", "citation", "claim"]),
+    new Set(["source", "semantic", "claim-evidence", "version", "citation", "claim"]),
   );
 
   const nodeById = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
@@ -249,7 +250,7 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
       <div className={styles.toolbar}>
         <div>
           <span className={styles.kicker}>Provenance graph</span>
-          <strong>Trace research into cited passages, explicit claims, and committed revisions</strong>
+          <strong>Trace sources, citations, authored claim semantics, and committed revisions</strong>
           <small className={styles.scopeNote} aria-live="polite">
             {selected
               ? `${connected.size} nodes in selected trace · ${visibleEdges.length} visible edges`
@@ -391,7 +392,7 @@ export function EvolutionGraph({ nodes, edges }: { nodes: EvolutionNode[]; edges
             )}
           </>
         ) : (
-          <p className={styles.empty}>Select a node to trace its source, semantic, citation, passage, explicit-claim, manuscript, and revision path.</p>
+          <p className={styles.empty}>Select a node to trace source, citation, explicit Claim, authored Claim↔Evidence, manuscript, and revision paths.</p>
         )}
       </aside>
     </section>
