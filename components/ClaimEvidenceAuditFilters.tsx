@@ -31,6 +31,14 @@ export function claimAuditFilterHref(
   return `/insights?${params.toString()}`;
 }
 
+function preserveSelectedOption(
+  options: Array<{ value: string; count: number }>,
+  selected: string,
+) {
+  if (!selected || options.some((item) => item.value === selected)) return options;
+  return [{ value: selected, count: 0 }, ...options];
+}
+
 export function ClaimEvidenceAuditFilters({
   filters,
   options,
@@ -53,6 +61,8 @@ export function ClaimEvidenceAuditFilters({
     section: "",
     query: "",
   };
+  const fileOptions = preserveSelectedOption(options.files, filters.file);
+  const sectionOptions = preserveSelectedOption(options.sections, filters.section);
   const active = [
     filters.relation && { key: "relation", label: `Relation: ${filters.relation}`, patch: { relation: "" } },
     filters.coverage && { key: "coverage", label: `Coverage: ${COVERAGE.find(([value]) => value === filters.coverage)?.[1] || filters.coverage}`, patch: { coverage: "" } },
@@ -98,7 +108,11 @@ export function ClaimEvidenceAuditFilters({
           <span>File</span>
           <select name="claimFile" defaultValue={filters.file}>
             <option value="">Any manuscript file</option>
-            {options.files.map((item) => <option value={item.value} key={item.value}>{item.value} ({item.count})</option>)}
+            {fileOptions.map((item) => (
+              <option value={item.value} key={item.value}>
+                {item.value} ({item.count}{item.count === 0 && item.value === filters.file ? " in current scope" : ""})
+              </option>
+            ))}
           </select>
         </label>
 
@@ -106,7 +120,11 @@ export function ClaimEvidenceAuditFilters({
           <span>Section</span>
           <select name="claimSection" defaultValue={filters.section}>
             <option value="">Any section</option>
-            {options.sections.map((item) => <option value={item.value} key={item.value}>{item.value} ({item.count})</option>)}
+            {sectionOptions.map((item) => (
+              <option value={item.value} key={item.value}>
+                {item.value} ({item.count}{item.count === 0 && item.value === filters.section ? " in current scope" : ""})
+              </option>
+            ))}
           </select>
         </label>
 
