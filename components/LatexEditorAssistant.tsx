@@ -6,6 +6,7 @@ import {
   insertLatexEnvironment,
   insertLatexSection,
   insertObservaireClaimAnchor,
+  insertObservaireClaimEvidenceRelation,
   latexEditorCommands,
   toggleLatexLineComments,
   wrapLatexSelection,
@@ -143,6 +144,7 @@ export function LatexEditorAssistant() {
       const selection = editor.selection();
       if (id === "toggle-comment") transform = toggleLatexLineComments(value, selection.start, selection.end);
       else if (id === "claim-anchor") transform = insertObservaireClaimAnchor(value, selection.start);
+      else if (id === "claim-evidence") transform = insertObservaireClaimEvidenceRelation(value, selection.start, selection.end);
       else if (id === "bold") transform = wrapLatexSelection(value, selection.start, selection.end, "textbf");
       else if (id === "italic") transform = wrapLatexSelection(value, selection.start, selection.end, "textit");
       else if (id === "emphasis") transform = wrapLatexSelection(value, selection.start, selection.end, "emph");
