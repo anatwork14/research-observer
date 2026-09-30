@@ -135,6 +135,54 @@ The audit inherits the Claim projection's saved-source boundary:
 - restoring a hidden source returns its Claims/relationships;
 - there is no stale hand-maintained coverage record.
 
+## Drill-down filters
+
+Claim drill-down filters are a **view over the complete audit result**. They do not change the underlying KPI/chart totals and do not mutate manuscript source.
+
+Current URL-backed filters are:
+
+```text
+claimRelation
+claimCoverage
+claimFile
+claimSection
+claimQ
+```
+
+Supported relation filters remain the exact authored vocabulary:
+
+```text
+supports
+contradicts
+contextualizes
+qualifies
+```
+
+Coverage filters are structural counts of **distinct canonical Evidence targets**:
+
+```text
+none      → 0 Evidence targets
+one       → exactly 1 Evidence target
+multiple  → 2+ Evidence targets
+linked    → any authored Evidence link
+```
+
+File and section filters use exact saved manuscript metadata. Text search may match Claim ID, project label, manuscript file, section, literal bounded Claim excerpt, canonical Evidence slug, or Evidence title.
+
+Filter state is encoded in the URL so a drill-down can be shared or reproduced. Project-scope changes while staying on the Claims view preserve active Claim filters. Switching to a non-Claims Insights view must drop Claim-only filter parameters.
+
+A filtered result count must always remain visibly distinct from complete audit totals. Example:
+
+```text
+12 of 105 Claims match 2 active filters
+```
+
+must not replace the complete-scope `105 Claims` KPI.
+
+The first drill-down checkpoint filters only the Claim audit rows. Complete-scope charts above remain contextual reference and must say so in the UI.
+
+Filtering is read-only. Do not add hidden write actions, auto-linking, AI recommendations, or relationship mutations to the filter workflow.
+
 ## Performance
 
 The Claims view may scan selected manuscript projects because it explicitly requests manuscript analytics.
@@ -184,14 +232,20 @@ Focused service tests should verify at minimum:
 - prose/citations alone do not create coverage;
 - unavailable manuscript projects are labeled unavailable rather than zero;
 - multi-project isolation;
-- project scope changes the audit consistently.
+- project scope changes the audit consistently;
+- relation/coverage/file/section/text filters compose deterministically;
+- unsupported query values normalize to no filter;
+- filtered match counts remain separate from complete audit totals.
 
 Browser verification should confirm:
 
 - `/insights?view=claims` loads the audit;
 - other Insights tabs do not trigger manuscript Claim scanning;
 - project-scope controls update Claim analytics;
+- active Claim filters survive project-scope changes while staying on Claims;
+- switching away from Claims drops Claim-only filter parameters;
 - Claim/Evidence links navigate to the expected canonical surfaces;
 - large lists remain bounded and usable;
 - mobile/tablet layouts have no document-level horizontal overflow;
-- unavailable projects are clearly separated from factual zero counts.
+- unavailable projects are clearly separated from factual zero counts;
+- filter controls remain reachable and usable at mobile/tablet widths.
