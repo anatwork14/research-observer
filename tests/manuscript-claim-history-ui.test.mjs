@@ -54,6 +54,7 @@ test("Claim history chronology follows Git revision order rather than authored t
 
 test("historical Evidence comparison validates only selected loaded snapshots and separates historical from current canonical state", async () => {
   const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
+  const resolver = await fs.readFile(path.join(root, "lib/research/historical-research-evidence.mjs"), "utf8");
   assert.match(component, /const base = snapshots\.find\(\(snapshot\) => snapshot\.commit === baseCommit\) \|\| previous/);
   assert.match(component, /const compare = snapshots\.find\(\(snapshot\) => snapshot\.commit === compareCommit\) \|\| latest/);
   assert.match(component, /const validationCommits = \[\.\.\.new Set\(\[base, compare\]/);
@@ -70,6 +71,14 @@ test("historical Evidence comparison validates only selected loaded snapshots an
   assert.match(component, /resolution\.status === "valid" && link\.currentCanonical/);
   assert.match(component, /current canonical exists today/);
   assert.match(component, /not current canonical today/);
+  assert.match(component, /Historical endpoints: \{endpointSummary\(base/);
+  assert.match(component, /Historical endpoints: \{endpointSummary\(compare/);
+  assert.match(component, /const ENDPOINT_STATUS_ORDER/);
+  assert.match(resolver, /const MAX_NOTES = 1000/);
+  assert.match(resolver, /const MAX_NOTE_BYTES = 2 \* 1024 \* 1024/);
+  assert.match(resolver, /const MAX_PARALLEL_READS = 8/);
+  assert.match(resolver, /const MAX_INDEX_CACHE = 12/);
+  assert.match(resolver, /if \(!index\?\.available \|\| !index\?\.complete\)/);
 });
 
 test("Claim history responsive layout collapses compare grids without document-width assumptions", async () => {
