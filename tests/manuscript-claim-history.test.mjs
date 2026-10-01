@@ -163,3 +163,46 @@ test("historical loader reads committed Claim bytes and visibility state, includ
     await fs.rm(root, { recursive: true, force: true });
   }
 });
+
+test("reused manuscript history must match the configured selected-project path", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "observaire-claim-history-path-"));
+  try {
+    const manuscriptRoot = path.join(root, "manuscripts", "default");
+    await fs.mkdir(manuscriptRoot, { recursive: true });
+    await fs.writeFile(path.join(manuscriptRoot, "main.tex"), "\\documentclass{article}\n", "utf8");
+    git(root, "init");
+    git(root, "config", "user.name", "Observaire Test");
+    git(root, "config", "user.email", "observaire@example.invalid");
+    git(root, "add", "manuscripts/default/main.tex");
+    git(root, "commit", "-m", "Initial manuscript");
+    const commit = git(root, "rev-parse", "HEAD");
+
+    await assert.rejects(
+      loadManuscriptClaimEvolution({
+        rootDir: root,
+        projectId: "default",
+        history: {
+          projectId: "default",
+          projectPath: "other/default",
+          revisions: [{
+            commit,
+            shortCommit: commit.slice(0, 10),
+            at: "2026-01-01T00:00:00Z",
+            author: "Test",
+            subject: "Forged history",
+            files: [{ file: "main.tex", added: 1, removed: 0 }],
+            added: 1,
+            removed: 0,
+            stateChanged: false,
+          }],
+          dirtyFiles: [],
+          stateDirty: false,
+          available: true,
+        },
+      }),
+      /does not match the selected project path/,
+    );
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
