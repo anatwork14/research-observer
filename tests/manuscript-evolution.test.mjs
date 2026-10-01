@@ -6,6 +6,7 @@ import { mergeEvolutionLayers } from "../lib/research/evolution-merge.mjs";
 const history = {
   available: true,
   dirtyFiles: ["main.tex"],
+  stateDirty: false,
   revisions: [
     {
       commit: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -42,6 +43,30 @@ test("manuscript revisions become revision nodes, version edges, and timeline ev
   assert.ok(projection.edges.some((edge) => edge.type === "revised_in" && edge.source === "manuscript:default:main.tex"));
   assert.deepEqual(projection.timeline.map((event) => event.kind), ["manuscript", "manuscript"]);
   assert.equal(projection.timeline[1].status, "2 files · +12 −1");
+});
+
+test("visibility-only revisions stay revision events without fake manuscript-file edges", () => {
+  const stateHistory = {
+    available: true,
+    dirtyFiles: [],
+    stateDirty: false,
+    revisions: [{
+      commit: "cccccccccccccccccccccccccccccccccccccccc",
+      shortCommit: "cccccccccc",
+      at: "2026-09-12T12:00:00Z",
+      author: "Researcher",
+      subject: "hide appendix source",
+      files: [],
+      added: 0,
+      removed: 0,
+      stateChanged: true,
+    }],
+  };
+  const projection = buildManuscriptRevisionProjection({ projectId: "default", history: stateHistory });
+  assert.equal(projection.nodes.filter((node) => node.kind === "revision").length, 1);
+  assert.equal(projection.nodes.filter((node) => node.kind === "manuscript").length, 0);
+  assert.equal(projection.edges.length, 0);
+  assert.equal(projection.timeline[0].status, "manuscript visibility state changed");
 });
 
 test("generic evolution merge keeps citation/manuscript nodes and appends revision timeline", () => {
