@@ -96,6 +96,54 @@
 .form button { padding: 0 15px; color: var(--accent-deep); border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); cursor: pointer; }
 .form button:hover { background: var(--accent-wash); }
 
+.matrixPanel {
+  min-width: 0;
+  padding: 18px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.matrixScroll {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  margin-top: 16px;
+  padding-bottom: 3px;
+}
+.matrix {
+  width: max(100%, 760px);
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  font-size: 9px;
+}
+.matrix th,
+.matrix td {
+  min-width: 0;
+  padding: 8px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.matrix thead th { background: color-mix(in srgb, var(--accent-wash) 45%, var(--surface)); }
+.matrix tr > :first-child { width: 170px; border-left: 1px solid var(--line); }
+.matrix thead tr:first-child > * { border-top: 1px solid var(--line); }
+.matrix thead tr:first-child > :first-child { border-top-left-radius: 8px; }
+.matrix thead tr:first-child > :last-child { border-top-right-radius: 8px; }
+.matrix th[scope="row"] { color: var(--ink); background: var(--surface-strong); font: 600 9px/1.4 var(--mono); text-align: left; }
+.matrix th code { display: block; color: var(--accent-deep); font-size: 9px; }
+.matrix th small { display: block; margin-top: 3px; color: var(--muted); font-size: 8px; line-height: 1.3; overflow-wrap: anywhere; }
+.matrix td { display: table-cell; background: var(--surface); }
+.matrix td strong { display: block; color: var(--ink-soft); font-size: 9px; }
+.matrix td span,
+.matrix td small { display: block; margin-top: 3px; color: var(--muted); font-size: 8px; line-height: 1.35; }
+.matrixPresent { background: color-mix(in srgb, var(--accent-wash) 28%, var(--surface)) !important; }
+.matrixChanged { background: color-mix(in srgb, var(--warm) 9%, var(--surface)) !important; }
+.matrixAbsent { background: color-mix(in srgb, var(--surface) 76%, transparent) !important; }
+.matrixAbsent strong,
+.matrixAbsent span { color: var(--muted) !important; }
+
 .grid {
   display: grid;
   grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
@@ -140,7 +188,7 @@
 .revisionPair span { color: var(--muted); font: 9px var(--mono); text-transform: uppercase; }
 .revisionPair code { color: var(--accent-deep); font-size: 10px; }
 .revisionPair strong { font-size: 11px; overflow-wrap: anywhere; }
-.revisionPair small { color: var(--muted); font-size: 9px; line-height: 1.5; }
+.revisionPair small { color: var(--muted); font-size: 9px; line-height: 1.5; overflow-wrap: anywhere; }
 
 .claimComparisons { display: grid; gap: 11px; margin-top: 12px; }
 .claimCompare { min-width: 0; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
@@ -190,7 +238,8 @@
   .summary { grid-template-columns: 1fr 1fr; }
   .timelinePanel,
   .comparePanel,
-  .controls { padding: 13px; }
+  .controls,
+  .matrixPanel { padding: 13px; }
   .claimCompare > header { align-items: flex-start; flex-direction: column; }
   .claimCompare > header span { text-align: left; }
 }
