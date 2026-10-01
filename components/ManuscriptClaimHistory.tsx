@@ -407,7 +407,9 @@ export async function ManuscriptClaimHistory({
                       <div key={`${event.type}:${event.claimId}:${event.evidenceSlug || ""}:${index}`}>
                         <span>{EVENT_LABELS[event.type]}</span>
                         <Link className={event.claimId === selectedClaim ? styles.matrixActiveLink : styles.matrixLink} href={historyHref({ projectId, baseCommit: base?.commit, compareCommit: compare?.commit, claimId: event.claimId, evidenceSlug: selectedEvidence })}>{event.claimId}</Link>
-                        {eventDetail(event) && <small>{eventDetail(event)}</small>}
+                        {eventDetail(event) && (event.evidenceSlug ? (
+                          <Link className={event.evidenceSlug === selectedEvidence ? styles.eventEvidenceActiveLink : styles.eventEvidenceLink} href={historyHref({ projectId, baseCommit: base?.commit, compareCommit: compare?.commit, claimId: selectedClaim, evidenceSlug: event.evidenceSlug })}>{eventDetail(event)}</Link>
+                        ) : <small>{eventDetail(event)}</small>)}
                       </div>
                     ))}
                     {events.length > 10 && <small className={styles.more}>Showing 10 of {events.length} events for this revision transition.</small>}
