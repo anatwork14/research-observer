@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { EvolutionGraph } from "@/components/EvolutionGraph";
+import { ManuscriptClaimHistory } from "@/components/ManuscriptClaimHistory";
 import { ResearchEvolutionTimeline } from "@/components/ResearchEvolutionTimeline";
 import { ResearchGraph } from "@/components/ResearchGraph";
 import { ResearchVersionCompare } from "@/components/ResearchVersionCompare";
@@ -11,6 +12,10 @@ import {
   loadManuscriptCitationProjection,
   type ManuscriptCitationProjection,
 } from "@/lib/research/evolution.mjs";
+import {
+  loadManuscriptClaimEvolution,
+  type ManuscriptClaimEvolution,
+} from "@/lib/research/manuscript-claim-history.mjs";
 import {
   loadManuscriptClaimProjection,
   type ManuscriptClaimProjection,
@@ -31,7 +36,14 @@ function graphHref({ research, view, relation }: { research: string; view: Graph
 export default async function GraphPage({
   searchParams,
 }: {
-  searchParams: Promise<{ relation?: string; research?: string; view?: string }>;
+  searchParams: Promise<{
+    relation?: string;
+    research?: string;
+    view?: string;
+    claimBase?: string;
+    claimCompare?: string;
+    claimHistory?: string;
+  }>;
 }) {
   const workspace = await getResearchWorkspace();
   const filters = await searchParams;
@@ -88,6 +100,14 @@ export default async function GraphPage({
       relationUnresolved: 0,
     },
   };
+  let claimHistory: ManuscriptClaimEvolution = {
+    projectId,
+    snapshots: [],
+    transitions: [],
+    dirtyFiles: [],
+    available: false,
+    stats: { revisions: 0, transitions: 0, events: 0 },
+  };
   let citationAvailable = view === "research" ? null : false;
   let claimAvailable = view === "provenance" ? false : null;
   let revisions = buildManuscriptRevisionProjection({
@@ -101,7 +121,7 @@ export default async function GraphPage({
       : Promise.resolve<ManuscriptClaimProjection | null>(null);
     const [citationResult, historyResult, claimResult] = await Promise.allSettled([
       loadManuscriptCitationProjection({ projectId }),
-      listManuscriptRevisions({ projectId }),
+      listManuscriptRevisions({ projectId, includeStateChanges: view === "timeline" }),
       claimRequest,
     ]);
     if (citationResult.status === "fulfilled") {
@@ -116,6 +136,17 @@ export default async function GraphPage({
       ? historyResult.value
       : { projectId, projectPath: "", revisions: [], dirtyFiles: [], available: false };
     revisions = buildManuscriptRevisionProjection({ projectId, history: manuscriptHistory });
+    if (view === "timeline" && historyResult.status === "fulfilled") {
+      try {
+        claimHistory = await loadManuscriptClaimEvolution({
+          projectId,
+          researchEntries: workspace.entries,
+          history: manuscriptHistory,
+        });
+      } catch {
+        claimHistory = { projectId, snapshots: [], transitions: [], dirtyFiles: manuscriptHistory.dirtyFiles, available: false, stats: { revisions: 0, transitions: 0, events: 0 } };
+      }
+    }
   }
 
   const manuscriptHistoryAvailable = manuscript.stats.manuscriptFiles > 0 && revisions.available;
@@ -131,7 +162,7 @@ export default async function GraphPage({
             <h1>Trace sources, evidence, citations, explicit manuscript claims, and revisions.</h1>
             <p>
               Keep the force-directed semantic graph for canonical research relationships, switch to provenance to follow source-to-manuscript paths and explicitly authored Claim↔Evidence semantics,
-              or use the timeline to compare dated research, explicit semantic versions, and real committed manuscript revisions. Passage context is literal saved LaTeX structure; Claim nodes and Claim↔Evidence links exist only when the manuscript author writes their explicit Observaire directives.
+              or use the timeline to compare dated research, explicit semantic versions, real committed manuscript revisions, and historical authored Claim/Evidence state. Passage context is literal saved LaTeX structure; Claim nodes and Claim↔Evidence links exist only when the manuscript author writes their explicit Observaire directives.
             </p>
           </div>
           <span className="collection-count">
@@ -228,6 +259,13 @@ export default async function GraphPage({
           <>
             <ResearchEvolutionTimeline nodes={evolution.nodes} timeline={evolution.timeline} lineages={evolution.lineages} />
             <ResearchVersionCompare comparisons={versionComparisons} />
+            <ManuscriptClaimHistory
+              evolution={claimHistory}
+              projectId={projectId}
+              baseCommit={filters.claimBase}
+              compareCommit={filters.claimCompare}
+              claimId={filters.claimHistory}
+            />
           </>
         )}
       </main>
