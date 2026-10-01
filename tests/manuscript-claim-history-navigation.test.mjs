@@ -26,3 +26,13 @@ test("Claim evolution matrix contains horizontal width and keeps the Claim ident
   assert.match(css, /\.matrix thead tr > :first-child\s*\{[^}]*z-index:\s*3/s);
   assert.match(css, /\.matrix tbody tr > :first-child\s*\{[^}]*background:\s*var\(--surface-strong\)/s);
 });
+
+test("side-by-side Claim delta summaries reuse only explicit comparison events", async () => {
+  const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
+  assert.match(component, /function comparisonEventSummary\(events: ManuscriptClaimHistoryEvent\[\]\)/);
+  assert.match(component, /EVENT_ORDER[\s\S]*events\.filter\(\(event\) => event\.type === type\)\.length/);
+  assert.match(component, /const claimEvents = transitionEvents\(comparison\?\.events \|\| \[\], id\)/);
+  assert.match(component, /comparisonEventSummary\(claimEvents\)/);
+  assert.doesNotMatch(component, /comparisonEventSummary\([^)]*excerpt/);
+  assert.doesNotMatch(component, /comparisonEventSummary\([^)]*citation/);
+});
