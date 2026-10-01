@@ -33,6 +33,20 @@ test("Evidence history focus is explicit, exact, URL-backed, and intersects Clai
   assert.doesNotMatch(component, /loadHistoricalResearchEvidenceIndex\(\{ commit:.*selectedEvidence/);
 });
 
+test("history focus chips remove one dimension at a time and preserve Base/Compare", async () => {
+  const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
+  const css = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.module.css"), "utf8");
+  assert.match(component, /aria-label="Active Claim and Evidence history focus"/);
+  assert.match(component, /Claim: \{selectedClaim\} ×/);
+  assert.match(component, /Evidence: \{selectedEvidence\} ×/);
+  assert.match(component, /historyHref\(\{ projectId, baseCommit: base\?\.commit, compareCommit: compare\?\.commit, evidenceSlug: selectedEvidence \}\)/);
+  assert.match(component, /historyHref\(\{ projectId, baseCommit: base\?\.commit, compareCommit: compare\?\.commit, claimId: selectedClaim \}\)/);
+  assert.match(component, /className=\{styles\.clearFocus\} href=\{historyHref\(\{ projectId, baseCommit: base\?\.commit, compareCommit: compare\?\.commit \}\)\}/);
+  assert.match(css, /\.focusBar\s*\{[^}]*flex-wrap:\s*wrap/s);
+  assert.match(css, /\.focusBar a:focus-visible/);
+  assert.match(css, /@media \(pointer: coarse\)[\s\S]*\.focusBar a/);
+});
+
 test("chronology Evidence details provide exact focus links without changing the selected revision pair", async () => {
   const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
   const css = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.module.css"), "utf8");
