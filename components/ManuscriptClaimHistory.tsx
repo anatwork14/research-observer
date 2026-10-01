@@ -12,6 +12,10 @@ import {
   type ManuscriptClaimHistoryLink,
   type ManuscriptClaimHistorySnapshot,
 } from "@/lib/research/manuscript-claim-history.mjs";
+import {
+  MANUSCRIPT_CLAIM_EVIDENCE_RELATIONS,
+  type ManuscriptClaimEvidenceRelationType,
+} from "@/lib/research/manuscript-claim-relations.mjs";
 import styles from "./ManuscriptClaimHistory.module.css";
 
 const EVENT_LABELS: Record<ManuscriptClaimHistoryEvent["type"], string> = {
@@ -172,6 +176,17 @@ function comparisonEventSummary(events: ManuscriptClaimHistoryEvent[]) {
     .join(" · ");
 }
 
+function relationTransitionCount(
+  events: ManuscriptClaimHistoryEvent[],
+  before: ManuscriptClaimEvidenceRelationType,
+  after: ManuscriptClaimEvidenceRelationType,
+) {
+  return events.filter((event) =>
+    event.type === "relation-changed" &&
+    event.beforeRelation === before &&
+    event.afterRelation === after).length;
+}
+
 export async function ManuscriptClaimHistory({
   evolution,
   projectId,
@@ -200,6 +215,7 @@ export async function ManuscriptClaimHistory({
   const compare = snapshots.find((snapshot) => snapshot.commit === compareCommit) || latest;
   const comparison = base && compare ? compareManuscriptClaimSnapshots(base, compare) : null;
   const comparisonEvents = comparison ? transitionEvents(comparison.events, selectedClaim, selectedEvidence) : [];
+  const relationTransitionTotal = comparisonEvents.filter((event) => event.type === "relation-changed").length;
   const evidenceComparisonClaimIds = selectedEvidence && base && compare
     ? [...new Set([
         ...base.links.filter((link) => link.evidenceSlug === selectedEvidence).map((link) => link.claimId),
@@ -445,6 +461,44 @@ export async function ManuscriptClaimHistory({
                 <span>Compare</span><code>{compare.shortCommit}</code><strong>{compare.subject || "Manuscript revision"}</strong><small>{formatDate(compare.at)} · {compare.stats.claims} Claims · {compare.stats.links} authored links</small><small>Historical endpoints: {endpointSummary(compare, historicalIndexes[compare.commit], projectId)}</small>
               </div>
             </div>
+          )}
+
+          {comparison && (
+            <section className={styles.deltaPanel} aria-label="Base to Compare authored change summary">
+              <div className={styles.deltaCounts}>
+                {EVENT_ORDER.map((type) => {
+                  const count = comparisonEvents.filter((event) => event.type === type).length;
+                  return count ? <span key={type}><strong>{count}</strong>{EVENT_LABELS[type]}</span> : null;
+                })}
+                {!comparisonEvents.length && <span><strong>0</strong>matching explicit changes</span>}
+              </div>
+              <div className={styles.relationTransitionBlock}>
+                <div className={styles.relationTransitionHeading}>
+                  <strong>Explicit relation transitions</strong>
+                  <small>{relationTransitionTotal} unambiguous one-to-one change{relationTransitionTotal === 1 ? "" : "s"} in the active comparison focus.</small>
+                </div>
+                {relationTransitionTotal > 0 ? (
+                  <div className={styles.relationTransitionScroll}>
+                    <table className={styles.relationTransitionMatrix}>
+                      <thead>
+                        <tr><th scope="col">Before ↓ / After →</th>{MANUSCRIPT_CLAIM_EVIDENCE_RELATIONS.map((relation) => <th scope="col" key={relation}>{relation}</th>)}</tr>
+                      </thead>
+                      <tbody>
+                        {MANUSCRIPT_CLAIM_EVIDENCE_RELATIONS.map((before) => (
+                          <tr key={before}>
+                            <th scope="row">{before}</th>
+                            {MANUSCRIPT_CLAIM_EVIDENCE_RELATIONS.map((after) => {
+                              const count = relationTransitionCount(comparisonEvents, before, after);
+                              return <td className={count ? styles.relationTransitionHit : undefined} key={`${before}:${after}`}>{count || "—"}</td>;
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : <p className={styles.none}>No unambiguous direct relation transformation matches the active comparison focus.</p>}
+              </div>
+            </section>
           )}
 
           {base && compare && compareClaimIds.length > 0 && (
