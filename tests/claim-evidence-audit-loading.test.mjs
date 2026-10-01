@@ -59,6 +59,8 @@ test("Claim drilldown filters are URL-backed and preserved across project scope 
   const controls = await fs.readFile(path.join(root, "components/ClaimEvidenceAuditFilters.tsx"), "utf8");
   assert.match(page, /relation:\s*one\(params\.claimRelation\)/);
   assert.match(page, /coverage:\s*one\(params\.claimCoverage\)/);
+  assert.match(page, /signal:\s*one\(params\.claimSignal\)/);
+  assert.match(page, /evidence:\s*one\(params\.claimEvidence\)/);
   assert.match(page, /file:\s*one\(params\.claimFile\)/);
   assert.match(page, /section:\s*one\(params\.claimSection\)/);
   assert.match(page, /query:\s*one\(params\.claimQ\)/);
@@ -66,6 +68,8 @@ test("Claim drilldown filters are URL-backed and preserved across project scope 
   assert.match(page, /key === "claims" \? claimFilters : undefined/);
   assert.match(controls, /<form ref=\{formRef\} className=\{styles\.filterForm\} action="\/insights" method="get">/);
   assert.match(controls, /researchScope\.length > 0 && <input type="hidden" name="research"/);
+  assert.match(controls, /filters\.signal && <input type="hidden" name="claimSignal"/);
+  assert.match(controls, /filters\.evidence && <input type="hidden" name="claimEvidence"/);
   assert.match(controls, /claimAuditFilterHref\(researchScope, filters, clearFilters\)/);
   for (const name of ["claimRelation", "claimCoverage", "claimFile", "claimSection", "claimQ"]) {
     assert.match(controls, new RegExp(`name="${name}"`));
@@ -78,7 +82,7 @@ test("Claim filter controls resync from the URL after browser history navigation
   assert.match(controls, /form\.elements\.namedItem\(name\)/);
   assert.match(controls, /function syncFilterControls\(form: HTMLFormElement \| null, search: string\)/);
   assert.match(controls, /new URLSearchParams\(search\)/);
-  assert.match(controls, /\[filters\.relation, filters\.coverage, filters\.file, filters\.section, filters\.query\]/);
+  assert.match(controls, /\[filters\.relation, filters\.coverage, filters\.signal, filters\.evidence, filters\.file, filters\.section, filters\.query\]/);
   assert.match(controls, /requestAnimationFrame\(syncFromUrl\)/);
   assert.match(controls, /setTimeout\(syncFromUrl, 0\)/);
   assert.match(controls, /addEventListener\("pageshow", scheduleSync\)/);
@@ -102,4 +106,32 @@ test("relation tags link back into the authored-relation drilldown", async () =>
   assert.match(source, /<ClaimEvidenceAuditFilters/);
   assert.match(controls, /Charts above remain complete-scope context/);
   assert.match(css, /\.relationTags a/);
+});
+
+test("Claims charts drill into the same URL-backed filter contract", async () => {
+  const source = await fs.readFile(path.join(root, "components/ClaimEvidenceAudit.tsx"), "utf8");
+  const charts = await fs.readFile(path.join(root, "components/ClaimEvidenceAuditCharts.tsx"), "utf8");
+  assert.match(source, /<ClaimCoverageDrilldownChart[^>]*data=\{audit\.coverage\}/);
+  assert.match(source, /<ClaimRelationDrilldownChart[^>]*data=\{audit\.relationMix\}/);
+  assert.match(source, /<ClaimSignalDrilldownChart[^>]*data=\{audit\.claimSignals\}/);
+  assert.match(source, /<ClaimEvidenceReuseDrilldownChart[^>]*data=\{audit\.evidenceReuse\.slice\(0, 12\)\}/);
+  assert.match(charts, /<a href=\{hrefForDatum\(item\)\}/);
+  assert.match(charts, /coverage: item\.key/);
+  assert.match(charts, /relation: item\.key/);
+  assert.match(charts, /signal: "support-contradiction"/);
+  assert.match(charts, /evidence: \(item as EvidenceDatum\)\.slug/);
+  assert.match(charts, /support:\s*"supports"/);
+  assert.match(charts, /contradiction:\s*"contradicts"/);
+  assert.match(charts, /context:\s*"contextualizes"/);
+  assert.match(charts, /qualification:\s*"qualifies"/);
+});
+
+test("chart-only drilldown filters remain removable and survive form submissions", async () => {
+  const controls = await fs.readFile(path.join(root, "components/ClaimEvidenceAuditFilters.tsx"), "utf8");
+  assert.match(controls, /Signal: support \+ contradiction/);
+  assert.match(controls, /Evidence: \$\{filters\.evidence\}/);
+  assert.match(controls, /signal:\s*""/);
+  assert.match(controls, /evidence:\s*""/);
+  assert.match(controls, /name="claimSignal" value=\{filters\.signal\}/);
+  assert.match(controls, /name="claimEvidence" value=\{filters\.evidence\}/);
 });
