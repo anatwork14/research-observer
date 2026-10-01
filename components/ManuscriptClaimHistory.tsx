@@ -93,12 +93,14 @@ export function ManuscriptClaimHistory({
   baseCommit,
   compareCommit,
   claimId = "",
+  stateDirty = false,
 }: {
   evolution: ManuscriptClaimEvolution;
   projectId: string;
   baseCommit?: string;
   compareCommit?: string;
   claimId?: string;
+  stateDirty?: boolean;
 }) {
   const snapshots = evolution.snapshots || [];
   const claimIds = [...new Set(snapshots.flatMap((snapshot) => snapshot.claims.map((claim) => claim.claimId)))].sort();
@@ -114,6 +116,7 @@ export function ManuscriptClaimHistory({
     : changedClaimIds(comparisonEvents).slice(0, 20);
   const uniqueHistoricalClaims = new Set(snapshots.flatMap((snapshot) => snapshot.claims.map((claim) => claim.claimId))).size;
   const dirtyFiles = evolution.dirtyFiles || [];
+  const workingChanges = dirtyFiles.length + (stateDirty ? 1 : 0);
 
   if (!evolution.available) {
     return (
@@ -133,7 +136,7 @@ export function ManuscriptClaimHistory({
           <div><span className="kicker">Manuscript semantics</span><h2>Claim ↔ Evidence revision history</h2></div>
           <p>No committed manuscript revisions containing editable source or committed manuscript visibility-state changes were available.</p>
         </header>
-        {dirtyFiles.length > 0 && <p className={styles.dirty}>Working changes are present in {dirtyFiles.join(", ")}; they are intentionally excluded from committed history.</p>}
+        {workingChanges > 0 && <p className={styles.dirty}>Working state is intentionally excluded from committed history.{dirtyFiles.length ? ` Dirty source: ${dirtyFiles.join(", ")}.` : ""}{stateDirty ? " Manuscript visibility state also differs from the committed revision." : ""}</p>}
       </section>
     );
   }
@@ -155,12 +158,12 @@ export function ManuscriptClaimHistory({
         <article className="panel"><span>Revisions scanned</span><strong>{evolution.stats.revisions}</strong><small>latest committed snapshots, bounded at 40</small></article>
         <article className="panel"><span>Historical Claim IDs</span><strong>{uniqueHistoricalClaims}</strong><small>explicit authored identities</small></article>
         <article className="panel"><span>Authored changes</span><strong>{evolution.stats.events}</strong><small>factual adjacent-revision events</small></article>
-        <article className="panel"><span>Working changes</span><strong>{dirtyFiles.length}</strong><small>excluded from committed history</small></article>
+        <article className="panel"><span>Working changes</span><strong>{workingChanges}</strong><small>{dirtyFiles.length} source file{dirtyFiles.length === 1 ? "" : "s"}{stateDirty ? " · visibility state changed" : ""}</small></article>
       </section>
 
-      {dirtyFiles.length > 0 && (
+      {workingChanges > 0 && (
         <p className={styles.dirty}>
-          Unsaved or uncommitted manuscript state exists in {dirtyFiles.join(", ")}. The history below uses committed Git snapshots only.
+          Working state is excluded from committed history.{dirtyFiles.length ? ` Dirty source: ${dirtyFiles.join(", ")}.` : ""}{stateDirty ? " Manuscript visibility state differs from the latest committed state." : ""}
         </p>
       )}
 
