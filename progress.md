@@ -1221,3 +1221,33 @@ Branch: `fix/next-security-16.3.8`, created from verified feature HEAD. Do not m
 - Remaining security advisories: none reported by full or production-only npm audit.
 - Merge readiness: **YES** for this security/integration checkpoint; all requested gates, browser checks, and audit severity conditions passed. Existing Doctor, lint, build-tracing, and deprecated-ESLint warnings are documented above.
 - Push target is only `fix/next-security-16.3.8`. The verified feature branch remains unchanged; `main` was not merged or modified.
+## 2026-10-01 Claim chart drill-down verification
+
+Repository: `https://github.com/anatwork14/research-observer`
+
+Branch: `feature/claim-evidence-audit-chart-drilldown`; push this branch only. Do not merge to `main`.
+
+- Starting SHA and verified application code SHA: `92051f208332434f4062e552701626f6dc434219`. Base `origin/main`: `b275a063bae93371636c6418a12fe8249dd2a016`. Feature started 13 commits ahead / 0 behind. No implementation defect was confirmed and no application source code changed. This documentation checkpoint is the only intended post-verification edit.
+- Environment: Node v22.23.3, npm 10.9.9, Next.js and `eslint-config-next` 16.3.8. Starting feature worktree was clean. Browser QA used two clearly marked synthetic project fixtures, 85 synthetic Claims, and 14 synthetic Evidence records in project A plus one Evidence record in project B. All four disposable fixture directories were removed after QA.
+- Focused tests: Claim filters 9/9; Claim loading/UI 12/12; existing Claim audit 4/4; semantic relation/projection regressions 22/22. Total focused/regression tests: 47/47.
+- Full suite: 223/223 unit tests and 2/2 workflow tests. Typecheck PASS. Lint PASS with 0 errors and 2 existing unused-variable warnings (`_T`, `offsetAtLine`). Production build PASS with existing dynamic-filesystem tracing warnings. Both `GIT_CONFIG_GLOBAL=/dev/null npm run verify:merge-local` and `GIT_CONFIG_GLOBAL=/dev/null npm run check:full` PASS.
+- `npm audit`: 0 vulnerabilities, including 0 critical. `npm audit --omit=dev`: 0 vulnerabilities, including 0 critical. `git diff --check`: PASS. Doctor after fixture cleanup: 0 errors, 1 existing ignored-root `AGENTS.md` warning; 1 repository note.
+
+### Browser results
+
+- Baseline project A: 85 Claims; coverage counts 1/83/1 for zero/one/multiple Evidence targets; authored relation totals supports 23, contradicts 22, contextualizes 20, qualifies 21; support-plus-contradiction overlap 1; 14 canonical Evidence records linked. The Evidence chart rendered 12 bars with a `12 of 14` disclosure. Baseline rendered 80 of 85 Claims.
+- Coverage drill-downs used the URL-backed `claimCoverage=none|one|multiple` links and Enter activation. Results were 1 (`qa-claim-001`), 83, and 1 (`qa-claim-007`) Claims respectively. A pointer hit on the tiny zero-coverage donut segment was not established with the available browser interaction tooling.
+- Relationship chart navigation returned supports 23, contradicts 22, contextualizes 20, and qualifies 21, with the exact `claimRelation` values. Signal chart ordinary links reused those same relation values; supports and contextualizes links were keyboard activated. The overlap link set only `claimSignal=support-contradiction`, returned the single explicitly dual-linked Claim, and displayed an individually removable `Signal: support + contradiction` chip.
+- Invalid signal values `positive`, `mixed`, and `conflicted` produced no active signal chip or filtering. Exact Evidence drill-downs used canonical slugs; `evidence-alpha` returned 34 and `evidence-alpha-extended` returned 17 without substring crossover. Missing slug returned 0 of 85 without error. Evidence chips were individually removable.
+- Preserved search+relation, file+coverage, section+Evidence, and coverage+relation intersections. Observed counts: search+supports 23; results file+one Evidence target 38; Results section+evidence-alpha 16; one target+supports 22; a Discussion+evidence-alpha zero-result intersection displayed 0 of 85 while retaining the complete chart context.
+- Form submission preserved signal, Evidence, file, section, and search state. Removing only Signal or only Evidence retained the remaining filters. Clear all removed Claim filters and retained Claims view/project scope.
+- Project switching preserved chart and ordinary filters across A+B, B-only, and all-project scopes. In B-only scope, `evidence-alpha` remained visible and returned 0 of 1. Other Insights tabs dropped Claim-only URL filters, and returning to Claims did not restore stale state.
+- Browser Back/Forward restored the URL, active chips, rows, and form controls across baseline → coverage → relation → Evidence states. Full-scope KPI and chart labels/values remained unchanged while rows narrowed. Relation, signal, and Evidence keyboard link activation navigated; donut Enter activation worked. Relationship chart links also worked with pointer activation.
+- Existing generic Analytics rendered its four SVG chart groups. Browser console `error`/`warn` logs were empty on inspected routes. The Claims view exposed ordinary navigation/filter controls only; no chart-driven write or inference action appeared. Static lazy-loading tests passed; they assert filter changes reuse the existing audit rather than rescanning manuscripts.
+- At the available in-app browser viewport (641×750), the document width was observed as 641/641. The browser tool did not expose viewport emulation, so 390×844, 768×1024, 1024×768, and desktop layout/overflow checks remain unverified. Saved-versus-unsaved manuscript isolation and remaining general audit navigation/unavailable-project regressions were not re-run in this pass.
+
+### Delivery assessment
+
+- No defects fixed; no behavior outside the requested chart-driven read-only drill-down scope changed.
+- Remaining warnings are the two existing lint warnings, build tracing warnings, and the ignored-root Doctor warning. Remaining verification gaps: exact viewport matrix, donut pointer activation, and saved-source isolation.
+- Merge readiness: **NO**, pending those unverified browser/source-boundary checks. The branch is verified as based on the secured `main` SHA above; only this feature branch may be pushed. Nothing was merged to `main`.
