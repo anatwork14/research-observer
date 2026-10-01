@@ -135,6 +135,10 @@ function transitionEvents(events: ManuscriptClaimHistoryEvent[], claimId: string
   return claimId ? events.filter((event) => event.claimId === claimId) : events;
 }
 
+function matrixEventSummary(events: ManuscriptClaimHistoryEvent[]) {
+  return [...new Set(events.map((event) => EVENT_LABELS[event.type]))].join(" · ");
+}
+
 export async function ManuscriptClaimHistory({
   evolution,
   projectId,
@@ -165,6 +169,12 @@ export async function ManuscriptClaimHistory({
   const uniqueHistoricalClaims = new Set(snapshots.flatMap((snapshot) => snapshot.claims.map((claim) => claim.claimId))).size;
   const dirtyFiles = evolution.dirtyFiles || [];
   const workingChanges = dirtyFiles.length + (stateDirty ? 1 : 0);
+  const matrixSnapshots = snapshots.slice(-12);
+  const matrixCommits = new Set(matrixSnapshots.map((snapshot) => snapshot.commit));
+  const matrixTransitions = evolution.transitions.filter((transition) => matrixCommits.has(transition.toCommit));
+  const matrixChangedIds = changedClaimIds(matrixTransitions.flatMap((transition) => transition.events));
+  const matrixClaimIds = selectedClaim ? [selectedClaim] : (matrixChangedIds.length ? matrixChangedIds : claimIds).slice(0, 20);
+  const transitionByCommit = new Map(evolution.transitions.map((transition) => [transition.toCommit, transition]));
   const historicalIndexes: Record<string, HistoricalResearchEvidenceIndex | undefined> = {};
   const validationCommits = [...new Set([base, compare]
     .filter((snapshot): snapshot is ManuscriptClaimHistorySnapshot => Boolean(snapshot?.links.length))
@@ -229,7 +239,7 @@ export async function ManuscriptClaimHistory({
       <section className={`${styles.controls} panel`}>
         <div className={styles.controlsHeading}>
           <div><span className="kicker">Revision compare</span><h3>Compare explicit authored state</h3></div>
-          <p>Base → Compare is directional. Claim focus filters the event list and side-by-side inspection without changing the underlying snapshots.</p>
+          <p>Base → Compare is directional. Claim focus filters the event list, matrix, and side-by-side inspection without changing the underlying snapshots.</p>
         </div>
         <form action="/graph" method="get" className={styles.form}>
           <input type="hidden" name="research" value={projectId} />
@@ -255,6 +265,44 @@ export async function ManuscriptClaimHistory({
           </label>
           <button type="submit">Compare revisions</button>
         </form>
+      </section>
+
+      <section className={`${styles.matrixPanel} panel`} aria-label="Claim evolution matrix">
+        <header className={styles.panelHeading}>
+          <div><span className="kicker">Multi-revision view</span><h3>Claim evolution matrix</h3></div>
+          <p>Shows up to 12 recent committed snapshots and 20 changed Claim IDs. Cells report authored presence, authored-link count, and explicit changes entering that revision; no historical research endpoint scan is run for matrix-only revisions.</p>
+        </header>
+        <div className={styles.matrixScroll}>
+          <table className={styles.matrix}>
+            <thead>
+              <tr>
+                <th scope="col">Claim</th>
+                {matrixSnapshots.map((snapshot) => <th scope="col" key={snapshot.commit}><code>{snapshot.shortCommit}</code><small>{snapshot.subject || "Revision"}</small></th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {matrixClaimIds.map((id) => (
+                <tr key={id}>
+                  <th scope="row">{id}</th>
+                  {matrixSnapshots.map((snapshot) => {
+                    const present = Boolean(snapshotClaim(snapshot, id));
+                    const links = snapshotLinks(snapshot, id);
+                    const events = transitionEvents(transitionByCommit.get(snapshot.commit)?.events || [], id);
+                    return (
+                      <td className={events.length ? styles.matrixChanged : present ? styles.matrixPresent : styles.matrixAbsent} key={`${id}:${snapshot.commit}`}>
+                        <strong>{present ? "Present" : "Absent"}</strong>
+                        <span>{present ? `${links.length} authored link${links.length === 1 ? "" : "s"}` : "—"}</span>
+                        <small>{events.length ? matrixEventSummary(events) : "snapshot state"}</small>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {matrixSnapshots.length === 12 && snapshots.length > matrixSnapshots.length && <small className={styles.more}>Showing the latest 12 of {snapshots.length} loaded committed snapshots.</small>}
+        {!selectedClaim && matrixClaimIds.length === 20 && (matrixChangedIds.length || claimIds.length) > matrixClaimIds.length && <small className={styles.more}>Showing 20 Claim IDs. Use Claim focus to inspect another identity across the same revision window.</small>}
       </section>
 
       <section className={styles.grid}>
