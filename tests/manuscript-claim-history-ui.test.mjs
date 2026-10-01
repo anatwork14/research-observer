@@ -44,6 +44,14 @@ test("Claim history UI keeps historical semantics factual, bounded, and working 
   assert.match(service, /currentCanonical: Boolean/);
 });
 
+test("Claim history chronology follows Git revision order rather than authored timestamps", async () => {
+  const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
+  const service = await fs.readFile(path.join(root, "lib/research/manuscript-claim-history.mjs"), "utf8");
+  assert.match(component, /Revision order follows Git history; displayed timestamps are commit metadata and do not reorder snapshots/);
+  assert.match(service, /snapshots: newestFirstSnapshots\.reverse\(\)/);
+  assert.doesNotMatch(service, /snapshots\.slice\(\)\.sort/);
+});
+
 test("historical Evidence display distinguishes authored historical slugs from current canonical Evidence", async () => {
   const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
   assert.match(component, /link\.currentCanonical \? \(/);
