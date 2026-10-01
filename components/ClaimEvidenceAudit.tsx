@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { ClaimEvidenceAuditFilters } from "./ClaimEvidenceAuditFilters";
-import { DonutChart, HorizontalBarChart, InsightCard } from "./ResearchAnalyticsCharts";
+import {
+  ClaimCoverageDrilldownChart,
+  ClaimEvidenceReuseDrilldownChart,
+  ClaimRelationDrilldownChart,
+  ClaimSignalDrilldownChart,
+} from "./ClaimEvidenceAuditCharts";
+import { InsightCard } from "./ResearchAnalyticsCharts";
 import type { ClaimEvidenceAudit } from "@/lib/research/claim-evidence-audit.mjs";
 import {
   claimAuditFilterHref,
@@ -70,26 +76,26 @@ export function ClaimEvidenceAuditView({
             <InsightCard
               eyebrow="Coverage"
               title="Distinct Evidence targets per Claim"
-              description="Counts unique canonical Evidence targets, regardless of how many relationship types connect the same pair."
+              description="Counts unique canonical Evidence targets. Select a segment to drill into the same explicit Claim audit without changing complete-scope totals."
             >
-              <DonutChart data={audit.coverage} ariaLabel="Distinct Evidence targets per explicit Claim" />
+              <ClaimCoverageDrilldownChart data={audit.coverage} researchScope={researchScope} filters={filtered.filters} />
             </InsightCard>
 
             <InsightCard
               eyebrow="Semantics"
               title="Authored relationship mix"
-              description="Every bar is an explicit manuscript directive; no prose or citation inference is included."
+              description="Every bar is an explicit manuscript directive. Select a bar to filter Claims by that exact authored relation."
             >
-              <HorizontalBarChart data={audit.relationMix} ariaLabel="Authored Claim to Evidence relationship types" />
+              <ClaimRelationDrilldownChart data={audit.relationMix} researchScope={researchScope} filters={filtered.filters} />
             </InsightCard>
 
             <InsightCard
               eyebrow="Signals"
               title="Claims touched by each relationship pattern"
-              description="Categories may overlap. The support + contradiction bar counts Claims that explicitly contain both authored relation types."
+              description="Categories may overlap. Select a bar to drill down; support + contradiction uses the explicit overlap signal rather than inference."
               className="wide"
             >
-              <HorizontalBarChart data={audit.claimSignals} ariaLabel="Claims containing explicit authored relation patterns" />
+              <ClaimSignalDrilldownChart data={audit.claimSignals} researchScope={researchScope} filters={filtered.filters} />
             </InsightCard>
 
             <InsightCard
@@ -131,10 +137,10 @@ export function ClaimEvidenceAuditView({
             <InsightCard
               eyebrow="Reuse"
               title="Evidence reach across Claims"
-              description="Number of distinct explicit Claims each canonical Evidence object is related to."
+              description="Number of distinct explicit Claims each canonical Evidence object is related to. Select a bar to drill into that exact Evidence slug."
               className="wide"
             >
-              <HorizontalBarChart data={audit.evidenceReuse.slice(0, 12)} ariaLabel="Distinct Claims per linked Evidence object" />
+              <ClaimEvidenceReuseDrilldownChart data={audit.evidenceReuse.slice(0, 12)} researchScope={researchScope} filters={filtered.filters} />
               {audit.evidenceReuse.length > 12 && (
                 <small className={styles.more}>
                   Showing 12 of {audit.evidenceReuse.length} linked Evidence objects; audit counts include all results.
