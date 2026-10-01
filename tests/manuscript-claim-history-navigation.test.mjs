@@ -133,3 +133,19 @@ test("side-by-side Claim delta summaries reuse only explicit filtered comparison
   assert.doesNotMatch(component, /comparisonEventSummary\([^)]*excerpt/);
   assert.doesNotMatch(component, /comparisonEventSummary\([^)]*citation/);
 });
+
+test("event summary pills and relation labels drill into existing exact filters without inventing transition-pair state", async () => {
+  const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
+  const css = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.module.css"), "utf8");
+  assert.match(component, /styles\.eventFilterActiveLink : styles\.eventFilterLink/);
+  assert.match(component, /historyHref\(\{ \.\.\.hrefState, eventType: type \}\)/);
+  assert.match(component, /styles\.relationFilterActiveLink : styles\.relationFilterLink/);
+  assert.match(component, /historyHref\(\{ \.\.\.hrefState, relationType: relation \}\)/);
+  assert.match(component, /historyHref\(\{ \.\.\.hrefState, relationType: before \}\)/);
+  assert.doesNotMatch(component, /historyTransition/);
+  assert.doesNotMatch(component, /<td[^>]*><Link[^>]*historyHref/);
+  assert.match(css, /\.eventFilterLink:focus-visible/);
+  assert.match(css, /\.relationFilterLink:focus-visible/);
+  assert.match(css, /@media \(pointer: coarse\)[\s\S]*\.eventFilterLink,[\s\S]*\.eventFilterActiveLink/);
+  assert.match(css, /@media \(pointer: coarse\)[\s\S]*\.relationFilterLink,[\s\S]*\.relationFilterActiveLink/);
+});
