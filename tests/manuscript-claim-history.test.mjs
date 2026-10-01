@@ -26,6 +26,7 @@ function snapshot(commit, at, claims = [], links = []) {
     author: "Test",
     subject: commit,
     files: ["main.tex"],
+    stateChanged: false,
     mainFile: "main.tex",
     claims,
     links,
@@ -82,7 +83,7 @@ test("ambiguous multi-relation changes are not invented as one relation transfor
   assert.equal(events.filter((event) => event.type === "relation-added").length, 2);
 });
 
-test("historical loader reads committed Claim bytes and committed hidden state while ignoring dirty working-tree edits", async () => {
+test("historical loader reads committed Claim bytes and visibility state, including state-only revisions, while ignoring dirty edits", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "observaire-claim-history-"));
   try {
     const manuscriptRoot = path.join(root, "manuscripts", "default");
@@ -123,6 +124,10 @@ test("historical loader reads committed Claim bytes and committed hidden state w
     git(root, "add", "manuscripts/default");
     git(root, "commit", "-m", "Revise Claim semantics");
 
+    await fs.writeFile(path.join(manuscriptRoot, ".observaire-ide.json"), JSON.stringify({ schemaVersion: 1, mainFile: "main.tex", hiddenFiles: ["hidden.tex"] }, null, 2) + "\n");
+    git(root, "add", "manuscripts/default/.observaire-ide.json");
+    git(root, "commit", "-m", "Hide historical appendix source");
+
     await fs.appendFile(path.join(manuscriptRoot, "main.tex"), "% observaire:claim dirty-only\nDirty text.\n");
 
     const evolution = await loadManuscriptClaimEvolution({
@@ -132,21 +137,28 @@ test("historical loader reads committed Claim bytes and committed hidden state w
     });
 
     assert.equal(evolution.available, true);
-    assert.equal(evolution.snapshots.length, 2);
+    assert.equal(evolution.snapshots.length, 3);
     assert.deepEqual(evolution.dirtyFiles, ["main.tex"]);
 
-    const [initial, revised] = evolution.snapshots;
+    const [initial, revised, hiddenAgain] = evolution.snapshots;
     assert.deepEqual(initial.claims.map((item) => item.claimId), ["result-a"]);
     assert.deepEqual(revised.claims.map((item) => item.claimId), ["hidden-result", "result-a"]);
-    assert.equal(revised.claims.some((item) => item.claimId === "dirty-only"), false);
+    assert.deepEqual(hiddenAgain.claims.map((item) => item.claimId), ["result-a"]);
+    assert.equal(hiddenAgain.stateChanged, true);
+    assert.equal(hiddenAgain.files.length, 0);
+    assert.equal(hiddenAgain.claims.some((item) => item.claimId === "dirty-only"), false);
     assert.equal(initial.links[0].relation, "supports");
-    assert.equal(revised.links[0].relation, "qualifies");
+    assert.equal(revised.links.find((item) => item.claimId === "result-a")?.relation, "qualifies");
     assert.equal(revised.links[0].currentCanonical, true);
 
-    const transition = evolution.transitions[0];
-    assert.ok(transition.events.some((event) => event.type === "claim-text-changed" && event.claimId === "result-a"));
-    assert.ok(transition.events.some((event) => event.type === "relation-changed" && event.beforeRelation === "supports" && event.afterRelation === "qualifies"));
-    assert.ok(transition.events.some((event) => event.type === "claim-added" && event.claimId === "hidden-result"));
+    const semanticTransition = evolution.transitions[0];
+    assert.ok(semanticTransition.events.some((event) => event.type === "claim-text-changed" && event.claimId === "result-a"));
+    assert.ok(semanticTransition.events.some((event) => event.type === "relation-changed" && event.beforeRelation === "supports" && event.afterRelation === "qualifies"));
+    assert.ok(semanticTransition.events.some((event) => event.type === "claim-added" && event.claimId === "hidden-result"));
+
+    const visibilityTransition = evolution.transitions[1];
+    assert.ok(visibilityTransition.events.some((event) => event.type === "claim-removed" && event.claimId === "hidden-result"));
+    assert.equal(visibilityTransition.events.some((event) => event.claimId === "dirty-only"), false);
   } finally {
     await fs.rm(root, { recursive: true, force: true });
   }
