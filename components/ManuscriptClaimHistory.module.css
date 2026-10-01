@@ -95,6 +95,35 @@
 .form select { width: 100%; padding: 0 28px 0 10px; text-overflow: ellipsis; }
 .form button { grid-column: span 3; padding: 0 15px; color: var(--accent-deep); border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); cursor: pointer; }
 .form button:hover { background: var(--accent-wash); }
+
+.revisionNav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.revisionNav a,
+.revisionNav span {
+  flex: 1 1 150px;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 9px;
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line));
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--surface-strong) 82%, transparent);
+  color: var(--ink-soft);
+  font: 9px/1.35 var(--mono);
+  text-align: center;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.revisionNav a:hover { border-color: var(--accent); background: var(--accent-wash); color: var(--accent-deep); }
+.revisionNav a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.revisionNav [aria-disabled="true"] { opacity: .45; border-style: dashed; background: transparent; color: var(--muted); }
+.revisionNav .swapRevision { border-color: color-mix(in srgb, var(--warm) 42%, var(--line)); color: var(--accent-deep); }
+
 .focusBar {
   display: flex;
   flex-wrap: wrap;
@@ -374,6 +403,8 @@
   .panelHeading > p { max-width: none; }
   .form { grid-template-columns: 1fr; }
   .form button { grid-column: span 1; }
+  .revisionNav a,
+  .revisionNav span { flex-basis: 100%; }
   .revisionPair,
   .claimPair { grid-template-columns: 1fr; }
   .relationTransitionHeading { align-items: flex-start; flex-direction: column; }
@@ -398,6 +429,8 @@
 @media (pointer: coarse) {
   .form select,
   .form button,
+  .revisionNav a,
+  .revisionNav span,
   .focusBar a,
   .linkList a,
   .matrixLink,
