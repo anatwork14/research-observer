@@ -52,12 +52,24 @@ test("Claim history chronology follows Git revision order rather than authored t
   assert.doesNotMatch(service, /snapshots\.slice\(\)\.sort/);
 });
 
-test("historical Evidence display distinguishes authored historical slugs from current canonical Evidence", async () => {
+test("historical Evidence comparison validates only selected loaded snapshots and separates historical from current canonical state", async () => {
   const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
-  assert.match(component, /link\.currentCanonical \? \(/);
-  assert.match(component, /historical authored slug · not current canonical Evidence/);
-  assert.match(component, /<span>\{link\.relation\} · \{link\.evidenceSlug\}<\/span>/);
-  assert.match(component, /\/progress\/\$\{encodeURIComponent\(link\.evidenceSlug\)\}/);
+  assert.match(component, /const base = snapshots\.find\(\(snapshot\) => snapshot\.commit === baseCommit\) \|\| previous/);
+  assert.match(component, /const compare = snapshots\.find\(\(snapshot\) => snapshot\.commit === compareCommit\) \|\| latest/);
+  assert.match(component, /const validationCommits = \[\.\.\.new Set\(\[base, compare\]/);
+  assert.match(component, /loadHistoricalResearchEvidenceIndex\(\{ commit, projectId \}\)/);
+  assert.doesNotMatch(component, /loadHistoricalResearchEvidenceIndex\(\{ commit: baseCommit/);
+  assert.doesNotMatch(component, /loadHistoricalResearchEvidenceIndex\(\{ commit: compareCommit/);
+  assert.match(component, /resolveHistoricalEvidenceSlug\(historicalIndex, link\.evidenceSlug, \{ projectId \}\)/);
+  assert.match(component, /historically valid Evidence · current canonical/);
+  assert.match(component, /historical target missing/);
+  assert.match(component, /historical target ambiguous/);
+  assert.match(component, /historical target belongs to project/);
+  assert.match(component, /historical target type/);
+  assert.match(component, /historical endpoint validation unavailable/);
+  assert.match(component, /resolution\.status === "valid" && link\.currentCanonical/);
+  assert.match(component, /current canonical exists today/);
+  assert.match(component, /not current canonical today/);
 });
 
 test("Claim history responsive layout collapses compare grids without document-width assumptions", async () => {
