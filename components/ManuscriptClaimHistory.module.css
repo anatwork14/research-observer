@@ -127,7 +127,19 @@
   overflow-wrap: anywhere;
 }
 .matrix thead th { background: color-mix(in srgb, var(--accent-wash) 45%, var(--surface)); }
-.matrix tr > :first-child { width: 190px; border-left: 1px solid var(--line); }
+.matrix tr > :first-child {
+  width: 190px;
+  border-left: 1px solid var(--line);
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  box-shadow: 7px 0 12px -12px color-mix(in srgb, var(--ink) 48%, transparent);
+}
+.matrix thead tr > :first-child {
+  z-index: 3;
+  background: color-mix(in srgb, var(--accent-wash) 78%, var(--surface));
+}
+.matrix tbody tr > :first-child { background: var(--surface-strong); }
 .matrix thead tr:first-child > * { border-top: 1px solid var(--line); }
 .matrix thead tr:first-child > :first-child { border-top-left-radius: 8px; }
 .matrix thead tr:first-child > :last-child { border-top-right-radius: 8px; }
