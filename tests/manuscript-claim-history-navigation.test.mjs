@@ -61,6 +61,18 @@ test("chronology Evidence details provide exact focus links without changing the
   assert.match(css, /@media \(max-width: 700px\)[\s\S]*\.eventEvidenceLink,[\s\S]*\.eventEvidenceActiveLink \{ grid-column: 1 \/ -1; \}/);
 });
 
+test("Base and Compare endpoint cards focus authored Evidence history independently from canonical navigation", async () => {
+  const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
+  assert.match(component, /const beforeEvidenceSlugs = \[\.\.\.new Set\(beforeLinks\.map\(\(link\) => link\.evidenceSlug\)\)\]/);
+  assert.match(component, /const afterEvidenceSlugs = \[\.\.\.new Set\(afterLinks\.map\(\(link\) => link\.evidenceSlug\)\)\]/);
+  assert.match(component, /aria-label=\{`Base Evidence history focus for \$\{id\}`\}/);
+  assert.match(component, /aria-label=\{`Compare Evidence history focus for \$\{id\}`\}/);
+  assert.match(component, /Focus Evidence: \{slug\}/);
+  assert.match(component, /baseCommit: base\.commit, compareCommit: compare\.commit, claimId: id, evidenceSlug: slug/);
+  assert.match(component, /href=\{`\/progress\/\$\{encodeURIComponent\(link\.evidenceSlug\)\}`\}/);
+  assert.doesNotMatch(component, /Focus Evidence:[\s\S]{0,100}\/progress\//);
+});
+
 test("Claim evolution matrix contains horizontal width and keeps the Claim identity column visible", async () => {
   const css = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.module.css"), "utf8");
   assert.match(css, /\.matrixPanel\s*\{[^}]*overflow:\s*hidden/s);
