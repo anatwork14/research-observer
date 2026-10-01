@@ -144,6 +144,8 @@ Current URL-backed filters are:
 ```text
 claimRelation
 claimCoverage
+claimSignal
+claimEvidence
 claimFile
 claimSection
 claimQ
@@ -167,6 +169,16 @@ multiple  → 2+ Evidence targets
 linked    → any authored Evidence link
 ```
 
+`claimSignal` currently supports only:
+
+```text
+support-contradiction
+```
+
+This means the Claim explicitly has at least one authored `supports` relation and at least one authored `contradicts` relation. The ordinary single-relation signal bars reuse `claimRelation` instead of defining duplicate URL semantics.
+
+`claimEvidence` is an exact canonical Evidence slug. It must not become fuzzy title matching, cross-project guessing, or semantic similarity search.
+
 File and section filters use exact saved manuscript metadata. Text search may match Claim ID, project label, manuscript file, section, literal bounded Claim excerpt, canonical Evidence slug, or Evidence title.
 
 Filter state is encoded in the URL so a drill-down can be shared or reproduced. Project-scope changes while staying on the Claims view preserve active Claim filters. Switching to a non-Claims Insights view must drop Claim-only filter parameters.
@@ -179,15 +191,40 @@ A filtered result count must always remain visibly distinct from complete audit 
 
 must not replace the complete-scope `105 Claims` KPI.
 
-The first drill-down checkpoint filters only the Claim audit rows. Complete-scope charts above remain contextual reference and must say so in the UI.
+Complete-scope charts above remain contextual reference. Filters — whether chosen from the form or by selecting a chart mark — narrow the Claim audit rows only.
 
 Filtering is read-only. Do not add hidden write actions, auto-linking, AI recommendations, or relationship mutations to the filter workflow.
+
+## Chart drill-down behavior
+
+The Claims charts are navigational views into the same URL filter contract. They must not maintain a second client-only chart selection state.
+
+Mappings are:
+
+```text
+coverage donut segment        → claimCoverage=<band>
+relationship-mix bar          → claimRelation=<relation>
+support signal bar            → claimRelation=supports
+contradiction signal bar      → claimRelation=contradicts
+context signal bar            → claimRelation=contextualizes
+qualification signal bar      → claimRelation=qualifies
+support + contradiction bar   → claimSignal=support-contradiction
+Evidence-reuse bar             → claimEvidence=<canonical-slug>
+```
+
+Chart navigation preserves unrelated active Claim filters and selected research scope. Form submissions preserve active chart-only filters until the researcher removes a chip or clears all filters.
+
+Chart values stay complete-scope after drill-down. They are not recomputed to make a selected category appear to become the new total.
+
+Use real links for chart marks so URLs are shareable, browser history remains meaningful, and keyboard users can activate drill-downs without pointer-only JavaScript.
 
 ## Performance
 
 The Claims view may scan selected manuscript projects because it explicitly requests manuscript analytics.
 
 The other Insights views — Overview, Analytics, Timeline, and Versions — must not pay for Claim/manuscript scanning merely to render.
+
+Filtering and chart drill-downs operate on the already-built audit result for the request. They must not trigger an additional manuscript scan solely to derive the filtered rows.
 
 UI lists should remain bounded even if the underlying audit result is complete. Current first-pass bounds are:
 
@@ -227,15 +264,17 @@ Focused service tests should verify at minimum:
 - 0 / 1 / 2+ distinct Evidence target bands;
 - two relation types to one Evidence count as one distinct target and two relationships;
 - support + contradiction overlap is counted factually;
+- exact Evidence-slug filtering;
 - Evidence reuse counts distinct Claims;
 - invalid relationship issues do not enter valid coverage;
 - prose/citations alone do not create coverage;
 - unavailable manuscript projects are labeled unavailable rather than zero;
 - multi-project isolation;
 - project scope changes the audit consistently;
-- relation/coverage/file/section/text filters compose deterministically;
+- relation/coverage/signal/Evidence/file/section/text filters compose deterministically;
 - unsupported query values normalize to no filter;
-- filtered match counts remain separate from complete audit totals.
+- filtered match counts remain separate from complete audit totals;
+- chart-generated URLs preserve unrelated active filters.
 
 Browser verification should confirm:
 
@@ -244,8 +283,11 @@ Browser verification should confirm:
 - project-scope controls update Claim analytics;
 - active Claim filters survive project-scope changes while staying on Claims;
 - switching away from Claims drops Claim-only filter parameters;
+- coverage, relationship, overlap, and Evidence-reuse chart marks navigate to the expected filter state;
+- chart values remain complete-scope after navigation;
+- browser Back/Forward restores chart-driven filter state;
 - Claim/Evidence links navigate to the expected canonical surfaces;
 - large lists remain bounded and usable;
 - mobile/tablet layouts have no document-level horizontal overflow;
 - unavailable projects are clearly separated from factual zero counts;
-- filter controls remain reachable and usable at mobile/tablet widths.
+- filter controls and linked chart marks remain reachable and usable at mobile/tablet widths.
