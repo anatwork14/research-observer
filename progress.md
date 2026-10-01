@@ -1179,3 +1179,45 @@ Branch: `feature/claim-evidence-audit-filters`; push target only. Do not merge t
 - A fresh post-fix browser tab reported no console errors or warnings. The earlier disabled Codex manuscript-act 503 occurred only during the separate saved-source IDE check with Codex disabled; it is expected and unrelated.
 - Build-generated `next-env.d.ts` and `tsconfig.json` changes were restored. No synthetic QA fixtures remain.
 - Merge readiness: application code passed requested local gates; push this checkpoint only to `feature/claim-evidence-audit-filters`. Nothing was merged to `main`.
+
+
+## 2026-10-01 Next.js 16.3.8 security and filter integration checkpoint
+
+Repository: `https://github.com/anatwork14/research-observer`
+
+Branch: `fix/next-security-16.3.8`, created from verified feature HEAD. Do not merge to `main`.
+
+- Starting SHA: `66af017073c7e1b9dcf4ba33577dfd476610266b` (`feature/claim-evidence-audit-filters`). Base `main): `863d962d140a99e3d5f4f2bbea9ff7afa61f03e6`. Functional dependency commit: `a11497092fd047207ab9f7c043c3a0d45c7c2bb6`; the following documentation commit records this checkpoint.
+- Node v22.23.3 and npm 10.9.9. The configured registry returned both `next@16.3.8` and `eslint-config-next@16.3.8`. `npm ci` passed before and after the upgrade; each clean install added 513 packages. The resulting lockfile also passed another clean `npm ci`.
+- Direct installed versions after upgrade: `next@16.3.8`, `eslint-config-next@16.3.8`; `npm ls next --all` showed only `next@16.3.8`, with no old nested install.
+- Pre-upgrade `npm audit`: critical 1, high 0, moderate 0, low 0. `npm audit --omit=dev`: critical 1, high 0, moderate 0, low 0. The finding was Next.js GHSA-vcvr-r3jv-pc5j, “Remote Code Execution in next/og ImageResponse”, affecting the installed 16.3.3.
+- Post-upgrade `npm audit`: critical 0, high 0, moderate 0, low 0. `npm audit --omit=dev`: critical 0, high 0, moderate 0, low 0.
+- Source search found `next/image` and AVIF support, but no `next/og` import or `ImageResponse` usage. The upgrade was retained regardless of that exposure search.
+- The only tracked dependency edits are exact pins for `next` and `eslint-config-next`, plus the corresponding Next, SWC, env, and ESLint plugin lock entries. React, TypeScript, Codex, CodeMirror, PDF.js, and unrelated locked package versions were not upgraded. Build-generated `next-env.d.ts` and `tsconfig.json` edits were restored.
+
+### Automated verification
+
+- Focused Claim filter tests: filter logic 6/6, loading/UI 10/10, audit 4/4.
+- Claim semantic regression tests: 22/22.
+- Full unit suite: 218/218. Workflow tests: 2/2.
+- Typecheck: PASS. Lint: PASS with 0 errors and 2 existing unused-variable warnings (`_T`, `offsetAtLine`). Production build: PASS.
+- `GIT_CONFIG_GLOBAL=/dev/null npm run verify:merge-local`: PASS.
+- `GIT_CONFIG_GLOBAL=/dev/null npm run check:full`: PASS.
+- `npm run verify:merge-full`: PASS, exit 0. Individual stages: `verify:merge-local` PASS; `verify:latex:container` PASS; `verify:latex:project-toolchain` Docker build PASS; `verify:latex:project-app` PASS; `verify:persistence` PASS, including source bind mounts and byte-identical SHA-256 across container recreation.
+- Doctor: 0 errors, 1 existing ignored-root `AGENTS.md` warning. Build emitted existing dynamic-filesystem tracing warnings. `npm ci` emitted the existing deprecated ESLint 9.39.5 notice. No new Next 16.3.8 compatibility fix was required.
+
+### Browser and responsive smoke
+
+- Ran the upgraded development server on loopback with Codex disabled. `/`, `/insights`, `/insights?view=claims&research=default`, `/graph`, and `/ide?research=default` loaded meaningful route content.
+- Claims form submission applied a relation filter. Relation-tag drill-down updated the URL and selected control. Browser Back/Forward restored coverage/search values and matching rows.
+- With filters active, project switching traversed All Projects and the synthetic Beta project while preserving coverage/search state. Clear all removed the filters while retaining the Beta project and Claims view.
+- Responsive filter state/layout smoke: 390×844 had one column and document 390/390; 1024×768 had three columns and 1024/1024; desktop 1280×800 had six columns and 1280/1280. Filter selections and the 1-of-1 result remained synchronized at each viewport.
+- Browser console: 0 errors and 0 warnings across the tested routes. HTTP requests succeeded; the expected disabled Codex manuscript-act endpoint returned 503 with Codex disabled, while the IDE and ordinary routes remained usable.
+- Browser interaction used four clearly labeled disposable synthetic test files. All four files and their empty fixture directories were removed. Doctor returned to 1 repository note, 0 errors, and the same single ignored-root warning.
+
+### Delivery state
+
+- No application compatibility defects were found; no source-code compatibility changes were required.
+- Remaining security advisories: none reported by full or production-only npm audit.
+- Merge readiness: **YES** for this security/integration checkpoint; all requested gates, browser checks, and audit severity conditions passed. Existing Doctor, lint, build-tracing, and deprecated-ESLint warnings are documented above.
+- Push target is only `fix/next-security-16.3.8`. The verified feature branch remains unchanged; `main` was not merged or modified.
