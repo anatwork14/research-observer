@@ -1,6 +1,6 @@
 # Claim ↔ Evidence revision history
 
-Observaire's Claim/Evidence revision history is a **read-only derived projection over committed manuscript Git snapshots**. It answers factual questions about how explicitly authored manuscript state changed across commits. It does not infer meaning from prose, citations, dates, or AI interpretation.
+Observaire's Claim/Evidence revision history is a **read-only derived projection over committed Git snapshots**. It answers factual questions about how explicitly authored manuscript state changed across commits. It does not infer meaning from prose, citations, dates, or AI interpretation.
 
 Read this document together with:
 
@@ -18,7 +18,9 @@ Historical Claim state may use only:
 3. the committed `.observaire-ide.json` visibility state for that revision, when present;
 4. the existing Claim and Claim↔Evidence directive parsers.
 
-Current editor buffers, dirty working-tree bytes, filesystem mtimes, IDE save timestamps, build timestamps, and current hidden-state choices must not rewrite historical snapshots.
+For a selected Base/Compare pair, historical Evidence endpoint validation may additionally read the canonical research files under the **same Git commit**. It must use the historical configured `progressDir`, historical project-folder manifests, stable note IDs/fallback slugs, exact project identity, and exact `type: evidence` state from that commit.
+
+Current editor buffers, dirty working-tree bytes, filesystem mtimes, IDE save timestamps, build timestamps, current hidden-state choices, and current research-object type/project state must not rewrite historical snapshots.
 
 Dirty manuscript files may be reported as current working state, but they are not revision snapshots.
 
@@ -66,27 +68,78 @@ contextualizes
 qualifies
 ```
 
-A historical snapshot records the exact syntactically valid directive attached to a valid unique Claim ID in that snapshot.
+A historical snapshot records the exact syntactically valid directive attached to a valid unique Claim ID in that snapshot. The directive remains part of authored history regardless of whether its Evidence slug validates.
 
-### Important canonical-Evidence limitation
+## Same-commit historical Evidence validation
 
-The first revision-history implementation does **not** reconstruct historical Git snapshots of canonical `progress/` research objects. Therefore a historical authored directive establishes:
+For the selected Base and Compare snapshots only, the side-by-side view may validate each authored Evidence slug against the canonical research tree at that **same commit**.
 
-> At this manuscript commit, the author explicitly wrote this Claim ID, relation word, and Evidence slug.
+The resolution states are factual and exact:
 
-It does **not** independently establish:
+```text
+valid
+missing
+ambiguous
+cross-project
+wrong-type
+unavailable
+```
 
-> At that historical moment, the Evidence slug necessarily resolved to a same-project canonical `type:evidence` research object.
+`valid` requires all of the following at the selected Git commit:
 
-The UI may annotate whether the historical Evidence slug resolves to canonical Evidence **in the current workspace**, but that present-day annotation must never decide whether the historical authored directive is included.
+- exact canonical slug match;
+- exactly one matching research object;
+- the same selected research project identity;
+- exact `type: evidence`.
 
-A future research-object Git-history feature could add historical endpoint validation as a separate derived layer. Do not fake it using current canonical state.
+Do not use aliases, title similarity, DOI identity, citation keys, current research state, or prose to upgrade an endpoint.
+
+### Historical project and slug rules
+
+Historical validation mirrors the canonical compiler rules that determine endpoint identity:
+
+- use the historical `research-observer.config.json` `progressDir` when it is path-safe;
+- unsafe/malformed historical `progressDir` falls back to repository-local `progress` rather than escaping the repository;
+- historical `.observaire-project.json` controls a folder project's ID when valid;
+- folder project identity takes precedence over a note's `research` frontmatter;
+- a valid stable note `id` is the canonical slug;
+- without a stable ID, root-note fallback is its file slug and folder-project fallback is `<project-id>-<file-slug>`.
+
+If the same canonical slug resolves to multiple historical objects, the status is `ambiguous`; do not choose a winner.
+
+### Bounded/incomplete scans
+
+Historical research validation is bounded. If a selected historical research tree cannot be scanned completely—for example because a note exceeds the historical read bound or the note-count bound is exceeded—the resolver returns `unavailable` for endpoint checks from that index.
+
+A partial index must never be used to claim either:
+
+- “this slug was historically valid Evidence”, or
+- “this slug was historically missing”.
+
+This avoids false certainty from incomplete historical data.
+
+### Current canonical state is separate
+
+Historical validity and current canonical validity are separate dimensions.
+
+Examples:
+
+```text
+historically valid + current canonical
+historically valid + not current canonical today
+historically wrong type + current canonical today
+historically missing + current canonical today
+```
+
+A current `/progress/<slug>` link is shown only when the endpoint was historically valid same-project Evidence for that selected snapshot **and** the slug is current canonical Evidence today.
+
+Current canonical state must never retroactively decide whether the historical authored directive existed or whether it was valid at that commit.
 
 ## Adjacent-revision events
 
 Snapshot adjacency follows the bounded Git revision sequence returned by the manuscript history service. The loader reverses that newest-first sequence once for oldest→newest reading. Commit timestamps are displayed metadata only: author dates may be equal or skewed and must never reorder snapshot adjacency.
 
-Adjacent historical snapshots may produce only factual events derived from explicit state:
+Adjacent historical snapshots may produce only factual events derived from explicit manuscript state:
 
 ```text
 claim-added
@@ -99,6 +152,8 @@ relation-added
 relation-removed
 relation-changed
 ```
+
+Historical endpoint validation does not create or delete these authored manuscript events. It annotates selected comparison endpoints separately.
 
 ### Relation change rule
 
@@ -133,7 +188,7 @@ claimHistory=<optional-claim-id>
 
 `claimHistory` is a view filter only. It must not change or regenerate the historical snapshots.
 
-Invalid or unavailable commit query values fall back to the default recent pair rather than causing arbitrary Git object access.
+Invalid or unavailable commit query values fall back to the default recent pair rather than causing arbitrary Git object access. Historical Evidence validation is invoked only after Base and Compare have resolved to commit SHAs from the already-loaded bounded snapshot list. Raw query-string commit text must never become a Git object/path read.
 
 ## UI semantics
 
@@ -151,9 +206,9 @@ The history panel should show:
 - current dirty manuscript-file count and dirty visibility-state indicator, clearly excluded from history;
 - Git-sequenced adjacent-revision events with commit timestamps shown as metadata;
 - Base/Compare/Claim controls;
-- side-by-side literal Claim text and explicit relation sets.
-
-Current-canonical Evidence targets may link to `/progress/<slug>`. A historical slug that does not currently resolve to canonical Evidence remains visible as historical authored text but must be labeled as not current canonical Evidence rather than guessed or removed.
+- side-by-side literal Claim text and explicit relation sets;
+- same-commit historical Evidence endpoint status for selected Base/Compare relations;
+- current canonical availability as a separate present-day annotation/navigation state.
 
 Do not deep-link a historical Claim line into the current editor as if the historical line number necessarily still existed.
 
@@ -163,32 +218,37 @@ Historical work is intentionally bounded:
 
 - manuscript Git history service: maximum 80 revisions;
 - Claim historical snapshots: latest 40 relevant revisions;
-- source file read: maximum 2 MiB per historical `.tex` source;
+- historical `.tex` read: maximum 2 MiB per source;
+- historical research endpoint index: maximum 1,000 ordered Markdown notes per selected revision;
+- historical research note read: maximum 2 MiB per note;
+- historical research endpoint indexes: selected Base and Compare revisions only;
 - event rows displayed per transition: 10;
 - unfocused side-by-side changed Claims: 20.
 
-The underlying loaded snapshot may contain more Claims/events than the UI displays. Disclose bounded presentation instead of silently implying completeness.
+The underlying loaded Claim snapshot may contain more Claims/events than the UI displays. Disclose bounded presentation instead of silently implying completeness.
 
 ## Loading boundary
 
 Claim revision history is Timeline-only in the first implementation.
 
-- Research Graph must not load historical Claim snapshots.
-- Provenance must not load historical Claim snapshots.
+- Research Graph must not load historical Claim snapshots or historical Evidence endpoint indexes.
+- Provenance must not load historical Claim snapshots or historical Evidence endpoint indexes.
 - Timeline may reuse its already-loaded manuscript revision history so it does not run a duplicate `git log` merely for Claim history.
+- Historical Evidence endpoint indexing runs only for selected Base/Compare snapshots that contain authored Evidence links, not for all 40 historical Claim snapshots.
 
-An unavailable historical Claim scan must fail soft without breaking the canonical research timeline.
+An unavailable historical Claim scan or historical Evidence scan must fail soft without breaking the canonical research timeline or removing authored manuscript history.
 
 ## Non-inference rules
 
-Historical revision events must never infer:
+Historical revision events and endpoint validation must never infer:
 
 - support/contradiction from prose wording;
 - Evidence use from citation proximity;
 - Claim rename from textual similarity;
 - relation transformation from ambiguous many-to-many relation changes;
 - chronology from authored timestamps, mtimes, filename order, graph position, or IDE timestamps;
-- historical canonical Evidence validity from current canonical research state.
+- historical endpoint validity from current canonical research state;
+- historical endpoint identity from title/DOI/citation similarity.
 
 ## Verification
 
@@ -204,8 +264,13 @@ Focused verification should include:
 - committed hidden-state changes, including state-only commits;
 - dirty working-tree Claim edits excluded;
 - dirty visibility-state changes reported separately from source files;
-- current-canonical Evidence annotation does not control historical inclusion;
+- historical Evidence valid at one commit, wrong-type at another, and missing at another;
+- historical cross-project and duplicate-slug ambiguity;
+- historical custom/unsafe `progressDir` behavior;
+- incomplete historical research scan yields `unavailable`, not false missing/valid;
+- current-canonical state remains separate from historical validity;
 - Timeline-only loading and reuse of the existing manuscript history scan;
+- selected-pair-only historical Evidence indexing;
 - URL-backed Base/Compare/Claim controls;
 - invalid comparison SHAs cannot trigger arbitrary Git reads;
 - responsive comparison/timeline layout without document-level overflow.
