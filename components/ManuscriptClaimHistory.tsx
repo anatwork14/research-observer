@@ -254,6 +254,11 @@ export async function ManuscriptClaimHistory({
   const newerBase = baseIndex >= 0 && baseIndex < snapshots.length - 1 ? snapshots[baseIndex + 1] : undefined;
   const olderCompare = compareIndex > 0 ? snapshots[compareIndex - 1] : undefined;
   const newerCompare = compareIndex >= 0 && compareIndex < snapshots.length - 1 ? snapshots[compareIndex + 1] : undefined;
+  const adjacentBaseForCompare = compareIndex > 0 ? snapshots[compareIndex - 1] : undefined;
+  const latestPairBase = snapshots.at(-2);
+  const latestPairCompare = snapshots.at(-1);
+  const adjacentPairIsCurrent = Boolean(adjacentBaseForCompare && base?.commit === adjacentBaseForCompare.commit);
+  const latestPairIsCurrent = Boolean(latestPairBase && latestPairCompare && base?.commit === latestPairBase.commit && compare?.commit === latestPairCompare.commit);
   const comparison = base && compare ? compareManuscriptClaimSnapshots(base, compare) : null;
   const comparisonEvents = comparison ? transitionEvents(comparison.events, selectedClaim, selectedEvidence, selectedEvent, selectedRelation) : [];
   const relationTransitionTotal = comparisonEvents.filter((event) => event.type === "relation-changed").length;
@@ -418,6 +423,8 @@ export async function ManuscriptClaimHistory({
             {base.commit !== compare.commit ? <Link className={styles.swapRevision} href={historyHref({ ...hrefState, baseCommit: compare.commit, compareCommit: base.commit })}>Swap Base ↔ Compare</Link> : <span className={styles.swapRevision} aria-disabled="true">Swap Base ↔ Compare</span>}
             {olderCompare ? <Link href={historyHref({ ...hrefState, compareCommit: olderCompare.commit })}>← Older Compare</Link> : <span aria-disabled="true">← Older Compare</span>}
             {newerCompare ? <Link href={historyHref({ ...hrefState, compareCommit: newerCompare.commit })}>Newer Compare →</Link> : <span aria-disabled="true">Newer Compare →</span>}
+            {adjacentBaseForCompare && !adjacentPairIsCurrent ? <Link href={historyHref({ ...hrefState, baseCommit: adjacentBaseForCompare.commit })}>Previous → Compare</Link> : <span aria-disabled="true">Previous → Compare</span>}
+            {latestPairBase && latestPairCompare && !latestPairIsCurrent ? <Link href={historyHref({ ...hrefState, baseCommit: latestPairBase.commit, compareCommit: latestPairCompare.commit })}>Latest pair</Link> : <span aria-disabled="true">Latest pair</span>}
           </nav>
         )}
         {hasFocus && (
