@@ -40,9 +40,8 @@ function LinkedHorizontalBarChart({
         {data.map((item, index) => {
           const y = top + index * row;
           const barWidth = (item.value / max) * plot;
-          const href = hrefForDatum(item);
           return (
-            <a href={href} key={item.key} aria-label={`Filter Claims by ${item.label}: ${item.value}`}>
+            <a href={hrefForDatum(item)} key={item.key} aria-label={`Filter Claims by ${item.label}: ${item.value}`}>
               <g>
                 <text x={labelWidth - 12} y={y + 20} textAnchor="end" className="insight-axis-label">{item.label}</text>
                 <rect x={labelWidth} y={y + 7} width={plot} height="18" rx="5" className="insight-bar-track" />
@@ -102,14 +101,9 @@ function LinkedDonutChart({
       </svg>
       <div className="insight-legend">
         {visible.map((item, index) => (
-          <a
-            href={hrefForDatum(item)}
-            key={item.key}
-            style={{ color: "inherit", textDecoration: "none" }}
-            aria-label={`Filter Claims by ${item.label}: ${item.value}`}
-          >
+          <div key={item.key}>
             <i className={TONES[index % TONES.length]} /><span>{item.label}</span><strong>{item.value}</strong>
-          </a>
+          </div>
         ))}
       </div>
     </div>
@@ -149,11 +143,19 @@ export function ClaimSignalDrilldownChart({
   researchScope,
   filters,
 }: DrilldownProps & { data: Datum[] }) {
+  const relationForSignal: Record<string, NormalizedClaimEvidenceAuditFilters["relation"]> = {
+    support: "supports",
+    contradiction: "contradicts",
+    context: "contextualizes",
+    qualification: "qualifies",
+  };
   return (
     <LinkedHorizontalBarChart
       data={data}
       ariaLabel="Claims containing explicit authored relation patterns; select a bar to filter the Claim audit"
-      hrefForDatum={(item) => claimAuditFilterHref(researchScope, filters, { signal: item.key as NormalizedClaimEvidenceAuditFilters["signal"] })}
+      hrefForDatum={(item) => item.key === "support-contradiction"
+        ? claimAuditFilterHref(researchScope, filters, { signal: "support-contradiction" })
+        : claimAuditFilterHref(researchScope, filters, { relation: relationForSignal[item.key] || "" })}
     />
   );
 }
