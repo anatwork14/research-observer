@@ -8,13 +8,29 @@ const root = process.cwd();
 test("Claim history chronology drill-down stays URL-backed and preserves selected comparison state", async () => {
   const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
   assert.match(component, /function historyHref/);
-  assert.match(component, /Revision and Claim links update the same URL-backed comparison state/);
   assert.match(component, /compareCommit: transition\.toCommit/);
   assert.match(component, /claimId: event\.claimId/);
+  assert.match(component, /evidenceSlug: selectedEvidence/);
   assert.match(component, /baseCommit: base\?\.commit/);
   assert.match(component, /compareCommit: compare\?\.commit/);
   assert.doesNotMatch(component, /loadHistoricalResearchEvidenceIndex\(\{ commit: transition\.toCommit/);
   assert.doesNotMatch(component, /loadHistoricalResearchEvidenceIndex\(\{ commit: event/);
+});
+
+test("Evidence history focus is explicit, exact, URL-backed, and intersects Claim focus", async () => {
+  const page = await fs.readFile(path.join(root, "app/graph/page.tsx"), "utf8");
+  const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
+  assert.match(page, /evidenceHistory\?: string/);
+  assert.match(page, /evidenceSlug=\{filters\.evidenceHistory\}/);
+  assert.match(component, /params\.set\("evidenceHistory", evidenceSlug\)/);
+  assert.match(component, /name="evidenceHistory"/);
+  assert.match(component, /const evidenceSlugs = \[\.\.\.new Set\(snapshots\.flatMap/);
+  assert.match(component, /const selectedEvidence = evidenceSlugs\.includes\(evidenceSlug\) \? evidenceSlug : ""/);
+  assert.match(component, /\(!claimId \|\| event\.claimId === claimId\)[\s\S]*\(!evidenceSlug \|\| event\.evidenceSlug === evidenceSlug\)/);
+  assert.match(component, /transitionEvents\(comparison\.events, selectedClaim, selectedEvidence\)/);
+  assert.match(component, /link\.evidenceSlug === selectedEvidence/);
+  assert.doesNotMatch(component, /includes\(selectedEvidence\).*title/);
+  assert.doesNotMatch(component, /loadHistoricalResearchEvidenceIndex\(\{ commit:.*selectedEvidence/);
 });
 
 test("Claim evolution matrix contains horizontal width and keeps the Claim identity column visible", async () => {
@@ -25,13 +41,14 @@ test("Claim evolution matrix contains horizontal width and keeps the Claim ident
   assert.match(css, /\.matrix tr > :first-child\s*\{[^}]*position:\s*sticky[^}]*left:\s*0[^}]*z-index:\s*2/s);
   assert.match(css, /\.matrix thead tr > :first-child\s*\{[^}]*z-index:\s*3/s);
   assert.match(css, /\.matrix tbody tr > :first-child\s*\{[^}]*background:\s*var\(--surface-strong\)/s);
+  assert.match(css, /grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\) auto/);
 });
 
 test("side-by-side Claim delta summaries reuse only explicit comparison events", async () => {
   const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
   assert.match(component, /function comparisonEventSummary\(events: ManuscriptClaimHistoryEvent\[\]\)/);
   assert.match(component, /EVENT_ORDER[\s\S]*events\.filter\(\(event\) => event\.type === type\)\.length/);
-  assert.match(component, /const claimEvents = transitionEvents\(comparison\?\.events \|\| \[\], id\)/);
+  assert.match(component, /const claimEvents = transitionEvents\(comparison\?\.events \|\| \[\], id, selectedEvidence\)/);
   assert.match(component, /comparisonEventSummary\(claimEvents\)/);
   assert.doesNotMatch(component, /comparisonEventSummary\([^)]*excerpt/);
   assert.doesNotMatch(component, /comparisonEventSummary\([^)]*citation/);
