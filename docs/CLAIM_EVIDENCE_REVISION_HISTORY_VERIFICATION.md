@@ -1,6 +1,6 @@
 # Claim ↔ Evidence revision history — runtime verification
 
-Use this checklist for the first runtime/browser acceptance pass of `feature/claim-evidence-revision-history`.
+Use this checklist for the runtime/browser acceptance pass of `feature/claim-evidence-revision-history`.
 
 The feature is read-only and derived. Verification must preserve these invariants:
 
@@ -11,7 +11,9 @@ The feature is read-only and derived. Verification must preserve these invariant
 - Claim↔Evidence history comes only from explicit `% observaire:claim-evidence <claim-id> <relation> <evidence-slug>` directives;
 - no semantic meaning is inferred from prose, citations, dates, graph position, or AI output;
 - Git revision sequence defines snapshot adjacency; commit timestamps are display metadata only;
-- current canonical Evidence resolution is a present-day annotation, not historical endpoint validation;
+- selected Base/Compare Evidence endpoints are validated against canonical research state at the exact same Git commit;
+- current canonical Evidence state remains a separate present-day annotation and navigation state;
+- incomplete historical research scans yield unavailable endpoint validation rather than false valid/missing results;
 - arbitrary query-string commit values never become Git object/path reads.
 
 ## 1. Checkout and ancestry
@@ -46,6 +48,7 @@ node --test tests/manuscript-evolution.test.mjs
 node --test tests/manuscript-claim-history.test.mjs
 node --test tests/manuscript-claim-history-order.test.mjs
 node --test tests/manuscript-claim-history-ui.test.mjs
+node --test tests/historical-research-evidence.test.mjs
 ```
 
 These must cover at least:
@@ -62,7 +65,13 @@ These must cover at least:
 - dirty working-tree Claim edits excluded;
 - Git order preserved despite misleading timestamps;
 - forged reused `history.projectPath` rejected;
+- historical Evidence valid / wrong-type / missing across exact commits;
+- historical folder-project precedence and cross-project result;
+- duplicate historical canonical slug ambiguity;
+- unsafe historical `progressDir` cannot escape the repository;
+- incomplete historical research scan returns `unavailable`;
 - Timeline-only historical loading;
+- selected-pair-only historical Evidence validation;
 - URL-backed Base/Compare/Claim controls;
 - responsive static layout guards.
 
@@ -70,6 +79,8 @@ Then run the repository gate:
 
 ```bash
 GIT_CONFIG_GLOBAL=/dev/null npm run verify:merge-local
+npm audit
+npm audit --omit=dev
 git diff --check
 ```
 
@@ -79,9 +90,19 @@ Record exact unit/workflow counts from the command output. Do not reuse counts f
 
 Use a disposable project fixture or restore the project exactly after testing.
 
-Create a short committed manuscript history with explicit Claim semantics. The minimum useful sequence is:
+Create a short committed history where manuscript and canonical research state change in the same repository.
 
-### Revision A — initial Claim
+### Revision A — valid historical Evidence
+
+Canonical research contains exact same-project:
+
+```yaml
+id: evidence-robustness
+type: evidence
+research: <project>
+```
+
+Manuscript contains:
 
 ```tex
 % observaire:claim robustness-under-drift
@@ -91,9 +112,9 @@ Our method remains stable under distribution shift.
 
 Keep a second `.tex` source hidden in committed `.observaire-ide.json`.
 
-### Revision B — text and relation change
+### Revision B — text/relation change + wrong-type historical endpoint
 
-Change the same Claim ID literal passage text and replace exactly one relation:
+Change the same Claim ID literal passage and relation:
 
 ```tex
 % observaire:claim robustness-under-drift
@@ -101,15 +122,23 @@ Change the same Claim ID literal passage text and replace exactly one relation:
 Our method remains stable under stronger distribution shift.
 ```
 
-Also unhide the second source in committed `.observaire-ide.json`, with a second explicit Claim inside it.
+At this same commit, change `evidence-robustness` canonical research object to another type such as:
 
-### Revision C — state-only visibility commit
+```yaml
+type: literature
+```
 
-Change only `.observaire-ide.json` to hide the second source again. Do not modify `.tex` bytes.
+Also unhide the second manuscript source, with a second explicit Claim inside it.
+
+### Revision C — state-only manuscript visibility + missing historical endpoint
+
+Change only manuscript `.observaire-ide.json` to hide the second source again, and remove the canonical `evidence-robustness` research object in the same commit if a separate research change is acceptable for the fixture. If you need a strictly manuscript-state-only commit for revision-list behavior, use a Revision C1 state-only commit and a Revision C2 endpoint-removal commit.
+
+The verification must include at least one true state-only `.observaire-ide.json` commit with no `.tex` or research change.
 
 ### Working tree only
 
-After Revision C, make both:
+After committed revisions, make both:
 
 - an uncommitted `.tex` Claim edit;
 - an uncommitted `.observaire-ide.json` visibility change.
@@ -129,8 +158,8 @@ Verify:
 1. `Claim ↔ Evidence revision history` renders only in Timeline.
 2. Summary shows bounded revisions scanned, historical Claim IDs, authored changes, and working changes.
 3. Dirty source count and dirty visibility-state indication are distinct facts.
-4. Revision C is present even though it changed only visibility state.
-5. Revision C is labeled as a visibility-state change; it is not shown as a fake manuscript source edit.
+4. A true state-only visibility commit is present even though it changed no `.tex` bytes.
+5. The state-only commit is labeled as a visibility-state change; it is not shown as a fake manuscript source edit.
 6. The second Claim appears when its source is committed visible and leaves the next visible snapshot when the source is committed hidden.
 7. The UI does not label that visibility-driven absence as source deletion.
 8. `supports → qualifies` appears as one relation change for the same Claim/Evidence endpoints.
@@ -138,6 +167,7 @@ Verify:
 10. Literal Claim text change is shown for the same explicit Claim ID.
 11. Current uncommitted Claim text never appears in historical snapshots.
 12. Current uncommitted visibility state never rewrites committed historical visibility.
+13. Changing research endpoint validity does not remove or manufacture authored manuscript relation events.
 
 ## 5. Git-order regression
 
@@ -171,29 +201,87 @@ Checks:
 - selecting two non-adjacent loaded revisions produces a direct factual snapshot comparison;
 - identical Base/Compare produces zero explicit changes;
 - invalid/unavailable `claimBase` or `claimCompare` falls back to the safe default loaded pair;
-- query values are never sent to Git as object/path input.
+- raw query values are never sent to Git as manuscript or research object input;
+- endpoint validation runs for the resolved Base/Compare snapshots, not the raw query SHA strings.
 
-## 7. Historical Evidence display
+## 7. Same-commit historical Evidence endpoint validation
 
-Use both cases:
+Verify all statuses using exact authored slugs.
 
-### Current canonical Evidence
+### Historically valid
 
-A historical authored Evidence slug that currently resolves to same-project canonical `type:evidence` may link to `/progress/<slug>`.
+At Revision A, `evidence-robustness` must show as historically valid same-project Evidence.
 
-### Not current canonical Evidence
+If the slug is also current canonical Evidence today, it may link to:
 
-Use a historical authored slug that now resolves to nothing, wrong type, or wrong project.
+```text
+/progress/evidence-robustness
+```
+
+### Historically wrong type
+
+At Revision B, where the same slug is `type: literature`, verify:
+
+- status says historical target is not Evidence / wrong type;
+- authored relation remains visible;
+- there is no historical-validity upgrade from today's state;
+- it is not linked to current `/progress/<slug>` merely because a current canonical Evidence object later exists.
+
+### Historically missing
+
+At the endpoint-removal revision, verify:
+
+- status says historical target missing;
+- authored slug remains visible;
+- authored relation history remains intact.
+
+### Historical cross-project
+
+Create an exact slug that resolves at that commit only to another project.
+
+Verify `cross-project`; do not accept it as same-project Evidence.
+
+### Historical duplicate slug
+
+Create two historical canonical objects with the same slug in the scanned commit.
+
+Verify `ambiguous`; do not choose a winner.
+
+### Incomplete validation
+
+Use the focused service test or a disposable fixture that exceeds the bounded historical note read.
+
+Verify the resolver reports `unavailable`, not `missing` or `valid` from a partial scan.
+
+## 8. Historical vs current canonical separation
+
+Exercise at least these two-dimensional cases where practical:
+
+```text
+historically valid + current canonical today
+historically valid + not current canonical today
+historically wrong-type/missing + current canonical today
+```
 
 Verify:
 
-- the literal historical authored slug remains visible;
-- it is labeled `not current canonical Evidence`;
-- the UI does not borrow a title from a current wrong-type/cross-project object;
-- the historical directive is not deleted merely because current canonical resolution fails;
-- the UI never claims that the target was historically valid canonical Evidence.
+- historical state comes only from that selected Git commit;
+- current state is clearly labeled as today/current canonical;
+- current state never retroactively alters historical status;
+- current navigation link appears only for historically valid + current canonical;
+- unresolved historical status displays the authored slug rather than borrowing a title from an invalid current object.
 
-## 8. No historical deep-link confusion
+## 9. Historical progressDir and project identity
+
+The focused test covers unsafe path fallback. In browser/runtime fixture, also verify any non-default configured historical `progressDir` if practical.
+
+For folder-backed research projects verify:
+
+- historical `.observaire-project.json` project ID is honored;
+- folder project ID takes precedence over conflicting note frontmatter;
+- project rename is not inferred across commits; exact project identity is used at each endpoint check.
+
+## 10. No historical deep-link confusion
 
 Historical Claim file/section context may be shown as text.
 
@@ -201,7 +289,7 @@ Verify the history panel does **not** deep-link a historical line number into th
 
 Current live Provenance deep links remain unchanged and should still use validated current file/line navigation.
 
-## 9. Loading boundaries
+## 11. Loading and performance boundaries
 
 Verify each graph view separately.
 
@@ -215,6 +303,7 @@ Expected:
 
 - no Claim-history panel;
 - no historical Claim snapshot scan;
+- no historical research Evidence index scan;
 - no new history query controls.
 
 ### Provenance
@@ -227,6 +316,7 @@ Expected:
 
 - live Claim/Claim↔Evidence projection remains available;
 - no historical Claim snapshot scan;
+- no historical research Evidence index scan;
 - existing provenance semantics unchanged.
 
 ### Timeline
@@ -235,9 +325,14 @@ Expected:
 
 - existing manuscript revision scan is reused;
 - historical Claim loader does not run a second `git log` for the same request;
-- state-only revisions are included for Timeline history without turning `.observaire-ide.json` into a manuscript node.
+- state-only revisions are included for Timeline history without turning `.observaire-ide.json` into a manuscript node;
+- historical research endpoint indexes are built only for selected Base/Compare snapshots that have authored links;
+- changing Claim focus alone does not cause validation of additional historical revisions;
+- at most two distinct selected historical commit indexes are needed per rendered comparison.
 
-## 10. Responsive/browser matrix
+Record a practical Timeline load/performance sanity observation for a normal fixture. Do not remove validation bounds merely to make a large fixture pass.
+
+## 12. Responsive/browser matrix
 
 Verify at minimum:
 
@@ -256,11 +351,11 @@ At every size verify:
 - coarse-pointer controls meet the existing 44 px interaction target;
 - timeline event rows wrap long Claim IDs and Evidence slugs;
 - side-by-side Claim comparison collapses to one column on narrow screens;
-- long manuscript filenames, commit subjects, Claim IDs, and Evidence slugs do not widen the page;
-- current-canonical and historical-slug labels remain legible;
+- long manuscript filenames, commit subjects, Claim IDs, Evidence slugs, and endpoint-status text do not widen the page;
+- historical validity and current-canonical labels remain legible;
 - browser console has no React hydration/render exceptions attributable to this feature.
 
-## 11. Existing feature regression
+## 13. Existing feature regression
 
 Confirm this checkpoint does not break:
 
@@ -276,7 +371,7 @@ Confirm this checkpoint does not break:
 
 A citation or strong prose statement without an explicit Claim↔Evidence directive must still create no authored semantic relationship.
 
-## 12. Final report
+## 14. Final report
 
 Return this exact report shape:
 
@@ -289,40 +384,54 @@ Return this exact report shape:
 7. focused manuscript-evolution tests
 8. focused Claim-history service tests
 9. Git-order regression test
-10. Claim-history UI/static test
-11. `verify:merge-local`
-12. unit test count
-13. workflow test count
-14. typecheck
-15. lint
-16. production build
-17. `git diff --check`
-18. Revision A behavior
-19. Revision B text change
-20. Revision B relation change
-21. Revision C state-only visibility behavior
-22. dirty `.tex` isolation
-23. dirty visibility-state isolation
-24. Git-order/browser ordering
-25. Base/Compare URL persistence
-26. Claim-focus behavior
-27. invalid query SHA fallback
-28. current canonical Evidence case
-29. non-current historical Evidence case
-30. no historical editor deep-link confusion
-31. Research Graph loading boundary
-32. Provenance loading boundary
-33. Timeline history-scan reuse
-34. 390×844 result + `scrollWidth/clientWidth`
-35. 768×1024 result + `scrollWidth/clientWidth`
-36. 1024×768 result + `scrollWidth/clientWidth`
-37. desktop result
-38. console result
-39. unrelated regressions
-40. blockers
-41. existing unrelated warnings
-42. merge-ready yes/no
-43. exact final verified commit SHA
-44. nothing else changed
+10. historical Evidence resolver tests
+11. Claim-history UI/static test
+12. `verify:merge-local`
+13. unit test count
+14. workflow test count
+15. typecheck
+16. lint
+17. production build
+18. full npm-audit critical count
+19. production-only audit critical count
+20. `git diff --check`
+21. Revision A Claim behavior
+22. Revision B text change
+23. Revision B relation change
+24. state-only visibility behavior
+25. dirty `.tex` isolation
+26. dirty visibility-state isolation
+27. Git-order/browser ordering
+28. Base/Compare URL persistence
+29. Claim-focus behavior
+30. invalid query SHA fallback
+31. historically valid Evidence case
+32. historical wrong-type case
+33. historical missing case
+34. historical cross-project case
+35. historical duplicate/ambiguous case
+36. incomplete-scan unavailable case
+37. historical/current canonical separation
+38. historical progressDir/project identity
+39. no historical editor deep-link confusion
+40. Research Graph loading boundary
+41. Provenance loading boundary
+42. Timeline history-scan reuse
+43. selected-pair-only Evidence indexing
+44. Timeline performance sanity
+45. 390×844 result + `scrollWidth/clientWidth`
+46. 768×1024 result + `scrollWidth/clientWidth`
+47. 1024×768 result + `scrollWidth/clientWidth`
+48. desktop result + `scrollWidth/clientWidth`
+49. console result
+50. unrelated regressions
+51. defects fixed
+52. blockers
+53. existing unrelated warnings
+54. merge-ready yes/no
+55. exact final verified commit SHA
+56. `progress.md` updated yes/no
+57. nothing merged to `main`
+58. nothing else changed
 
 Do not merge this feature branch as part of verification. Integration is a separate explicit step after the report is reviewed.
