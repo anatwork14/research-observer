@@ -1252,3 +1252,31 @@ Branch: `feature/claim-evidence-audit-chart-drilldown`; push this branch only. D
 - No defects fixed; no behavior outside the requested chart-driven read-only drill-down scope changed.
 - Remaining warnings are the two existing lint warnings, build tracing warnings, and the ignored-root Doctor warning. Remaining verification gaps: exact viewport matrix, donut pointer activation, and saved-source isolation.
 - Merge readiness: **NO**, pending those unverified browser/source-boundary checks. The branch is verified as based on the secured `main` SHA above; only this feature branch may be pushed. Nothing was merged to `main`.
+
+## 2026-10-01 Claim chart final acceptance and publication
+
+Repository: `https://github.com/anatwork14/research-observer`
+
+Branch: `feature/claim-evidence-audit-chart-drilldown`; do not merge to `main`.
+
+- Starting remote SHA: `89f356ec58be945e165c20b8cb6ce60df19a4b6c`. Locally tested fix commit: `ed13d773acaf4180013f06259acfcbd588edcfee`, parent `89f356ec58be945e165c20b8cb6ce60df19a4b6c`, tree `27cb5d4784f9d99d9439f1f21fd438ecb0a746a2`. The source fix was published as commit `8618db6db1f1fe47848e4373e4bcb88fd988ec85`; its tree exactly matches the tested local tree. GitHub Git database API publication used the remote base tree, the three local tested blob contents and file modes, parent `89f356ec…`, and `force=false`, after normal HTTPS pushes timed out and remote state was checked. No force update was used.
+- Remote `main` remains `b275a063bae93371636c6418a12fe8249dd2a016`; merge base is the same SHA. At source publication the feature branch was 16 commits ahead and 0 behind `main`. The published source commit is a direct child of the previous feature SHA. Nothing was merged to `main`.
+- The disposable synthetic QA project and manuscript were removed. Research compilation passed after cleanup: 1 repository note, 0 errors; Doctor passed with the existing ignored-root `AGENTS.md` warning. Generated `next-env.d.ts` and `tsconfig.json` had no fix changes and were restored before publication.
+
+### Final browser acceptance
+
+- Playwright contexts reported exact `window.innerWidth/innerHeight` at 390×844, 768×1024, 1024×768, and 1280×800. In each case `documentElement.scrollWidth/clientWidth` was respectively `390/390`, `768/768`, `1024/1024`, and `1280/1280`; all four passed without document-level horizontal overflow. The 1024×768 result is browser viewport emulation, not physical iPad hardware.
+- Filter layout used one, two, three, and six columns at those widths. With five active filters, chips wrapped to three rows at 390px and one row at 768px, 1024px, and 1280px. Five Insights tabs and five Claims chart cards rendered at every requested width.
+- Claim table internal scrolling was observed at 390px (`328/820`) and 768px (`694/820`); it fit without internal overflow at 1024px (`942/942`) and desktop (`1182/1182`). At 390px, all three chart SVG scrollers were `324/620`; the Evidence-reuse chart exposed 12 links and its last link became visible after horizontal scrolling. No document overflow occurred.
+- Direct pointer activation of the tiny `0 Evidence targets` arc was unreliable: hit-testing at the arc resolved to the neighboring `1 Evidence target` link. The coverage legend fallback was added with a 44px pointer target and visible keyboard focus. Its pointer click and Enter activation both navigated to `claimCoverage=none`, matching the tiny arc’s URL. The larger donut segment also passed pointer activation. Donut data proportions were unchanged.
+- Saved-source baseline: 85 Claims; coverage 1/83/1 for zero/one/multiple Evidence targets; 86 authored links; supports 23, contradicts 22, contextualizes 20, qualifies 21; 14 canonical Evidence records linked. Baseline supports drill-down returned 23 Claims.
+- An unsaved `qa-claim-085` directive edit left the separately loaded Claims Insights audit, chart values, and supports drill-down unchanged. Saving it changed supports 23→24 and qualifies 21→20; the supports drill-down changed 23→24 and included `qa-claim-085`. Restoring and saving the original 15,341-byte source returned all baseline chart/KPI counts. Restored source SHA-256: `d8d6e28f5d9e74ce815e51ea8aae034dc0d2142864ed66ef55391f8fbc9af499`.
+- Claims viewport checks had no console errors or warnings. The IDE emitted only the expected disabled Codex `503` and aborted Codex requests while leaving the route; no React, hydration, SVG-anchor, or DOM-nesting warnings were observed.
+
+### Final verification and readiness
+
+- Focused tests: Claim filters 9/9, Claim loading/UI 13/13 (including the legend-link regression), Claim audit 4/4.
+- `GIT_CONFIG_GLOBAL=/dev/null npm run verify:merge-local`: PASS; 224/224 unit tests, 2/2 workflow tests, typecheck, lint, and production build passed.
+- `GIT_CONFIG_GLOBAL=/dev/null npm run check:full`: PASS. `npm audit` and `npm audit --omit=dev`: 0 vulnerabilities. `git diff --check`: PASS.
+- Existing warnings: two lint warnings (`_T`, `offsetAtLine`), dynamic-filesystem build tracing warnings, and Doctor's ignored-root `AGENTS.md` warning. No remaining acceptance blockers. Merge readiness: **YES**.
+- This is the closing acceptance checkpoint for the earlier incomplete entry above; the earlier history has not been rewritten. Only the feature branch was published; `main` was not changed.
