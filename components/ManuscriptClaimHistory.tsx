@@ -326,6 +326,13 @@ export async function ManuscriptClaimHistory({
           </label>
           <button type="submit">Compare revisions</button>
         </form>
+        {(selectedClaim || selectedEvidence) && (
+          <div className={styles.focusBar} aria-label="Active Claim and Evidence history focus">
+            {selectedClaim && <Link href={historyHref({ projectId, baseCommit: base?.commit, compareCommit: compare?.commit, evidenceSlug: selectedEvidence })}>Claim: {selectedClaim} ×</Link>}
+            {selectedEvidence && <Link href={historyHref({ projectId, baseCommit: base?.commit, compareCommit: compare?.commit, claimId: selectedClaim })}>Evidence: {selectedEvidence} ×</Link>}
+            <Link className={styles.clearFocus} href={historyHref({ projectId, baseCommit: base?.commit, compareCommit: compare?.commit })}>Clear focus</Link>
+          </div>
+        )}
       </section>
 
       <section className={`${styles.matrixPanel} panel`} aria-label="Claim evolution matrix">
