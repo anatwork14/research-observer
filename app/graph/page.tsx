@@ -108,11 +108,12 @@ export default async function GraphPage({
     available: false,
     stats: { revisions: 0, transitions: 0, events: 0 },
   };
+  let manuscriptStateDirty = false;
   let citationAvailable = view === "research" ? null : false;
   let claimAvailable = view === "provenance" ? false : null;
   let revisions = buildManuscriptRevisionProjection({
     projectId,
-    history: { projectId, projectPath: "", revisions: [], dirtyFiles: [], available: false },
+    history: { projectId, projectPath: "", revisions: [], dirtyFiles: [], stateDirty: false, available: false },
   });
 
   if (view !== "research") {
@@ -134,7 +135,8 @@ export default async function GraphPage({
     }
     const manuscriptHistory = historyResult.status === "fulfilled"
       ? historyResult.value
-      : { projectId, projectPath: "", revisions: [], dirtyFiles: [], available: false };
+      : { projectId, projectPath: "", revisions: [], dirtyFiles: [], stateDirty: false, available: false };
+    manuscriptStateDirty = Boolean(manuscriptHistory.stateDirty);
     revisions = buildManuscriptRevisionProjection({ projectId, history: manuscriptHistory });
     if (view === "timeline" && historyResult.status === "fulfilled") {
       try {
@@ -265,6 +267,7 @@ export default async function GraphPage({
               baseCommit={filters.claimBase}
               compareCommit={filters.claimCompare}
               claimId={filters.claimHistory}
+              stateDirty={manuscriptStateDirty}
             />
           </>
         )}
