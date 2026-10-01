@@ -84,6 +84,8 @@ A future research-object Git-history feature could add historical endpoint valid
 
 ## Adjacent-revision events
 
+Snapshot adjacency follows the bounded Git revision sequence returned by the manuscript history service. The loader reverses that newest-first sequence once for oldest→newest reading. Commit timestamps are displayed metadata only: author dates may be equal or skewed and must never reorder snapshot adjacency.
+
 Adjacent historical snapshots may produce only factual events derived from explicit state:
 
 ```text
@@ -146,8 +148,8 @@ The history panel should show:
 - bounded committed revisions scanned;
 - unique historical Claim IDs;
 - factual authored transition count;
-- current dirty manuscript-file count, clearly excluded from history;
-- chronological adjacent-revision events;
+- current dirty manuscript-file count and dirty visibility-state indicator, clearly excluded from history;
+- Git-sequenced adjacent-revision events with commit timestamps shown as metadata;
 - Base/Compare/Claim controls;
 - side-by-side literal Claim text and explicit relation sets.
 
@@ -185,7 +187,7 @@ Historical revision events must never infer:
 - Evidence use from citation proximity;
 - Claim rename from textual similarity;
 - relation transformation from ambiguous many-to-many relation changes;
-- chronology from mtimes, filename order, graph position, or IDE timestamps;
+- chronology from authored timestamps, mtimes, filename order, graph position, or IDE timestamps;
 - historical canonical Evidence validity from current canonical research state.
 
 ## Verification
@@ -198,8 +200,10 @@ Focused verification should include:
 - exact one-to-one relation change;
 - ambiguous multi-relation change remains additions/removals;
 - Evidence target add/remove independent of relation-word change;
+- Git revision order preserved even with misleading author timestamps;
 - committed hidden-state changes, including state-only commits;
 - dirty working-tree Claim edits excluded;
+- dirty visibility-state changes reported separately from source files;
 - current-canonical Evidence annotation does not control historical inclusion;
 - Timeline-only loading and reuse of the existing manuscript history scan;
 - URL-backed Base/Compare/Claim controls;
