@@ -52,6 +52,19 @@ test("Claim history chronology follows Git revision order rather than authored t
   assert.doesNotMatch(service, /snapshots\.slice\(\)\.sort/);
 });
 
+test("chronology revision and Claim drill-down reuse safe URL-backed loaded-snapshot state", async () => {
+  const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
+  assert.match(component, /Revision and Claim links update the same URL-backed comparison state/);
+  assert.match(component, /compareCommit: transition\.toCommit/);
+  assert.match(component, /claimId: event\.claimId/);
+  assert.match(component, /baseCommit: base\?\.commit/);
+  assert.match(component, /compareCommit: compare\?\.commit/);
+  assert.match(component, /transition\.toCommit === compare\?\.commit \? styles\.matrixActiveLink : styles\.matrixLink/);
+  assert.match(component, /event\.claimId === selectedClaim \? styles\.matrixActiveLink : styles\.matrixLink/);
+  assert.doesNotMatch(component, /loadHistoricalResearchEvidenceIndex\(\{ commit: transition\.toCommit/);
+  assert.doesNotMatch(component, /loadHistoricalResearchEvidenceIndex\(\{ commit: event/);
+});
+
 test("historical Evidence comparison validates only selected loaded snapshots and separates historical from current canonical state", async () => {
   const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
   const resolver = await fs.readFile(path.join(root, "lib/research/historical-research-evidence.mjs"), "utf8");
