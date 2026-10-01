@@ -335,7 +335,7 @@ export async function ManuscriptClaimHistory({
         <article className={`${styles.timelinePanel} panel`}>
           <header className={styles.panelHeading}>
             <div><span className="kicker">Chronology</span><h3>Authored semantic changes</h3></div>
-            <p>{selectedClaim ? `Showing events for Claim ${selectedClaim}. ` : "Showing explicit Claim/Evidence events across adjacent committed snapshots. "}Revision order follows Git history; displayed timestamps are commit metadata and do not reorder snapshots.</p>
+            <p>{selectedClaim ? `Showing events for Claim ${selectedClaim}. ` : "Showing explicit Claim/Evidence events across adjacent committed snapshots. "}Revision order follows Git history; displayed timestamps are commit metadata and do not reorder snapshots. Revision and Claim links update the same URL-backed comparison state.</p>
           </header>
           <div className={styles.timeline}>
             {evolution.transitions.slice().reverse().map((transition) => {
@@ -346,7 +346,9 @@ export async function ManuscriptClaimHistory({
                 <div className={styles.transition} key={`${transition.fromCommit}:${transition.toCommit}`}>
                   <div className={styles.transitionMeta}>
                     <time dateTime={transition.at}>{formatDate(transition.at)}</time>
-                    <code>{transition.toCommit.slice(0, 10)}</code>
+                    <Link className={transition.toCommit === compare?.commit ? styles.matrixActiveLink : styles.matrixLink} href={historyHref({ projectId, baseCommit: base?.commit, compareCommit: transition.toCommit, claimId: selectedClaim })}>
+                      <code>{transition.toCommit.slice(0, 10)}</code>
+                    </Link>
                     {targetSnapshot?.stateChanged && <span>visibility state changed</span>}
                   </div>
                   <strong>{transition.subject || "Manuscript revision"}</strong>
@@ -360,7 +362,7 @@ export async function ManuscriptClaimHistory({
                     {events.slice(0, 10).map((event, index) => (
                       <div key={`${event.type}:${event.claimId}:${event.evidenceSlug || ""}:${index}`}>
                         <span>{EVENT_LABELS[event.type]}</span>
-                        <strong>{event.claimId}</strong>
+                        <Link className={event.claimId === selectedClaim ? styles.matrixActiveLink : styles.matrixLink} href={historyHref({ projectId, baseCommit: base?.commit, compareCommit: compare?.commit, claimId: event.claimId })}>{event.claimId}</Link>
                         {eventDetail(event) && <small>{eventDetail(event)}</small>}
                       </div>
                     ))}
