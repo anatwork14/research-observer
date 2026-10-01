@@ -184,9 +184,22 @@ Comparison state is URL-backed:
 claimBase=<full-commit-sha>
 claimCompare=<full-commit-sha>
 claimHistory=<optional-claim-id>
+evidenceHistory=<optional-authored-evidence-slug>
 ```
 
-`claimHistory` is a view filter only. It must not change or regenerate the historical snapshots.
+`claimHistory` and `evidenceHistory` are view filters only. They must not change or regenerate the historical snapshots.
+
+Evidence focus is an exact authored-slug filter over the already-loaded historical manuscript snapshots. It is not a canonical-research lookup and does not itself assert that the slug was historically valid Evidence. The selected Base/Compare endpoint validator separately determines `valid`, `missing`, `wrong-type`, `cross-project`, `ambiguous`, or `unavailable` for that same authored slug.
+
+Claim focus and Evidence focus combine with strict AND semantics. When Evidence focus is active:
+
+- chronology includes only explicit events whose `evidenceSlug` exactly matches;
+- Claim text/move/add/remove events without an Evidence endpoint are not promoted into Evidence-related events;
+- matrix rows are Claims that explicitly link to that slug within the displayed revision window, plus Claims with matching explicit endpoint events;
+- matrix cells report only authored links to that exact slug;
+- side-by-side link sets are narrowed to that exact authored slug.
+
+Invalid or unavailable Claim/Evidence focus values normalize to no corresponding focus rather than title/alias/fuzzy matching.
 
 Invalid or unavailable commit query values fall back to the default recent pair rather than causing arbitrary Git object access. Historical Evidence validation is invoked only after Base and Compare have resolved to commit SHAs from the already-loaded bounded snapshot list. Raw query-string commit text must never become a Git object/path read.
 
@@ -205,8 +218,10 @@ The history panel should show:
 - factual authored transition count;
 - current dirty manuscript-file count and dirty visibility-state indicator, clearly excluded from history;
 - Git-sequenced adjacent-revision events with commit timestamps shown as metadata;
-- Base/Compare/Claim controls;
+- Base/Compare/Claim/Evidence controls;
+- a bounded multi-revision Claim matrix with URL-backed revision and Claim drill-down;
 - side-by-side literal Claim text and explicit relation sets;
+- factual per-Claim delta summaries derived only from explicit comparison events;
 - same-commit historical Evidence endpoint status for selected Base/Compare relations;
 - current canonical availability as a separate present-day annotation/navigation state.
 
@@ -223,7 +238,8 @@ Historical work is intentionally bounded:
 - historical research note read: maximum 2 MiB per note;
 - historical research endpoint indexes: selected Base and Compare revisions only;
 - event rows displayed per transition: 10;
-- unfocused side-by-side changed Claims: 20.
+- unfocused side-by-side matching Claims: 20;
+- multi-revision matrix: latest 12 loaded snapshots × at most 20 Claim rows.
 
 The underlying loaded Claim snapshot may contain more Claims/events than the UI displays. Disclose bounded presentation instead of silently implying completeness.
 
@@ -235,6 +251,7 @@ Claim revision history is Timeline-only in the first implementation.
 - Provenance must not load historical Claim snapshots or historical Evidence endpoint indexes.
 - Timeline may reuse its already-loaded manuscript revision history so it does not run a duplicate `git log` merely for Claim history.
 - Historical Evidence endpoint indexing runs only for selected Base/Compare snapshots that contain authored Evidence links, not for all 40 historical Claim snapshots.
+- Changing Claim or Evidence focus filters must not broaden historical research indexing beyond the resolved Base/Compare pair.
 
 An unavailable historical Claim scan or historical Evidence scan must fail soft without breaking the canonical research timeline or removing authored manuscript history.
 
@@ -248,7 +265,8 @@ Historical revision events and endpoint validation must never infer:
 - relation transformation from ambiguous many-to-many relation changes;
 - chronology from authored timestamps, mtimes, filename order, graph position, or IDE timestamps;
 - historical endpoint validity from current canonical research state;
-- historical endpoint identity from title/DOI/citation similarity.
+- historical endpoint identity from title/DOI/citation similarity;
+- Evidence-focus matches from title, alias, DOI, citation key, or substring similarity.
 
 ## Verification
 
@@ -271,7 +289,11 @@ Focused verification should include:
 - current-canonical state remains separate from historical validity;
 - Timeline-only loading and reuse of the existing manuscript history scan;
 - selected-pair-only historical Evidence indexing;
-- URL-backed Base/Compare/Claim controls;
+- URL-backed Base/Compare/Claim/Evidence controls;
+- exact Evidence focus, invalid Evidence focus normalization, and Claim+Evidence AND behavior;
+- Evidence focus does not turn Claim text/move events into Evidence events;
+- Evidence focus does not trigger additional historical research indexes beyond Base/Compare;
+- matrix revision/Claim URL drill-down, bounds, sticky Claim column, and internal horizontal containment;
 - invalid comparison SHAs cannot trigger arbitrary Git reads;
 - responsive comparison/timeline layout without document-level overflow.
 
