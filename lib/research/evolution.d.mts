@@ -43,6 +43,7 @@ export type EvolutionNode = {
   added?: number;
   removed?: number;
   files?: string[];
+  stateChanged?: boolean;
 };
 
 export type EvolutionEdge = {
