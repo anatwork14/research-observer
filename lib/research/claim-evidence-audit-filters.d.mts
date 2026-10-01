@@ -13,7 +13,7 @@ export type ClaimEvidenceAuditFilters = {
 export type NormalizedClaimEvidenceAuditFilters = {
   relation: "supports" | "contradicts" | "contextualizes" | "qualifies" | "";
   coverage: "none" | "one" | "multiple" | "linked" | "";
-  signal: "support" | "contradiction" | "support-contradiction" | "context" | "qualification" | "";
+  signal: "support-contradiction" | "";
   evidence: string;
   file: string;
   section: string;
@@ -21,7 +21,7 @@ export type NormalizedClaimEvidenceAuditFilters = {
 };
 
 export const CLAIM_AUDIT_COVERAGE_FILTERS: readonly ["none", "one", "multiple", "linked"];
-export const CLAIM_AUDIT_SIGNAL_FILTERS: readonly ["support", "contradiction", "support-contradiction", "context", "qualification"];
+export const CLAIM_AUDIT_SIGNAL_FILTERS: readonly ["support-contradiction"];
 
 export function normalizeClaimEvidenceAuditFilters(filters?: ClaimEvidenceAuditFilters): NormalizedClaimEvidenceAuditFilters;
 
