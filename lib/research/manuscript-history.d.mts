@@ -8,6 +8,7 @@ export type ManuscriptRevision = {
   files: ManuscriptRevisionFile[];
   added: number;
   removed: number;
+  stateChanged: boolean;
 };
 export type ManuscriptRevisionHistory = {
   projectId: string;
@@ -16,4 +17,8 @@ export type ManuscriptRevisionHistory = {
   dirtyFiles: string[];
   available: boolean;
 };
-export function listManuscriptRevisions(options?: { rootDir?: string; projectId?: string }): Promise<ManuscriptRevisionHistory>;
+export function listManuscriptRevisions(options?: {
+  rootDir?: string;
+  projectId?: string;
+  includeStateChanges?: boolean;
+}): Promise<ManuscriptRevisionHistory>;
