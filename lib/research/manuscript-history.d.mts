@@ -18,6 +18,15 @@ export type ManuscriptRevisionHistory = {
   stateDirty: boolean;
   available: boolean;
 };
+export type ManuscriptHistoryContext = {
+  root: string;
+  projectId: string;
+  projectPath: string;
+};
+export function resolveManuscriptHistoryContext(options?: {
+  rootDir?: string;
+  projectId?: string;
+}): Promise<ManuscriptHistoryContext>;
 export function listManuscriptRevisions(options?: {
   rootDir?: string;
   projectId?: string;
