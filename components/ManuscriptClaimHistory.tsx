@@ -202,7 +202,7 @@ export function ManuscriptClaimHistory({
         <article className={`${styles.timelinePanel} panel`}>
           <header className={styles.panelHeading}>
             <div><span className="kicker">Chronology</span><h3>Authored semantic changes</h3></div>
-            <p>{selectedClaim ? `Showing events for Claim ${selectedClaim}.` : "Showing explicit Claim/Evidence events across adjacent committed snapshots."}</p>
+            <p>{selectedClaim ? `Showing events for Claim ${selectedClaim}. ` : "Showing explicit Claim/Evidence events across adjacent committed snapshots. "}Revision order follows Git history; displayed timestamps are commit metadata and do not reorder snapshots.</p>
           </header>
           <div className={styles.timeline}>
             {evolution.transitions.slice().reverse().map((transition) => {
