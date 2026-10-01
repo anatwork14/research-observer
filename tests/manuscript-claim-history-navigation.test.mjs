@@ -56,6 +56,14 @@ test("event and relation filters normalize exact authored vocabulary and compose
   assert.doesNotMatch(component, /loadHistoricalResearchEvidenceIndex\(\{ commit:.*selectedRelation/);
 });
 
+test("event-type filtering restricts unfocused matrix and compare rows to matching events", async () => {
+  const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
+  assert.match(component, /const focusedComparisonClaimIds = selectedEvent\s*\? changedClaimIds\(comparisonEvents\)\s*:\s*stateFocusedComparisonClaimIds/);
+  assert.match(component, /const matrixDefaultIds = selectedEvent\s*\? matrixChangedIds\s*:/);
+  assert.match(component, /const matrixChangedIds = changedClaimIds\(matrixTransitions\.flatMap\(\(transition\) => transitionEvents\(transition\.events, "", selectedEvidence, selectedEvent, selectedRelation\)\)\)/);
+  assert.doesNotMatch(component, /selectedEvent\s*\?\s*matrixFocusedClaimIds/);
+});
+
 test("history filter chips remove one dimension at a time and preserve Base/Compare plus other filters", async () => {
   const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
   const css = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.module.css"), "utf8");
