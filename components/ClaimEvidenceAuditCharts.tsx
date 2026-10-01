@@ -101,9 +101,14 @@ function LinkedDonutChart({
       </svg>
       <div className="insight-legend">
         {visible.map((item, index) => (
-          <div key={item.key}>
+          <a
+            className="insight-legend-link"
+            href={hrefForDatum(item)}
+            key={item.key}
+            aria-label={`Filter Claims by ${item.label}: ${item.value}`}
+          >
             <i className={TONES[index % TONES.length]} /><span>{item.label}</span><strong>{item.value}</strong>
-          </div>
+          </a>
         ))}
       </div>
     </div>

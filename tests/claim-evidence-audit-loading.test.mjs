@@ -126,6 +126,18 @@ test("Claims charts drill into the same URL-backed filter contract", async () =>
   assert.match(charts, /qualification:\s*"qualifies"/);
 });
 
+test("coverage legend provides a keyboard and pointer drill-down matching its donut segment", async () => {
+  const charts = await fs.readFile(path.join(root, "components/ClaimEvidenceAuditCharts.tsx"), "utf8");
+  const donut = charts.match(/function LinkedDonutChart\([\s\S]*?\n}\n\nexport function ClaimCoverageDrilldownChart/);
+  assert.ok(donut, "coverage donut implementation is present");
+  assert.equal((donut[0].match(/href=\{hrefForDatum\(item\)\}/g) ?? []).length, 2);
+  assert.match(donut[0], /<a href=\{hrefForDatum\(item\)\} key=\{item\.key\} aria-label=\{`Filter Claims by \$\{item\.label\}: \$\{item\.value\}`\}>/);
+  assert.match(donut[0], /className="insight-legend-link"[\s\S]*?href=\{hrefForDatum\(item\)\}[\s\S]*?aria-label=\{`Filter Claims by \$\{item\.label\}: \$\{item\.value\}`\}/);
+  const css = await fs.readFile(path.join(root, "app/globals.css"), "utf8");
+  assert.match(css, /\.insight-legend > a\s*\{[^}]*min-height:\s*44px/s);
+  assert.match(css, /\.insight-legend > a:focus-visible/);
+});
+
 test("chart-only drilldown filters remain removable and survive form submissions", async () => {
   const controls = await fs.readFile(path.join(root, "components/ClaimEvidenceAuditFilters.tsx"), "utf8");
   assert.match(controls, /Signal: support \+ contradiction/);
