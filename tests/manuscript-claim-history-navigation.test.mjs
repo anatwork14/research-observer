@@ -33,6 +33,20 @@ test("Evidence history focus is explicit, exact, URL-backed, and intersects Clai
   assert.doesNotMatch(component, /loadHistoricalResearchEvidenceIndex\(\{ commit:.*selectedEvidence/);
 });
 
+test("chronology Evidence details provide exact focus links without changing the selected revision pair", async () => {
+  const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
+  const css = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.module.css"), "utf8");
+  assert.match(component, /event\.evidenceSlug === selectedEvidence \? styles\.eventEvidenceActiveLink : styles\.eventEvidenceLink/);
+  assert.match(component, /evidenceSlug: event\.evidenceSlug/);
+  assert.match(component, /baseCommit: base\?\.commit/);
+  assert.match(component, /compareCommit: compare\?\.commit/);
+  assert.match(component, /claimId: selectedClaim/);
+  assert.match(css, /\.eventEvidenceLink:focus-visible/);
+  assert.match(css, /\.eventEvidenceActiveLink/);
+  assert.match(css, /@media \(pointer: coarse\)[\s\S]*\.eventEvidenceLink,[\s\S]*\.eventEvidenceActiveLink \{ min-height: 44px; \}/);
+  assert.match(css, /@media \(max-width: 700px\)[\s\S]*\.eventEvidenceLink,[\s\S]*\.eventEvidenceActiveLink \{ grid-column: 1 \/ -1; \}/);
+});
+
 test("Claim evolution matrix contains horizontal width and keeps the Claim identity column visible", async () => {
   const css = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.module.css"), "utf8");
   assert.match(css, /\.matrixPanel\s*\{[^}]*overflow:\s*hidden/s);
