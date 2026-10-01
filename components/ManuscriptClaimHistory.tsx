@@ -38,6 +38,15 @@ const EVENT_ORDER: ManuscriptClaimHistoryEvent["type"][] = [
   "relation-removed",
 ];
 
+const ENDPOINT_STATUS_ORDER: HistoricalEvidenceResolution["status"][] = [
+  "valid",
+  "missing",
+  "wrong-type",
+  "cross-project",
+  "ambiguous",
+  "unavailable",
+];
+
 function formatDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
@@ -63,6 +72,21 @@ function historicalStatus(resolution: HistoricalEvidenceResolution) {
   if (resolution.status === "cross-project") return `historical target belongs to project ${resolution.research || "unknown"}`;
   if (resolution.status === "wrong-type") return `historical target type ${resolution.type || "unknown"}, not Evidence`;
   return "historical endpoint validation unavailable";
+}
+
+function endpointSummary(snapshot: ManuscriptClaimHistorySnapshot, historicalIndex: HistoricalResearchEvidenceIndex | undefined, projectId: string) {
+  const slugs = [...new Set(snapshot.links.map((link) => link.evidenceSlug))];
+  if (!slugs.length) return "no authored Evidence endpoints";
+  const counts = new Map<HistoricalEvidenceResolution["status"], number>();
+  for (const slug of slugs) {
+    const status = resolveHistoricalEvidenceSlug(historicalIndex, slug, { projectId }).status;
+    counts.set(status, (counts.get(status) || 0) + 1);
+  }
+  const detail = ENDPOINT_STATUS_ORDER
+    .map((status) => counts.get(status) ? `${counts.get(status)} ${status}` : "")
+    .filter(Boolean)
+    .join(" · ");
+  return `${slugs.length} distinct · ${detail}`;
 }
 
 function ClaimLinks({
@@ -286,10 +310,10 @@ export async function ManuscriptClaimHistory({
           {base && compare && (
             <div className={styles.revisionPair}>
               <div>
-                <span>Base</span><code>{base.shortCommit}</code><strong>{base.subject || "Manuscript revision"}</strong><small>{formatDate(base.at)} · {base.stats.claims} Claims · {base.stats.links} authored links</small>
+                <span>Base</span><code>{base.shortCommit}</code><strong>{base.subject || "Manuscript revision"}</strong><small>{formatDate(base.at)} · {base.stats.claims} Claims · {base.stats.links} authored links</small><small>Historical endpoints: {endpointSummary(base, historicalIndexes[base.commit], projectId)}</small>
               </div>
               <div>
-                <span>Compare</span><code>{compare.shortCommit}</code><strong>{compare.subject || "Manuscript revision"}</strong><small>{formatDate(compare.at)} · {compare.stats.claims} Claims · {compare.stats.links} authored links</small>
+                <span>Compare</span><code>{compare.shortCommit}</code><strong>{compare.subject || "Manuscript revision"}</strong><small>{formatDate(compare.at)} · {compare.stats.claims} Claims · {compare.stats.links} authored links</small><small>Historical endpoints: {endpointSummary(compare, historicalIndexes[compare.commit], projectId)}</small>
               </div>
             </div>
           )}
