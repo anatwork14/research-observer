@@ -3,6 +3,8 @@ import type { ClaimEvidenceAudit, ClaimEvidenceAuditClaim } from "./claim-eviden
 export type ClaimEvidenceAuditFilters = {
   relation?: string;
   coverage?: string;
+  signal?: string;
+  evidence?: string;
   file?: string;
   section?: string;
   query?: string;
@@ -11,12 +13,15 @@ export type ClaimEvidenceAuditFilters = {
 export type NormalizedClaimEvidenceAuditFilters = {
   relation: "supports" | "contradicts" | "contextualizes" | "qualifies" | "";
   coverage: "none" | "one" | "multiple" | "linked" | "";
+  signal: "support" | "contradiction" | "support-contradiction" | "context" | "qualification" | "";
+  evidence: string;
   file: string;
   section: string;
   query: string;
 };
 
 export const CLAIM_AUDIT_COVERAGE_FILTERS: readonly ["none", "one", "multiple", "linked"];
+export const CLAIM_AUDIT_SIGNAL_FILTERS: readonly ["support", "contradiction", "support-contradiction", "context", "qualification"];
 
 export function normalizeClaimEvidenceAuditFilters(filters?: ClaimEvidenceAuditFilters): NormalizedClaimEvidenceAuditFilters;
 
