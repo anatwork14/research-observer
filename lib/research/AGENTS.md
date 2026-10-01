@@ -113,6 +113,7 @@ For graph/timeline/version work, also read `docs/RESEARCH_EVOLUTION.md`. For exp
 - `relation-changed` may be emitted only for exactly one removed and one added relation on the same exact Claim/Evidence endpoints. Ambiguous multi-relation changes remain additions/removals.
 - Evidence-target add/remove operates on exact Claim/Evidence endpoint presence independently of relation words, so `supports → qualifies` alone does not remove/re-add the Evidence target.
 - Committed visibility-state changes may add/remove Claims from the visible historical snapshot even when `.tex` bytes do not change; describe that as snapshot presence/absence, not automatic source deletion.
+- Preserve the manuscript history service's Git revision sequence. Reverse its newest-first list once for oldest→newest display; never sort historical snapshots by author/commit timestamp because timestamps can be skewed or equal.
 - Historical Claim scanning is Timeline-only in the first UI. Research Graph and Provenance must not pay for it.
 - Reuse the Timeline page's already-loaded manuscript revision list rather than running a duplicate `git log` in the same request.
 - Invalid `claimBase`/`claimCompare` query values must select only already-loaded snapshots or fall back to a safe default pair; never pass arbitrary query text to Git object reads.
@@ -160,6 +161,7 @@ node --test tests/manuscript-claim-relations.test.mjs
 node --test tests/manuscript-claim-relation-collision.test.mjs
 node --test tests/manuscript-claim-evidence-projection.test.mjs
 node --test tests/manuscript-claim-history.test.mjs
+node --test tests/manuscript-claim-history-order.test.mjs
 node --test tests/manuscript-claim-history-ui.test.mjs
 node --test tests/claim-evidence-audit.test.mjs
 node --test tests/claim-evidence-audit-loading.test.mjs
