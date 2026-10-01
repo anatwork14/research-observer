@@ -26,11 +26,16 @@ test("Claim history comparison state is URL-backed and preserves the selected pr
   assert.match(component, /name="claimHistory"/);
 });
 
-test("Claim history UI keeps historical semantics factual, bounded, and dirty state separate", async () => {
+test("Claim history UI keeps historical semantics factual, bounded, and working state separate", async () => {
+  const page = await fs.readFile(path.join(root, "app/graph/page.tsx"), "utf8");
   const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
   const service = await fs.readFile(path.join(root, "lib/research/manuscript-claim-history.mjs"), "utf8");
   assert.match(component, /Current dirty editor text is never projected backward/);
   assert.match(component, /no semantic relationship is inferred from prose or citations/);
+  assert.match(component, /const workingChanges = dirtyFiles\.length \+ \(stateDirty \? 1 : 0\)/);
+  assert.match(component, /Manuscript visibility state differs from the latest committed state/);
+  assert.match(page, /stateDirty=\{manuscriptStateDirty\}/);
+  assert.match(page, /manuscriptStateDirty = Boolean\(manuscriptHistory\.stateDirty\)/);
   assert.match(component, /slice\(0, 10\)/);
   assert.match(component, /changedClaimIds\(comparisonEvents\)\.slice\(0, 20\)/);
   assert.match(component, /bounded at 40/);
@@ -42,7 +47,8 @@ test("Claim history UI keeps historical semantics factual, bounded, and dirty st
 test("historical Evidence display distinguishes authored historical slugs from current canonical Evidence", async () => {
   const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
   assert.match(component, /link\.currentCanonical \? \(/);
-  assert.match(component, /not current canonical Evidence/);
+  assert.match(component, /historical authored slug · not current canonical Evidence/);
+  assert.match(component, /<span>\{link\.relation\} · \{link\.evidenceSlug\}<\/span>/);
   assert.match(component, /\/progress\/\$\{encodeURIComponent\(link\.evidenceSlug\)\}/);
 });
 
