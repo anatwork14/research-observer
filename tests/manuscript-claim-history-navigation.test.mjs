@@ -82,7 +82,7 @@ test("history filter chips remove one dimension at a time and preserve Base/Comp
   assert.match(css, /@media \(pointer: coarse\)[\s\S]*\.focusBar a/);
 });
 
-test("revision pair navigation follows loaded Git snapshot order, preserves filters, and stops at edges", async () => {
+test("revision pair navigation follows loaded Git snapshot order, preserves filters, stops at edges, and exposes bounded presets", async () => {
   const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
   const css = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.module.css"), "utf8");
   assert.match(component, /const baseIndex = base \? snapshots\.findIndex\(\(snapshot\) => snapshot\.commit === base\.commit\) : -1/);
@@ -91,14 +91,25 @@ test("revision pair navigation follows loaded Git snapshot order, preserves filt
   assert.match(component, /const newerBase = baseIndex >= 0 && baseIndex < snapshots\.length - 1 \? snapshots\[baseIndex \+ 1\] : undefined/);
   assert.match(component, /const olderCompare = compareIndex > 0 \? snapshots\[compareIndex - 1\] : undefined/);
   assert.match(component, /const newerCompare = compareIndex >= 0 && compareIndex < snapshots\.length - 1 \? snapshots\[compareIndex \+ 1\] : undefined/);
+  assert.match(component, /const adjacentBaseForCompare = compareIndex > 0 \? snapshots\[compareIndex - 1\] : undefined/);
+  assert.match(component, /const latestPairBase = snapshots\.at\(-2\)/);
+  assert.match(component, /const latestPairCompare = snapshots\.at\(-1\)/);
+  assert.match(component, /const adjacentPairIsCurrent = Boolean\(adjacentBaseForCompare && base\?\.commit === adjacentBaseForCompare\.commit\)/);
+  assert.match(component, /const latestPairIsCurrent = Boolean\(latestPairBase && latestPairCompare && base\?\.commit === latestPairBase\.commit && compare\?\.commit === latestPairCompare\.commit\)/);
   assert.match(component, /aria-label="Revision pair navigation"/);
   assert.match(component, /historyHref\(\{ \.\.\.hrefState, baseCommit: olderBase\.commit \}\)/);
   assert.match(component, /historyHref\(\{ \.\.\.hrefState, baseCommit: newerBase\.commit \}\)/);
   assert.match(component, /historyHref\(\{ \.\.\.hrefState, compareCommit: olderCompare\.commit \}\)/);
   assert.match(component, /historyHref\(\{ \.\.\.hrefState, compareCommit: newerCompare\.commit \}\)/);
   assert.match(component, /historyHref\(\{ \.\.\.hrefState, baseCommit: compare\.commit, compareCommit: base\.commit \}\)/);
+  assert.match(component, /historyHref\(\{ \.\.\.hrefState, baseCommit: adjacentBaseForCompare\.commit \}\)/);
+  assert.match(component, /historyHref\(\{ \.\.\.hrefState, baseCommit: latestPairBase\.commit, compareCommit: latestPairCompare\.commit \}\)/);
+  assert.match(component, />Previous → Compare<\/Link>/);
+  assert.match(component, />Latest pair<\/Link>/);
   assert.match(component, /aria-disabled="true">← Older Base/);
   assert.match(component, /aria-disabled="true">Newer Compare →/);
+  assert.match(component, /aria-disabled="true">Previous → Compare/);
+  assert.match(component, /aria-disabled="true">Latest pair/);
   assert.doesNotMatch(component, /baseIndex.*% snapshots\.length/);
   assert.doesNotMatch(component, /compareIndex.*% snapshots\.length/);
   assert.match(css, /\.revisionNav\s*\{[^}]*flex-wrap:\s*wrap/s);
