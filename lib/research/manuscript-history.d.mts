@@ -8,13 +8,14 @@ export type ManuscriptRevision = {
   files: ManuscriptRevisionFile[];
   added: number;
   removed: number;
-  stateChanged: boolean;
+  stateChanged?: boolean;
 };
 export type ManuscriptRevisionHistory = {
   projectId: string;
   projectPath: string;
   revisions: ManuscriptRevision[];
   dirtyFiles: string[];
+  stateDirty: boolean;
   available: boolean;
 };
 export function listManuscriptRevisions(options?: {
