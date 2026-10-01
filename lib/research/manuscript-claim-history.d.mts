@@ -24,6 +24,7 @@ export type ManuscriptClaimHistorySnapshot = {
   author: string;
   subject: string;
   files: string[];
+  stateChanged: boolean;
   mainFile: string;
   claims: ManuscriptClaimHistoryClaim[];
   links: ManuscriptClaimHistoryLink[];
@@ -59,6 +60,11 @@ export type ManuscriptClaimEvolution = {
   dirtyFiles?: string[];
   available?: boolean;
 };
+
+export function compareManuscriptClaimSnapshots(
+  previous: ManuscriptClaimHistorySnapshot,
+  current: ManuscriptClaimHistorySnapshot,
+): ManuscriptClaimHistoryTransition;
 
 export function buildManuscriptClaimEvolution(options?: {
   projectId?: string;
