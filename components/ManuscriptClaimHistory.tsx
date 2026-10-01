@@ -510,6 +510,8 @@ export async function ManuscriptClaimHistory({
                 const afterLinksAll = snapshotLinks(compare, id);
                 const beforeLinks = selectedEvidence ? beforeLinksAll.filter((link) => link.evidenceSlug === selectedEvidence) : beforeLinksAll;
                 const afterLinks = selectedEvidence ? afterLinksAll.filter((link) => link.evidenceSlug === selectedEvidence) : afterLinksAll;
+                const beforeEvidenceSlugs = [...new Set(beforeLinks.map((link) => link.evidenceSlug))];
+                const afterEvidenceSlugs = [...new Set(afterLinks.map((link) => link.evidenceSlug))];
                 const claimEvents = transitionEvents(comparison?.events || [], id, selectedEvidence);
                 const presence = before && after ? "present in both" : before ? "left compared snapshot" : "entered compared snapshot";
                 return (
@@ -518,11 +520,11 @@ export async function ManuscriptClaimHistory({
                     <div className={styles.claimPair}>
                       <div>
                         <span>Base</span>
-                        {before ? <><p>{before.excerpt}</p><small>{before.file}{before.section ? ` · ${before.section}` : ""}</small><ClaimLinks links={beforeLinks} historicalIndex={historicalIndexes[base.commit]} projectId={projectId} /></> : <em className={styles.none}>Claim absent from this visible committed snapshot</em>}
+                        {before ? <><p>{before.excerpt}</p><small>{before.file}{before.section ? ` · ${before.section}` : ""}</small><ClaimLinks links={beforeLinks} historicalIndex={historicalIndexes[base.commit]} projectId={projectId} />{beforeEvidenceSlugs.length > 0 && <div className={styles.focusBar} aria-label={`Base Evidence history focus for ${id}`}>{beforeEvidenceSlugs.map((slug) => <Link key={slug} className={slug === selectedEvidence ? styles.clearFocus : undefined} href={historyHref({ projectId, baseCommit: base.commit, compareCommit: compare.commit, claimId: id, evidenceSlug: slug })}>Focus Evidence: {slug}</Link>)}</div>}</> : <em className={styles.none}>Claim absent from this visible committed snapshot</em>}
                       </div>
                       <div>
                         <span>Compare</span>
-                        {after ? <><p>{after.excerpt}</p><small>{after.file}{after.section ? ` · ${after.section}` : ""}</small><ClaimLinks links={afterLinks} historicalIndex={historicalIndexes[compare.commit]} projectId={projectId} /></> : <em className={styles.none}>Claim absent from this visible committed snapshot</em>}
+                        {after ? <><p>{after.excerpt}</p><small>{after.file}{after.section ? ` · ${after.section}` : ""}</small><ClaimLinks links={afterLinks} historicalIndex={historicalIndexes[compare.commit]} projectId={projectId} />{afterEvidenceSlugs.length > 0 && <div className={styles.focusBar} aria-label={`Compare Evidence history focus for ${id}`}>{afterEvidenceSlugs.map((slug) => <Link key={slug} className={slug === selectedEvidence ? styles.clearFocus : undefined} href={historyHref({ projectId, baseCommit: base.commit, compareCommit: compare.commit, claimId: id, evidenceSlug: slug })}>Focus Evidence: {slug}</Link>)}</div>}</> : <em className={styles.none}>Claim absent from this visible committed snapshot</em>}
                       </div>
                     </div>
                   </section>
