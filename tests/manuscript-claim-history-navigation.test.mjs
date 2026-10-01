@@ -82,6 +82,31 @@ test("history filter chips remove one dimension at a time and preserve Base/Comp
   assert.match(css, /@media \(pointer: coarse\)[\s\S]*\.focusBar a/);
 });
 
+test("revision pair navigation follows loaded Git snapshot order, preserves filters, and stops at edges", async () => {
+  const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
+  const css = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.module.css"), "utf8");
+  assert.match(component, /const baseIndex = base \? snapshots\.findIndex\(\(snapshot\) => snapshot\.commit === base\.commit\) : -1/);
+  assert.match(component, /const compareIndex = compare \? snapshots\.findIndex\(\(snapshot\) => snapshot\.commit === compare\.commit\) : -1/);
+  assert.match(component, /const olderBase = baseIndex > 0 \? snapshots\[baseIndex - 1\] : undefined/);
+  assert.match(component, /const newerBase = baseIndex >= 0 && baseIndex < snapshots\.length - 1 \? snapshots\[baseIndex \+ 1\] : undefined/);
+  assert.match(component, /const olderCompare = compareIndex > 0 \? snapshots\[compareIndex - 1\] : undefined/);
+  assert.match(component, /const newerCompare = compareIndex >= 0 && compareIndex < snapshots\.length - 1 \? snapshots\[compareIndex \+ 1\] : undefined/);
+  assert.match(component, /aria-label="Revision pair navigation"/);
+  assert.match(component, /historyHref\(\{ \.\.\.hrefState, baseCommit: olderBase\.commit \}\)/);
+  assert.match(component, /historyHref\(\{ \.\.\.hrefState, baseCommit: newerBase\.commit \}\)/);
+  assert.match(component, /historyHref\(\{ \.\.\.hrefState, compareCommit: olderCompare\.commit \}\)/);
+  assert.match(component, /historyHref\(\{ \.\.\.hrefState, compareCommit: newerCompare\.commit \}\)/);
+  assert.match(component, /historyHref\(\{ \.\.\.hrefState, baseCommit: compare\.commit, compareCommit: base\.commit \}\)/);
+  assert.match(component, /aria-disabled="true">← Older Base/);
+  assert.match(component, /aria-disabled="true">Newer Compare →/);
+  assert.doesNotMatch(component, /baseIndex.*% snapshots\.length/);
+  assert.doesNotMatch(component, /compareIndex.*% snapshots\.length/);
+  assert.match(css, /\.revisionNav\s*\{[^}]*flex-wrap:\s*wrap/s);
+  assert.match(css, /\.revisionNav \[aria-disabled="true"\]/);
+  assert.match(css, /\.revisionNav a:focus-visible/);
+  assert.match(css, /@media \(pointer: coarse\)[\s\S]*\.revisionNav a,[\s\S]*\.revisionNav span/);
+});
+
 test("chronology Evidence details provide exact focus links without changing filters or selected revision pair", async () => {
   const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
   const css = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.module.css"), "utf8");
