@@ -487,7 +487,7 @@ export async function ManuscriptClaimHistory({
                   <div className={styles.eventCounts}>
                     {EVENT_ORDER.map((type) => {
                       const count = events.filter((event) => event.type === type).length;
-                      return count ? <span key={type}>{EVENT_LABELS[type]} · {count}</span> : null;
+                      return count ? <Link className={type === selectedEvent ? styles.eventFilterActiveLink : styles.eventFilterLink} href={historyHref({ ...hrefState, eventType: type })} key={type}>{EVENT_LABELS[type]} · {count}</Link> : null;
                     })}
                   </div>
                   <div className={styles.eventList}>
@@ -533,7 +533,7 @@ export async function ManuscriptClaimHistory({
               <div className={styles.deltaCounts}>
                 {EVENT_ORDER.map((type) => {
                   const count = comparisonEvents.filter((event) => event.type === type).length;
-                  return count ? <span key={type}><strong>{count}</strong>{EVENT_LABELS[type]}</span> : null;
+                  return count ? <Link className={type === selectedEvent ? styles.eventFilterActiveLink : styles.eventFilterLink} href={historyHref({ ...hrefState, eventType: type })} key={type}><strong>{count}</strong>{EVENT_LABELS[type]}</Link> : null;
                 })}
                 {!comparisonEvents.length && <span><strong>0</strong>matching explicit changes</span>}
               </div>
@@ -546,12 +546,12 @@ export async function ManuscriptClaimHistory({
                   <div className={styles.relationTransitionScroll}>
                     <table className={styles.relationTransitionMatrix}>
                       <thead>
-                        <tr><th scope="col">Before ↓ / After →</th>{MANUSCRIPT_CLAIM_EVIDENCE_RELATIONS.map((relation) => <th scope="col" key={relation}>{relation}</th>)}</tr>
+                        <tr><th scope="col">Before ↓ / After →</th>{MANUSCRIPT_CLAIM_EVIDENCE_RELATIONS.map((relation) => <th scope="col" key={relation}><Link className={relation === selectedRelation ? styles.relationFilterActiveLink : styles.relationFilterLink} href={historyHref({ ...hrefState, relationType: relation })}>{relation}</Link></th>)}</tr>
                       </thead>
                       <tbody>
                         {MANUSCRIPT_CLAIM_EVIDENCE_RELATIONS.map((before) => (
                           <tr key={before}>
-                            <th scope="row">{before}</th>
+                            <th scope="row"><Link className={before === selectedRelation ? styles.relationFilterActiveLink : styles.relationFilterLink} href={historyHref({ ...hrefState, relationType: before })}>{before}</Link></th>
                             {MANUSCRIPT_CLAIM_EVIDENCE_RELATIONS.map((after) => {
                               const count = relationTransitionCount(comparisonEvents, before, after);
                               return <td className={count ? styles.relationTransitionHit : undefined} key={`${before}:${after}`}>{count || "—"}</td>;
