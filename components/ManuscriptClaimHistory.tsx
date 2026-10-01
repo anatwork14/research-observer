@@ -248,6 +248,12 @@ export async function ManuscriptClaimHistory({
   const previous = snapshots.at(-2) || latest;
   const base = snapshots.find((snapshot) => snapshot.commit === baseCommit) || previous;
   const compare = snapshots.find((snapshot) => snapshot.commit === compareCommit) || latest;
+  const baseIndex = base ? snapshots.findIndex((snapshot) => snapshot.commit === base.commit) : -1;
+  const compareIndex = compare ? snapshots.findIndex((snapshot) => snapshot.commit === compare.commit) : -1;
+  const olderBase = baseIndex > 0 ? snapshots[baseIndex - 1] : undefined;
+  const newerBase = baseIndex >= 0 && baseIndex < snapshots.length - 1 ? snapshots[baseIndex + 1] : undefined;
+  const olderCompare = compareIndex > 0 ? snapshots[compareIndex - 1] : undefined;
+  const newerCompare = compareIndex >= 0 && compareIndex < snapshots.length - 1 ? snapshots[compareIndex + 1] : undefined;
   const comparison = base && compare ? compareManuscriptClaimSnapshots(base, compare) : null;
   const comparisonEvents = comparison ? transitionEvents(comparison.events, selectedClaim, selectedEvidence, selectedEvent, selectedRelation) : [];
   const relationTransitionTotal = comparisonEvents.filter((event) => event.type === "relation-changed").length;
@@ -405,6 +411,15 @@ export async function ManuscriptClaimHistory({
           </label>
           <button type="submit">Compare revisions</button>
         </form>
+        {base && compare && (
+          <nav className={styles.revisionNav} aria-label="Revision pair navigation">
+            {olderBase ? <Link href={historyHref({ ...hrefState, baseCommit: olderBase.commit })}>← Older Base</Link> : <span aria-disabled="true">← Older Base</span>}
+            {newerBase ? <Link href={historyHref({ ...hrefState, baseCommit: newerBase.commit })}>Newer Base →</Link> : <span aria-disabled="true">Newer Base →</span>}
+            {base.commit !== compare.commit ? <Link className={styles.swapRevision} href={historyHref({ ...hrefState, baseCommit: compare.commit, compareCommit: base.commit })}>Swap Base ↔ Compare</Link> : <span className={styles.swapRevision} aria-disabled="true">Swap Base ↔ Compare</span>}
+            {olderCompare ? <Link href={historyHref({ ...hrefState, compareCommit: olderCompare.commit })}>← Older Compare</Link> : <span aria-disabled="true">← Older Compare</span>}
+            {newerCompare ? <Link href={historyHref({ ...hrefState, compareCommit: newerCompare.commit })}>Newer Compare →</Link> : <span aria-disabled="true">Newer Compare →</span>}
+          </nav>
+        )}
         {hasFocus && (
           <div className={styles.focusBar} aria-label="Active Claim and Evidence history filters">
             {selectedClaim && <Link href={historyHref({ ...hrefState, claimId: undefined })}>Claim: {selectedClaim} ×</Link>}
