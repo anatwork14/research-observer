@@ -1,3 +1,5 @@
+import type { ManuscriptRevisionHistory } from "./manuscript-history.mjs";
+
 export type ManuscriptClaimHistoryClaim = {
   claimId: string;
   file: string;
@@ -76,4 +78,5 @@ export function loadManuscriptClaimEvolution(options?: {
   projectId?: string;
   researchEntries?: Array<{ slug: string; title?: string; research?: string; type?: string }>;
   maxSnapshots?: number;
+  history?: ManuscriptRevisionHistory;
 }): Promise<ManuscriptClaimEvolution>;
