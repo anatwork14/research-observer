@@ -50,6 +50,8 @@ function scopeHref(
   if (view === "claims" && claimFilters) {
     if (claimFilters.relation) params.set("claimRelation", claimFilters.relation);
     if (claimFilters.coverage) params.set("claimCoverage", claimFilters.coverage);
+    if (claimFilters.signal) params.set("claimSignal", claimFilters.signal);
+    if (claimFilters.evidence) params.set("claimEvidence", claimFilters.evidence);
     if (claimFilters.file) params.set("claimFile", claimFilters.file);
     if (claimFilters.section) params.set("claimSection", claimFilters.section);
     if (claimFilters.query) params.set("claimQ", claimFilters.query);
@@ -75,6 +77,8 @@ export default async function InsightsPage({
   const claimFilters = normalizeClaimEvidenceAuditFilters({
     relation: one(params.claimRelation),
     coverage: one(params.claimCoverage),
+    signal: one(params.claimSignal),
+    evidence: one(params.claimEvidence),
     file: one(params.claimFile),
     section: one(params.claimSection),
     query: one(params.claimQ),
