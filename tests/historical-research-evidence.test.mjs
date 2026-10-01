@@ -22,13 +22,13 @@ async function writeNote(file, { id, type, research = "default", title = id }) {
   await fs.mkdir(path.dirname(file), { recursive: true });
   await fs.writeFile(file, [
     "---",
-    `id: ${id}`,
+    ...(id === undefined ? [] : [`id: ${id}`]),
     `type: ${type}`,
     `research: ${research}`,
-    `title: ${title}`,
+    `title: ${title || "Untitled"}`,
     "---",
     "",
-    `# ${title}`,
+    `# ${title || "Untitled"}`,
     "",
   ].join("\n"));
 }
@@ -114,6 +114,44 @@ test("historical Evidence resolution preserves folder-project precedence and dup
     const duplicateCommit = git(root, "rev-parse", "HEAD");
     index = await loadHistoricalResearchEvidenceIndex({ rootDir: root, commit: duplicateCommit, projectId: "default" });
     assert.equal(resolveHistoricalEvidenceSlug(index, "shared-evidence").status, "ambiguous");
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test("historical fallback slugs match compiler folder discovery and ignore import staging directories", async () => {
+  const root = await initRepo("observaire-historical-evidence-discovery-");
+  try {
+    const progress = path.join(root, "progress");
+    await writeNote(path.join(progress, "alpha", "001_fallback.md"), {
+      id: undefined,
+      type: "evidence",
+      research: "default",
+      title: "Folder fallback",
+    });
+    await writeNote(path.join(progress, ".private", "002_hidden-folder.md"), {
+      id: undefined,
+      type: "evidence",
+      research: "default",
+      title: "Undiscovered folder fallback",
+    });
+    await writeNote(path.join(progress, ".observaire-import-staging", "003_imported.md"), {
+      id: "import-only-evidence",
+      type: "evidence",
+      research: "default",
+      title: "Import staging",
+    });
+    git(root, "add", ".");
+    git(root, "commit", "-m", "Compiler discovery edge cases");
+    const commit = git(root, "rev-parse", "HEAD");
+    const index = await loadHistoricalResearchEvidenceIndex({ rootDir: root, commit, projectId: "default" });
+
+    assert.equal(resolveHistoricalEvidenceSlug(index, "alpha-001_fallback", { projectId: "alpha" }).status, "valid");
+    assert.equal(resolveHistoricalEvidenceSlug(index, "001_fallback").status, "missing");
+    assert.equal(resolveHistoricalEvidenceSlug(index, "002_hidden-folder").status, "valid");
+    assert.equal(resolveHistoricalEvidenceSlug(index, "default-002_hidden-folder").status, "missing");
+    assert.equal(resolveHistoricalEvidenceSlug(index, "import-only-evidence").status, "missing");
+    assert.equal(index.entries.some((entry) => entry.file.includes(".observaire-import-staging")), false);
   } finally {
     await fs.rm(root, { recursive: true, force: true });
   }
