@@ -67,18 +67,24 @@ function historyHref({
   compareCommit,
   claimId,
   evidenceSlug,
+  eventType,
+  relationType,
 }: {
   projectId: string;
   baseCommit?: string;
   compareCommit?: string;
   claimId?: string;
   evidenceSlug?: string;
+  eventType?: string;
+  relationType?: string;
 }) {
   const params = new URLSearchParams({ research: projectId, view: "timeline" });
   if (baseCommit) params.set("claimBase", baseCommit);
   if (compareCommit) params.set("claimCompare", compareCommit);
   if (claimId) params.set("claimHistory", claimId);
   if (evidenceSlug) params.set("evidenceHistory", evidenceSlug);
+  if (eventType) params.set("historyEvent", eventType);
+  if (relationType) params.set("historyRelation", relationType);
   return `/graph?${params.toString()}`;
 }
 
@@ -152,14 +158,37 @@ function snapshotLinks(snapshot: ManuscriptClaimHistorySnapshot, claimId: string
   return snapshot.links.filter((link) => link.claimId === claimId);
 }
 
+function focusedLinks(
+  links: ManuscriptClaimHistoryLink[],
+  evidenceSlug: string,
+  relationType: ManuscriptClaimEvidenceRelationType | "",
+) {
+  return links.filter((link) =>
+    (!evidenceSlug || link.evidenceSlug === evidenceSlug) &&
+    (!relationType || link.relation === relationType));
+}
+
 function changedClaimIds(events: ManuscriptClaimHistoryEvent[]) {
   return [...new Set(events.map((event) => event.claimId).filter(Boolean))].sort();
 }
 
-function transitionEvents(events: ManuscriptClaimHistoryEvent[], claimId: string, evidenceSlug = "") {
+function eventMatchesRelation(event: ManuscriptClaimHistoryEvent, relationType: ManuscriptClaimEvidenceRelationType | "") {
+  if (!relationType) return true;
+  return event.relation === relationType || event.beforeRelation === relationType || event.afterRelation === relationType;
+}
+
+function transitionEvents(
+  events: ManuscriptClaimHistoryEvent[],
+  claimId: string,
+  evidenceSlug = "",
+  eventType: ManuscriptClaimHistoryEvent["type"] | "" = "",
+  relationType: ManuscriptClaimEvidenceRelationType | "" = "",
+) {
   return events.filter((event) =>
     (!claimId || event.claimId === claimId) &&
-    (!evidenceSlug || event.evidenceSlug === evidenceSlug));
+    (!evidenceSlug || event.evidenceSlug === evidenceSlug) &&
+    (!eventType || event.type === eventType) &&
+    eventMatchesRelation(event, relationType));
 }
 
 function matrixEventSummary(events: ManuscriptClaimHistoryEvent[]) {
@@ -194,6 +223,8 @@ export async function ManuscriptClaimHistory({
   compareCommit,
   claimId = "",
   evidenceSlug = "",
+  eventType = "",
+  relationType = "",
   stateDirty = false,
 }: {
   evolution: ManuscriptClaimEvolution;
@@ -202,6 +233,8 @@ export async function ManuscriptClaimHistory({
   compareCommit?: string;
   claimId?: string;
   evidenceSlug?: string;
+  eventType?: string;
+  relationType?: string;
   stateDirty?: boolean;
 }) {
   const snapshots = evolution.snapshots || [];
@@ -209,24 +242,26 @@ export async function ManuscriptClaimHistory({
   const evidenceSlugs = [...new Set(snapshots.flatMap((snapshot) => snapshot.links.map((link) => link.evidenceSlug)))].sort();
   const selectedClaim = claimIds.includes(claimId) ? claimId : "";
   const selectedEvidence = evidenceSlugs.includes(evidenceSlug) ? evidenceSlug : "";
+  const selectedEvent = EVENT_ORDER.find((type) => type === eventType) || "";
+  const selectedRelation = MANUSCRIPT_CLAIM_EVIDENCE_RELATIONS.find((relation) => relation === relationType) || "";
   const latest = snapshots.at(-1);
   const previous = snapshots.at(-2) || latest;
   const base = snapshots.find((snapshot) => snapshot.commit === baseCommit) || previous;
   const compare = snapshots.find((snapshot) => snapshot.commit === compareCommit) || latest;
   const comparison = base && compare ? compareManuscriptClaimSnapshots(base, compare) : null;
-  const comparisonEvents = comparison ? transitionEvents(comparison.events, selectedClaim, selectedEvidence) : [];
+  const comparisonEvents = comparison ? transitionEvents(comparison.events, selectedClaim, selectedEvidence, selectedEvent, selectedRelation) : [];
   const relationTransitionTotal = comparisonEvents.filter((event) => event.type === "relation-changed").length;
-  const evidenceComparisonClaimIds = selectedEvidence && base && compare
+  const focusedComparisonClaimIds = (selectedEvidence || selectedRelation) && base && compare
     ? [...new Set([
-        ...base.links.filter((link) => link.evidenceSlug === selectedEvidence).map((link) => link.claimId),
-        ...compare.links.filter((link) => link.evidenceSlug === selectedEvidence).map((link) => link.claimId),
+        ...focusedLinks(base.links, selectedEvidence, selectedRelation).map((link) => link.claimId),
+        ...focusedLinks(compare.links, selectedEvidence, selectedRelation).map((link) => link.claimId),
         ...comparisonEvents.map((event) => event.claimId),
       ])].sort()
     : [];
   const compareClaimIds = selectedClaim
     ? [selectedClaim]
-    : selectedEvidence
-      ? evidenceComparisonClaimIds.slice(0, 20)
+    : (selectedEvidence || selectedRelation)
+      ? focusedComparisonClaimIds.slice(0, 20)
       : changedClaimIds(comparisonEvents).slice(0, 20);
   const uniqueHistoricalClaims = new Set(snapshots.flatMap((snapshot) => snapshot.claims.map((claim) => claim.claimId))).size;
   const dirtyFiles = evolution.dirtyFiles || [];
@@ -234,14 +269,12 @@ export async function ManuscriptClaimHistory({
   const matrixSnapshots = snapshots.slice(-12);
   const matrixCommits = new Set(matrixSnapshots.map((snapshot) => snapshot.commit));
   const matrixTransitions = evolution.transitions.filter((transition) => matrixCommits.has(transition.toCommit));
-  const matrixChangedIds = changedClaimIds(matrixTransitions.flatMap((transition) => transitionEvents(transition.events, "", selectedEvidence)));
-  const matrixEvidenceClaimIds = selectedEvidence
-    ? [...new Set(matrixSnapshots.flatMap((snapshot) => snapshot.links
-        .filter((link) => link.evidenceSlug === selectedEvidence)
-        .map((link) => link.claimId)))].sort()
+  const matrixChangedIds = changedClaimIds(matrixTransitions.flatMap((transition) => transitionEvents(transition.events, "", selectedEvidence, selectedEvent, selectedRelation)));
+  const matrixFocusedClaimIds = (selectedEvidence || selectedRelation)
+    ? [...new Set(matrixSnapshots.flatMap((snapshot) => focusedLinks(snapshot.links, selectedEvidence, selectedRelation).map((link) => link.claimId)))].sort()
     : [];
-  const matrixDefaultIds = selectedEvidence
-    ? [...new Set([...matrixEvidenceClaimIds, ...matrixChangedIds])].sort()
+  const matrixDefaultIds = (selectedEvidence || selectedRelation)
+    ? [...new Set([...matrixFocusedClaimIds, ...matrixChangedIds])].sort()
     : (matrixChangedIds.length ? matrixChangedIds : claimIds);
   const matrixClaimIds = selectedClaim ? [selectedClaim] : matrixDefaultIds.slice(0, 20);
   const transitionByCommit = new Map(evolution.transitions.map((transition) => [transition.toCommit, transition]));
@@ -280,6 +313,17 @@ export async function ManuscriptClaimHistory({
     );
   }
 
+  const hrefState = {
+    projectId,
+    baseCommit: base?.commit,
+    compareCommit: compare?.commit,
+    claimId: selectedClaim,
+    evidenceSlug: selectedEvidence,
+    eventType: selectedEvent,
+    relationType: selectedRelation,
+  };
+  const hasFocus = Boolean(selectedClaim || selectedEvidence || selectedEvent || selectedRelation);
+
   return (
     <section className={styles.shell} aria-label="Explicit Claim and Evidence revision history">
       <header className={styles.heading}>
@@ -309,7 +353,7 @@ export async function ManuscriptClaimHistory({
       <section className={`${styles.controls} panel`}>
         <div className={styles.controlsHeading}>
           <div><span className="kicker">Revision compare</span><h3>Compare explicit authored state</h3></div>
-          <p>Base → Compare is directional. Claim and Evidence focus use exact authored identities and filter the event list, matrix, and side-by-side inspection without changing the underlying snapshots.</p>
+          <p>Base → Compare is directional. Claim, Evidence, event, and relation filters use exact authored fields and intersect without changing the underlying snapshots.</p>
         </div>
         <form action="/graph" method="get" className={styles.form}>
           <input type="hidden" name="research" value={projectId} />
@@ -340,13 +384,29 @@ export async function ManuscriptClaimHistory({
               {evidenceSlugs.map((slug) => <option value={slug} key={slug}>{slug}</option>)}
             </select>
           </label>
+          <label>
+            <span>Event type</span>
+            <select name="historyEvent" defaultValue={selectedEvent}>
+              <option value="">All explicit event types</option>
+              {EVENT_ORDER.map((type) => <option value={type} key={type}>{EVENT_LABELS[type]}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>Relation type</span>
+            <select name="historyRelation" defaultValue={selectedRelation}>
+              <option value="">All authored relation types</option>
+              {MANUSCRIPT_CLAIM_EVIDENCE_RELATIONS.map((relation) => <option value={relation} key={relation}>{relation}</option>)}
+            </select>
+          </label>
           <button type="submit">Compare revisions</button>
         </form>
-        {(selectedClaim || selectedEvidence) && (
-          <div className={styles.focusBar} aria-label="Active Claim and Evidence history focus">
-            {selectedClaim && <Link href={historyHref({ projectId, baseCommit: base?.commit, compareCommit: compare?.commit, evidenceSlug: selectedEvidence })}>Claim: {selectedClaim} ×</Link>}
-            {selectedEvidence && <Link href={historyHref({ projectId, baseCommit: base?.commit, compareCommit: compare?.commit, claimId: selectedClaim })}>Evidence: {selectedEvidence} ×</Link>}
-            <Link className={styles.clearFocus} href={historyHref({ projectId, baseCommit: base?.commit, compareCommit: compare?.commit })}>Clear focus</Link>
+        {hasFocus && (
+          <div className={styles.focusBar} aria-label="Active Claim and Evidence history filters">
+            {selectedClaim && <Link href={historyHref({ ...hrefState, claimId: undefined })}>Claim: {selectedClaim} ×</Link>}
+            {selectedEvidence && <Link href={historyHref({ ...hrefState, evidenceSlug: undefined })}>Evidence: {selectedEvidence} ×</Link>}
+            {selectedEvent && <Link href={historyHref({ ...hrefState, eventType: undefined })}>Event: {EVENT_LABELS[selectedEvent]} ×</Link>}
+            {selectedRelation && <Link href={historyHref({ ...hrefState, relationType: undefined })}>Relation: {selectedRelation} ×</Link>}
+            <Link className={styles.clearFocus} href={historyHref({ projectId, baseCommit: base?.commit, compareCommit: compare?.commit })}>Clear filters</Link>
           </div>
         )}
       </section>
@@ -354,7 +414,7 @@ export async function ManuscriptClaimHistory({
       <section className={`${styles.matrixPanel} panel`} aria-label="Claim evolution matrix">
         <header className={styles.panelHeading}>
           <div><span className="kicker">Multi-revision view</span><h3>Claim evolution matrix</h3></div>
-          <p>Shows up to 12 recent committed snapshots and 20 Claim IDs. Claim and Evidence focus intersect exactly. Click a Claim to focus it or a revision to make it Compare; matrix-only revisions do not trigger historical research endpoint scans.</p>
+          <p>Shows up to 12 recent committed snapshots and 20 Claim IDs. Active filters intersect exactly; event type filters transition labels while Evidence/relation filters also narrow authored link counts. Matrix-only revisions do not trigger historical research endpoint scans.</p>
         </header>
         <div className={styles.matrixScroll}>
           <table className={styles.matrix}>
@@ -363,7 +423,7 @@ export async function ManuscriptClaimHistory({
                 <th scope="col">Claim</th>
                 {matrixSnapshots.map((snapshot) => (
                   <th scope="col" key={snapshot.commit}>
-                    <Link className={snapshot.commit === compare?.commit ? styles.matrixActiveLink : styles.matrixLink} href={historyHref({ projectId, baseCommit: base?.commit, compareCommit: snapshot.commit, claimId: selectedClaim, evidenceSlug: selectedEvidence })}>
+                    <Link className={snapshot.commit === compare?.commit ? styles.matrixActiveLink : styles.matrixLink} href={historyHref({ ...hrefState, compareCommit: snapshot.commit })}>
                       <code>{snapshot.shortCommit}</code><small>{snapshot.subject || "Revision"}</small>
                     </Link>
                   </th>
@@ -374,17 +434,17 @@ export async function ManuscriptClaimHistory({
               {matrixClaimIds.map((id) => (
                 <tr key={id}>
                   <th scope="row">
-                    <Link className={id === selectedClaim ? styles.matrixActiveLink : styles.matrixLink} href={historyHref({ projectId, baseCommit: base?.commit, compareCommit: compare?.commit, claimId: id, evidenceSlug: selectedEvidence })}>{id}</Link>
+                    <Link className={id === selectedClaim ? styles.matrixActiveLink : styles.matrixLink} href={historyHref({ ...hrefState, claimId: id })}>{id}</Link>
                   </th>
                   {matrixSnapshots.map((snapshot) => {
                     const present = Boolean(snapshotClaim(snapshot, id));
                     const allLinks = snapshotLinks(snapshot, id);
-                    const links = selectedEvidence ? allLinks.filter((link) => link.evidenceSlug === selectedEvidence) : allLinks;
-                    const events = transitionEvents(transitionByCommit.get(snapshot.commit)?.events || [], id, selectedEvidence);
+                    const links = focusedLinks(allLinks, selectedEvidence, selectedRelation);
+                    const events = transitionEvents(transitionByCommit.get(snapshot.commit)?.events || [], id, selectedEvidence, selectedEvent, selectedRelation);
                     return (
                       <td className={events.length ? styles.matrixChanged : present ? styles.matrixPresent : styles.matrixAbsent} key={`${id}:${snapshot.commit}`}>
                         <strong>{present ? "Present" : "Absent"}</strong>
-                        <span>{present ? `${links.length} ${selectedEvidence ? "focused" : "authored"} link${links.length === 1 ? "" : "s"}` : "—"}</span>
+                        <span>{present ? `${links.length} ${(selectedEvidence || selectedRelation) ? "focused" : "authored"} link${links.length === 1 ? "" : "s"}` : "—"}</span>
                         <small>{events.length ? matrixEventSummary(events) : "snapshot state"}</small>
                       </td>
                     );
@@ -402,18 +462,18 @@ export async function ManuscriptClaimHistory({
         <article className={`${styles.timelinePanel} panel`}>
           <header className={styles.panelHeading}>
             <div><span className="kicker">Chronology</span><h3>Authored semantic changes</h3></div>
-            <p>{selectedClaim ? `Claim ${selectedClaim}. ` : ""}{selectedEvidence ? `Evidence ${selectedEvidence}. ` : ""}{!selectedClaim && !selectedEvidence ? "Showing explicit Claim/Evidence events across adjacent committed snapshots. " : "Showing only explicit events matching the active focus. "}Revision order follows Git history; displayed timestamps are commit metadata and do not reorder snapshots.</p>
+            <p>{selectedClaim ? `Claim ${selectedClaim}. ` : ""}{selectedEvidence ? `Evidence ${selectedEvidence}. ` : ""}{selectedEvent ? `Event ${EVENT_LABELS[selectedEvent]}. ` : ""}{selectedRelation ? `Relation ${selectedRelation}. ` : ""}{!hasFocus ? "Showing explicit Claim/Evidence events across adjacent committed snapshots. " : "Showing only explicit events matching every active filter. "}Revision order follows Git history; displayed timestamps are commit metadata and do not reorder snapshots.</p>
           </header>
           <div className={styles.timeline}>
             {evolution.transitions.slice().reverse().map((transition) => {
-              const events = transitionEvents(transition.events, selectedClaim, selectedEvidence);
+              const events = transitionEvents(transition.events, selectedClaim, selectedEvidence, selectedEvent, selectedRelation);
               if (!events.length) return null;
               const targetSnapshot = snapshots.find((snapshot) => snapshot.commit === transition.toCommit);
               return (
                 <div className={styles.transition} key={`${transition.fromCommit}:${transition.toCommit}`}>
                   <div className={styles.transitionMeta}>
                     <time dateTime={transition.at}>{formatDate(transition.at)}</time>
-                    <Link className={transition.toCommit === compare?.commit ? styles.matrixActiveLink : styles.matrixLink} href={historyHref({ projectId, baseCommit: base?.commit, compareCommit: transition.toCommit, claimId: selectedClaim, evidenceSlug: selectedEvidence })}>
+                    <Link className={transition.toCommit === compare?.commit ? styles.matrixActiveLink : styles.matrixLink} href={historyHref({ ...hrefState, compareCommit: transition.toCommit })}>
                       <code>{transition.toCommit.slice(0, 10)}</code>
                     </Link>
                     {targetSnapshot?.stateChanged && <span>visibility state changed</span>}
@@ -429,9 +489,9 @@ export async function ManuscriptClaimHistory({
                     {events.slice(0, 10).map((event, index) => (
                       <div key={`${event.type}:${event.claimId}:${event.evidenceSlug || ""}:${index}`}>
                         <span>{EVENT_LABELS[event.type]}</span>
-                        <Link className={event.claimId === selectedClaim ? styles.matrixActiveLink : styles.matrixLink} href={historyHref({ projectId, baseCommit: base?.commit, compareCommit: compare?.commit, claimId: event.claimId, evidenceSlug: selectedEvidence })}>{event.claimId}</Link>
+                        <Link className={event.claimId === selectedClaim ? styles.matrixActiveLink : styles.matrixLink} href={historyHref({ ...hrefState, claimId: event.claimId })}>{event.claimId}</Link>
                         {eventDetail(event) && (event.evidenceSlug ? (
-                          <Link className={event.evidenceSlug === selectedEvidence ? styles.eventEvidenceActiveLink : styles.eventEvidenceLink} href={historyHref({ projectId, baseCommit: base?.commit, compareCommit: compare?.commit, claimId: selectedClaim, evidenceSlug: event.evidenceSlug })}>{eventDetail(event)}</Link>
+                          <Link className={event.evidenceSlug === selectedEvidence ? styles.eventEvidenceActiveLink : styles.eventEvidenceLink} href={historyHref({ ...hrefState, evidenceSlug: event.evidenceSlug })}>{eventDetail(event)}</Link>
                         ) : <small>{eventDetail(event)}</small>)}
                       </div>
                     ))}
@@ -440,8 +500,8 @@ export async function ManuscriptClaimHistory({
                 </div>
               );
             })}
-            {!evolution.transitions.some((transition) => transitionEvents(transition.events, selectedClaim, selectedEvidence).length > 0) && (
-              <p className={styles.empty}>No explicit authored semantic changes match the active Claim/Evidence focus in the scanned revision window.</p>
+            {!evolution.transitions.some((transition) => transitionEvents(transition.events, selectedClaim, selectedEvidence, selectedEvent, selectedRelation).length > 0) && (
+              <p className={styles.empty}>No explicit authored semantic changes match every active history filter in the scanned revision window.</p>
             )}
           </div>
         </article>
@@ -449,7 +509,7 @@ export async function ManuscriptClaimHistory({
         <article className={`${styles.comparePanel} panel`}>
           <header className={styles.panelHeading}>
             <div><span className="kicker">Side by side</span><h3>Selected revision state</h3></div>
-            <p>{comparisonEvents.length} explicit change{comparisonEvents.length === 1 ? "" : "s"} in this comparison{selectedClaim ? ` for Claim ${selectedClaim}` : ""}{selectedEvidence ? ` involving Evidence ${selectedEvidence}` : ""}. Evidence endpoint badges validate against canonical research state at each selected Git commit; current canonical navigation is shown separately.</p>
+            <p>{comparisonEvents.length} explicit change{comparisonEvents.length === 1 ? "" : "s"} matches the active Base → Compare filters. Evidence endpoint badges validate against canonical research state at each selected Git commit; current canonical navigation is shown separately.</p>
           </header>
 
           {base && compare && (
@@ -475,7 +535,7 @@ export async function ManuscriptClaimHistory({
               <div className={styles.relationTransitionBlock}>
                 <div className={styles.relationTransitionHeading}>
                   <strong>Explicit relation transitions</strong>
-                  <small>{relationTransitionTotal} unambiguous one-to-one change{relationTransitionTotal === 1 ? "" : "s"} in the active comparison focus.</small>
+                  <small>{relationTransitionTotal} unambiguous one-to-one change{relationTransitionTotal === 1 ? "" : "s"} in the active comparison filters.</small>
                 </div>
                 {relationTransitionTotal > 0 ? (
                   <div className={styles.relationTransitionScroll}>
@@ -496,7 +556,7 @@ export async function ManuscriptClaimHistory({
                       </tbody>
                     </table>
                   </div>
-                ) : <p className={styles.none}>No unambiguous direct relation transformation matches the active comparison focus.</p>}
+                ) : <p className={styles.none}>No unambiguous direct relation transformation matches the active comparison filters.</p>}
               </div>
             </section>
           )}
@@ -508,11 +568,11 @@ export async function ManuscriptClaimHistory({
                 const after = snapshotClaim(compare, id);
                 const beforeLinksAll = snapshotLinks(base, id);
                 const afterLinksAll = snapshotLinks(compare, id);
-                const beforeLinks = selectedEvidence ? beforeLinksAll.filter((link) => link.evidenceSlug === selectedEvidence) : beforeLinksAll;
-                const afterLinks = selectedEvidence ? afterLinksAll.filter((link) => link.evidenceSlug === selectedEvidence) : afterLinksAll;
+                const beforeLinks = focusedLinks(beforeLinksAll, selectedEvidence, selectedRelation);
+                const afterLinks = focusedLinks(afterLinksAll, selectedEvidence, selectedRelation);
                 const beforeEvidenceSlugs = [...new Set(beforeLinks.map((link) => link.evidenceSlug))];
                 const afterEvidenceSlugs = [...new Set(afterLinks.map((link) => link.evidenceSlug))];
-                const claimEvents = transitionEvents(comparison?.events || [], id, selectedEvidence);
+                const claimEvents = transitionEvents(comparison?.events || [], id, selectedEvidence, selectedEvent, selectedRelation);
                 const presence = before && after ? "present in both" : before ? "left compared snapshot" : "entered compared snapshot";
                 return (
                   <section className={styles.claimCompare} key={id}>
@@ -520,21 +580,21 @@ export async function ManuscriptClaimHistory({
                     <div className={styles.claimPair}>
                       <div>
                         <span>Base</span>
-                        {before ? <><p>{before.excerpt}</p><small>{before.file}{before.section ? ` · ${before.section}` : ""}</small><ClaimLinks links={beforeLinks} historicalIndex={historicalIndexes[base.commit]} projectId={projectId} />{beforeEvidenceSlugs.length > 0 && <div className={styles.focusBar} aria-label={`Base Evidence history focus for ${id}`}>{beforeEvidenceSlugs.map((slug) => <Link key={slug} className={slug === selectedEvidence ? styles.clearFocus : undefined} href={historyHref({ projectId, baseCommit: base.commit, compareCommit: compare.commit, claimId: id, evidenceSlug: slug })}>Focus Evidence: {slug}</Link>)}</div>}</> : <em className={styles.none}>Claim absent from this visible committed snapshot</em>}
+                        {before ? <><p>{before.excerpt}</p><small>{before.file}{before.section ? ` · ${before.section}` : ""}</small><ClaimLinks links={beforeLinks} historicalIndex={historicalIndexes[base.commit]} projectId={projectId} />{beforeEvidenceSlugs.length > 0 && <div className={styles.focusBar} aria-label={`Base Evidence history focus for ${id}`}>{beforeEvidenceSlugs.map((slug) => <Link key={slug} className={slug === selectedEvidence ? styles.clearFocus : undefined} href={historyHref({ ...hrefState, claimId: id, evidenceSlug: slug })}>Focus Evidence: {slug}</Link>)}</div>}</> : <em className={styles.none}>Claim absent from this visible committed snapshot</em>}
                       </div>
                       <div>
                         <span>Compare</span>
-                        {after ? <><p>{after.excerpt}</p><small>{after.file}{after.section ? ` · ${after.section}` : ""}</small><ClaimLinks links={afterLinks} historicalIndex={historicalIndexes[compare.commit]} projectId={projectId} />{afterEvidenceSlugs.length > 0 && <div className={styles.focusBar} aria-label={`Compare Evidence history focus for ${id}`}>{afterEvidenceSlugs.map((slug) => <Link key={slug} className={slug === selectedEvidence ? styles.clearFocus : undefined} href={historyHref({ projectId, baseCommit: base.commit, compareCommit: compare.commit, claimId: id, evidenceSlug: slug })}>Focus Evidence: {slug}</Link>)}</div>}</> : <em className={styles.none}>Claim absent from this visible committed snapshot</em>}
+                        {after ? <><p>{after.excerpt}</p><small>{after.file}{after.section ? ` · ${after.section}` : ""}</small><ClaimLinks links={afterLinks} historicalIndex={historicalIndexes[compare.commit]} projectId={projectId} />{afterEvidenceSlugs.length > 0 && <div className={styles.focusBar} aria-label={`Compare Evidence history focus for ${id}`}>{afterEvidenceSlugs.map((slug) => <Link key={slug} className={slug === selectedEvidence ? styles.clearFocus : undefined} href={historyHref({ ...hrefState, claimId: id, evidenceSlug: slug })}>Focus Evidence: {slug}</Link>)}</div>}</> : <em className={styles.none}>Claim absent from this visible committed snapshot</em>}
                       </div>
                     </div>
                   </section>
                 );
               })}
-              {!selectedClaim && compareClaimIds.length === 20 && (selectedEvidence ? evidenceComparisonClaimIds.length : changedClaimIds(comparisonEvents).length) > compareClaimIds.length && <small className={styles.more}>Showing {compareClaimIds.length} of {selectedEvidence ? evidenceComparisonClaimIds.length : changedClaimIds(comparisonEvents).length} matching Claims. Use Claim focus to inspect another identity.</small>}
+              {!selectedClaim && compareClaimIds.length === 20 && ((selectedEvidence || selectedRelation) ? focusedComparisonClaimIds.length : changedClaimIds(comparisonEvents).length) > compareClaimIds.length && <small className={styles.more}>Showing {compareClaimIds.length} of {(selectedEvidence || selectedRelation) ? focusedComparisonClaimIds.length : changedClaimIds(comparisonEvents).length} matching Claims. Use Claim focus to inspect another identity.</small>}
             </div>
           )}
 
-          {base && compare && !compareClaimIds.length && <p className={styles.empty}>No explicit Claim/Evidence state matches the active focus in the selected comparison.</p>}
+          {base && compare && !compareClaimIds.length && <p className={styles.empty}>No explicit Claim/Evidence state matches every active history filter in the selected comparison.</p>}
         </article>
       </section>
     </section>
