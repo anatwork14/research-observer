@@ -1,5 +1,11 @@
 import Link from "next/link";
 import {
+  loadHistoricalResearchEvidenceIndex,
+  resolveHistoricalEvidenceSlug,
+  type HistoricalEvidenceResolution,
+  type HistoricalResearchEvidenceIndex,
+} from "@/lib/research/historical-research-evidence.mjs";
+import {
   compareManuscriptClaimSnapshots,
   type ManuscriptClaimEvolution,
   type ManuscriptClaimHistoryEvent,
@@ -50,23 +56,41 @@ function eventDetail(event: ManuscriptClaimHistoryEvent) {
   return "";
 }
 
-function linkLabel(link: ManuscriptClaimHistoryLink) {
-  return `${link.relation} · ${link.evidenceTitle || link.evidenceSlug}`;
+function historicalStatus(resolution: HistoricalEvidenceResolution) {
+  if (resolution.status === "valid") return "historically valid Evidence";
+  if (resolution.status === "missing") return "historical target missing";
+  if (resolution.status === "ambiguous") return `historical target ambiguous${resolution.matches?.length ? ` · ${resolution.matches.length} matches` : ""}`;
+  if (resolution.status === "cross-project") return `historical target belongs to project ${resolution.research || "unknown"}`;
+  if (resolution.status === "wrong-type") return `historical target type ${resolution.type || "unknown"}, not Evidence`;
+  return "historical endpoint validation unavailable";
 }
 
-function ClaimLinks({ links }: { links: ManuscriptClaimHistoryLink[] }) {
+function ClaimLinks({
+  links,
+  historicalIndex,
+  projectId,
+}: {
+  links: ManuscriptClaimHistoryLink[];
+  historicalIndex?: HistoricalResearchEvidenceIndex;
+  projectId: string;
+}) {
   if (!links.length) return <em className={styles.none}>No authored Evidence links</em>;
   return (
     <div className={styles.linkList}>
-      {links.map((link) => link.currentCanonical ? (
-        <Link href={`/progress/${encodeURIComponent(link.evidenceSlug)}`} key={`${link.relation}:${link.evidenceSlug}`}>
-          <span>{linkLabel(link)}</span><small>{link.evidenceSlug}</small>
-        </Link>
-      ) : (
-        <span className={styles.historicalLink} key={`${link.relation}:${link.evidenceSlug}`}>
-          <span>{link.relation} · {link.evidenceSlug}</span><small>historical authored slug · not current canonical Evidence</small>
-        </span>
-      ))}
+      {links.map((link) => {
+        const resolution = resolveHistoricalEvidenceSlug(historicalIndex, link.evidenceSlug, { projectId });
+        const label = resolution.status === "valid" && resolution.title ? resolution.title : link.evidenceSlug;
+        const currentSuffix = link.currentCanonical ? " · current canonical exists today" : " · not current canonical today";
+        return resolution.status === "valid" && link.currentCanonical ? (
+          <Link href={`/progress/${encodeURIComponent(link.evidenceSlug)}`} key={`${link.relation}:${link.evidenceSlug}`}>
+            <span>{link.relation} · {label}</span><small>{link.evidenceSlug} · historically valid Evidence · current canonical</small>
+          </Link>
+        ) : (
+          <span className={styles.historicalLink} key={`${link.relation}:${link.evidenceSlug}`}>
+            <span>{link.relation} · {label}</span><small>{historicalStatus(resolution)}{currentSuffix}</small>
+          </span>
+        );
+      })}
     </div>
   );
 }
@@ -87,7 +111,7 @@ function transitionEvents(events: ManuscriptClaimHistoryEvent[], claimId: string
   return claimId ? events.filter((event) => event.claimId === claimId) : events;
 }
 
-export function ManuscriptClaimHistory({
+export async function ManuscriptClaimHistory({
   evolution,
   projectId,
   baseCommit,
@@ -117,6 +141,17 @@ export function ManuscriptClaimHistory({
   const uniqueHistoricalClaims = new Set(snapshots.flatMap((snapshot) => snapshot.claims.map((claim) => claim.claimId))).size;
   const dirtyFiles = evolution.dirtyFiles || [];
   const workingChanges = dirtyFiles.length + (stateDirty ? 1 : 0);
+  const historicalIndexes: Record<string, HistoricalResearchEvidenceIndex | undefined> = {};
+  const validationCommits = [...new Set([base, compare]
+    .filter((snapshot): snapshot is ManuscriptClaimHistorySnapshot => Boolean(snapshot?.links.length))
+    .map((snapshot) => snapshot.commit))];
+  await Promise.all(validationCommits.map(async (commit) => {
+    try {
+      historicalIndexes[commit] = await loadHistoricalResearchEvidenceIndex({ commit, projectId });
+    } catch {
+      historicalIndexes[commit] = undefined;
+    }
+  }));
 
   if (!evolution.available) {
     return (
@@ -245,7 +280,7 @@ export function ManuscriptClaimHistory({
         <article className={`${styles.comparePanel} panel`}>
           <header className={styles.panelHeading}>
             <div><span className="kicker">Side by side</span><h3>Selected revision state</h3></div>
-            <p>{comparisonEvents.length} explicit change{comparisonEvents.length === 1 ? "" : "s"} in this comparison{selectedClaim ? ` for ${selectedClaim}` : ""}.</p>
+            <p>{comparisonEvents.length} explicit change{comparisonEvents.length === 1 ? "" : "s"} in this comparison{selectedClaim ? ` for ${selectedClaim}` : ""}. Evidence endpoint badges validate against canonical research state at each selected Git commit; current canonical navigation is shown separately.</p>
           </header>
 
           {base && compare && (
@@ -272,11 +307,11 @@ export function ManuscriptClaimHistory({
                     <div className={styles.claimPair}>
                       <div>
                         <span>Base</span>
-                        {before ? <><p>{before.excerpt}</p><small>{before.file}{before.section ? ` · ${before.section}` : ""}</small><ClaimLinks links={beforeLinks} /></> : <em className={styles.none}>Claim absent from this visible committed snapshot</em>}
+                        {before ? <><p>{before.excerpt}</p><small>{before.file}{before.section ? ` · ${before.section}` : ""}</small><ClaimLinks links={beforeLinks} historicalIndex={historicalIndexes[base.commit]} projectId={projectId} /></> : <em className={styles.none}>Claim absent from this visible committed snapshot</em>}
                       </div>
                       <div>
                         <span>Compare</span>
-                        {after ? <><p>{after.excerpt}</p><small>{after.file}{after.section ? ` · ${after.section}` : ""}</small><ClaimLinks links={afterLinks} /></> : <em className={styles.none}>Claim absent from this visible committed snapshot</em>}
+                        {after ? <><p>{after.excerpt}</p><small>{after.file}{after.section ? ` · ${after.section}` : ""}</small><ClaimLinks links={afterLinks} historicalIndex={historicalIndexes[compare.commit]} projectId={projectId} /></> : <em className={styles.none}>Claim absent from this visible committed snapshot</em>}
                       </div>
                     </div>
                   </section>
