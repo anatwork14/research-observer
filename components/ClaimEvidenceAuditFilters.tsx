@@ -72,11 +72,13 @@ export function ClaimEvidenceAuditFilters({
   }, []);
   useEffect(() => {
     syncFilterControls(formRef.current, window.location.search);
-  }, [filters.relation, filters.coverage, filters.file, filters.section, filters.query]);
+  }, [filters.relation, filters.coverage, filters.signal, filters.evidence, filters.file, filters.section, filters.query]);
 
   const clearFilters: NormalizedClaimEvidenceAuditFilters = {
     relation: "",
     coverage: "",
+    signal: "",
+    evidence: "",
     file: "",
     section: "",
     query: "",
@@ -86,6 +88,8 @@ export function ClaimEvidenceAuditFilters({
   const active = [
     filters.relation && { key: "relation", label: `Relation: ${filters.relation}`, patch: { relation: "" } },
     filters.coverage && { key: "coverage", label: `Coverage: ${COVERAGE.find(([value]) => value === filters.coverage)?.[1] || filters.coverage}`, patch: { coverage: "" } },
+    filters.signal && { key: "signal", label: "Signal: support + contradiction", patch: { signal: "" } },
+    filters.evidence && { key: "evidence", label: `Evidence: ${filters.evidence}`, patch: { evidence: "" } },
     filters.file && { key: "file", label: `File: ${filters.file}`, patch: { file: "" } },
     filters.section && { key: "section", label: `Section: ${filters.section}`, patch: { section: "" } },
     filters.query && { key: "query", label: `Search: ${filters.query}`, patch: { query: "" } },
@@ -100,13 +104,15 @@ export function ClaimEvidenceAuditFilters({
         </div>
         <p>
           {activeFilters ? `${matchedClaims} of ${totalClaims} Claims match ${activeFilters} active filter${activeFilters === 1 ? "" : "s"}.` : `${totalClaims} Claims in the complete audited scope.`}
-          {" "}Charts above remain complete-scope context; these controls narrow the Claim audit table only.
+          {" "}Charts above remain complete-scope context; these controls and chart selections narrow the Claim audit table only.
         </p>
       </div>
 
       <form ref={formRef} className={styles.filterForm} action="/insights" method="get">
         <input type="hidden" name="view" value="claims" />
         {researchScope.length > 0 && <input type="hidden" name="research" value={researchScope.join(",")} />}
+        {filters.signal && <input type="hidden" name="claimSignal" value={filters.signal} />}
+        {filters.evidence && <input type="hidden" name="claimEvidence" value={filters.evidence} />}
 
         <label>
           <span>Relation</span>
