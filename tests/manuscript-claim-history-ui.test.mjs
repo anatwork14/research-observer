@@ -81,18 +81,27 @@ test("historical Evidence comparison validates only selected loaded snapshots an
   assert.match(resolver, /if \(!index\?\.available \|\| !index\?\.complete\)/);
 });
 
-test("multi-revision Claim matrix stays bounded and never expands historical Evidence validation beyond Base/Compare", async () => {
+test("multi-revision Claim matrix stays bounded, URL-backed, and never expands historical Evidence validation beyond Base/Compare", async () => {
   const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
   const css = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.module.css"), "utf8");
   assert.match(component, /const matrixSnapshots = snapshots\.slice\(-12\)/);
   assert.match(component, /const matrixClaimIds = selectedClaim \? \[selectedClaim\] : \(matrixChangedIds\.length \? matrixChangedIds : claimIds\)\.slice\(0, 20\)/);
+  assert.match(component, /function historyHref/);
+  assert.match(component, /params\.set\("claimBase", baseCommit\)/);
+  assert.match(component, /params\.set\("claimCompare", compareCommit\)/);
+  assert.match(component, /params\.set\("claimHistory", claimId\)/);
+  assert.match(component, /compareCommit: snapshot\.commit/);
+  assert.match(component, /claimId: id/);
   assert.match(component, /Claim evolution matrix/);
-  assert.match(component, /no historical research endpoint scan is run for matrix-only revisions/);
+  assert.match(component, /matrix-only revisions do not trigger historical research endpoint scans/);
   assert.match(component, /matrixEventSummary\(events\)/);
   assert.match(component, /\{links\.length\} authored link/);
   assert.match(css, /\.matrixScroll\s*\{[^}]*overflow-x:\s*auto/s);
-  assert.match(css, /\.matrix\s*\{[^}]*width:\s*max\(100%, 760px\)/s);
+  assert.match(css, /\.matrix\s*\{[^}]*width:\s*max\(100%, 1180px\)/s);
+  assert.match(css, /\.matrixLink:focus-visible/);
+  assert.match(css, /\.matrixActiveLink/);
   assert.match(css, /\.matrixChanged/);
+  assert.match(css, /@media \(pointer: coarse\)[\s\S]*\.matrixLink,[\s\S]*\.matrixActiveLink \{ min-height: 44px; \}/);
 });
 
 test("Claim history responsive layout collapses compare grids without document-width assumptions", async () => {
