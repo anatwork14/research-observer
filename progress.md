@@ -1221,6 +1221,7 @@ Branch: `fix/next-security-16.3.8`, created from verified feature HEAD. Do not m
 - Remaining security advisories: none reported by full or production-only npm audit.
 - Merge readiness: **YES** for this security/integration checkpoint; all requested gates, browser checks, and audit severity conditions passed. Existing Doctor, lint, build-tracing, and deprecated-ESLint warnings are documented above.
 - Push target is only `fix/next-security-16.3.8`. The verified feature branch remains unchanged; `main` was not merged or modified.
+
 ## 2026-10-01 Claim chart drill-down verification
 
 Repository: `https://github.com/anatwork14/research-observer`
