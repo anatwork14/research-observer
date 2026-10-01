@@ -44,6 +44,8 @@ export default async function GraphPage({
     claimCompare?: string;
     claimHistory?: string;
     evidenceHistory?: string;
+    historyEvent?: string;
+    historyRelation?: string;
   }>;
 }) {
   const workspace = await getResearchWorkspace();
@@ -269,6 +271,8 @@ export default async function GraphPage({
               compareCommit={filters.claimCompare}
               claimId={filters.claimHistory}
               evidenceSlug={filters.evidenceHistory}
+              eventType={filters.historyEvent}
+              relationType={filters.historyRelation}
               stateDirty={manuscriptStateDirty}
             />
           </>
