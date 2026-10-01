@@ -59,16 +59,21 @@ function auditFixture() {
   };
 }
 
-test("normalizes only supported relation and coverage filters", () => {
-  assert.deepEqual(normalizeClaimEvidenceAuditFilters({ relation: "proves", coverage: "many", query: "  Evidence  " }), {
+test("normalizes only supported relation, coverage, and overlap filters", () => {
+  assert.deepEqual(normalizeClaimEvidenceAuditFilters({ relation: "proves", coverage: "many", signal: "positive", query: "  Evidence  " }), {
     relation: "",
     coverage: "",
+    signal: "",
+    evidence: "",
     file: "",
     section: "",
     query: "Evidence",
   });
-  assert.equal(normalizeClaimEvidenceAuditFilters({ relation: "supports", coverage: "none" }).relation, "supports");
-  assert.equal(normalizeClaimEvidenceAuditFilters({ relation: "supports", coverage: "none" }).coverage, "none");
+  const valid = normalizeClaimEvidenceAuditFilters({ relation: "supports", coverage: "none", signal: "support-contradiction", evidence: " evidence-a " });
+  assert.equal(valid.relation, "supports");
+  assert.equal(valid.coverage, "none");
+  assert.equal(valid.signal, "support-contradiction");
+  assert.equal(valid.evidence, "evidence-a");
 });
 
 test("filters Claims by authored relation and distinct Evidence coverage", () => {
@@ -78,6 +83,31 @@ test("filters Claims by authored relation and distinct Evidence coverage", () =>
   assert.deepEqual(filterClaimEvidenceAudit(audit, { coverage: "multiple" }).claims.map((item) => item.claimId), ["mixed"]);
   assert.deepEqual(filterClaimEvidenceAudit(audit, { relation: "contradicts" }).claims.map((item) => item.claimId), ["mixed"]);
   assert.deepEqual(filterClaimEvidenceAudit(audit, { relation: "supports", coverage: "linked" }).claims.map((item) => item.claimId), ["one", "mixed"]);
+});
+
+test("filters by explicit support plus contradiction overlap", () => {
+  const filtered = filterClaimEvidenceAudit(auditFixture(), { signal: "support-contradiction" });
+  assert.deepEqual(filtered.claims.map((item) => item.claimId), ["mixed"]);
+  assert.equal(filtered.activeFilters, 1);
+});
+
+test("filters by exact canonical Evidence slug", () => {
+  const audit = auditFixture();
+  assert.deepEqual(filterClaimEvidenceAudit(audit, { evidence: "evidence-b" }).claims.map((item) => item.claimId), ["mixed"]);
+  assert.deepEqual(filterClaimEvidenceAudit(audit, { evidence: "evidence-a" }).claims.map((item) => item.claimId), ["one", "mixed"]);
+  assert.deepEqual(filterClaimEvidenceAudit(audit, { evidence: "Evidence A" }).claims.map((item) => item.claimId), []);
+});
+
+test("chart drilldowns intersect with existing filters", () => {
+  const audit = auditFixture();
+  assert.deepEqual(
+    filterClaimEvidenceAudit(audit, { evidence: "evidence-a", relation: "contradicts", coverage: "multiple" }).claims.map((item) => item.claimId),
+    ["mixed"],
+  );
+  assert.deepEqual(
+    filterClaimEvidenceAudit(audit, { evidence: "evidence-b", relation: "supports", file: "main.tex" }).claims.map((item) => item.claimId),
+    [],
+  );
 });
 
 test("filters by exact manuscript file and section", () => {
@@ -114,6 +144,8 @@ test("filter drill-down URLs preserve project scope and every unmodified filter"
   const href = claimAuditFilterHref(["alpha", "beta"], {
     relation: "supports",
     coverage: "one",
+    signal: "support-contradiction",
+    evidence: "evidence-a",
     file: "chapters/results.tex",
     section: "Results",
     query: "orbit signal",
@@ -123,6 +155,8 @@ test("filter drill-down URLs preserve project scope and every unmodified filter"
   assert.equal(params.get("research"), "alpha,beta");
   assert.equal(params.get("claimRelation"), "contradicts");
   assert.equal(params.get("claimCoverage"), "one");
+  assert.equal(params.get("claimSignal"), "support-contradiction");
+  assert.equal(params.get("claimEvidence"), "evidence-a");
   assert.equal(params.get("claimFile"), "chapters/results.tex");
   assert.equal(params.get("claimSection"), "Results");
   assert.equal(params.get("claimQ"), "orbit signal");
