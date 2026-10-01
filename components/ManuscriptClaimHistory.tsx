@@ -251,13 +251,16 @@ export async function ManuscriptClaimHistory({
   const comparison = base && compare ? compareManuscriptClaimSnapshots(base, compare) : null;
   const comparisonEvents = comparison ? transitionEvents(comparison.events, selectedClaim, selectedEvidence, selectedEvent, selectedRelation) : [];
   const relationTransitionTotal = comparisonEvents.filter((event) => event.type === "relation-changed").length;
-  const focusedComparisonClaimIds = (selectedEvidence || selectedRelation) && base && compare
+  const stateFocusedComparisonClaimIds = (selectedEvidence || selectedRelation) && base && compare
     ? [...new Set([
         ...focusedLinks(base.links, selectedEvidence, selectedRelation).map((link) => link.claimId),
         ...focusedLinks(compare.links, selectedEvidence, selectedRelation).map((link) => link.claimId),
         ...comparisonEvents.map((event) => event.claimId),
       ])].sort()
     : [];
+  const focusedComparisonClaimIds = selectedEvent
+    ? changedClaimIds(comparisonEvents)
+    : stateFocusedComparisonClaimIds;
   const compareClaimIds = selectedClaim
     ? [selectedClaim]
     : (selectedEvidence || selectedRelation)
@@ -273,9 +276,11 @@ export async function ManuscriptClaimHistory({
   const matrixFocusedClaimIds = (selectedEvidence || selectedRelation)
     ? [...new Set(matrixSnapshots.flatMap((snapshot) => focusedLinks(snapshot.links, selectedEvidence, selectedRelation).map((link) => link.claimId)))].sort()
     : [];
-  const matrixDefaultIds = (selectedEvidence || selectedRelation)
-    ? [...new Set([...matrixFocusedClaimIds, ...matrixChangedIds])].sort()
-    : (matrixChangedIds.length ? matrixChangedIds : claimIds);
+  const matrixDefaultIds = selectedEvent
+    ? matrixChangedIds
+    : (selectedEvidence || selectedRelation)
+      ? [...new Set([...matrixFocusedClaimIds, ...matrixChangedIds])].sort()
+      : (matrixChangedIds.length ? matrixChangedIds : claimIds);
   const matrixClaimIds = selectedClaim ? [selectedClaim] : matrixDefaultIds.slice(0, 20);
   const transitionByCommit = new Map(evolution.transitions.map((transition) => [transition.toCommit, transition]));
   const historicalIndexes: Record<string, HistoricalResearchEvidenceIndex | undefined> = {};
@@ -414,7 +419,7 @@ export async function ManuscriptClaimHistory({
       <section className={`${styles.matrixPanel} panel`} aria-label="Claim evolution matrix">
         <header className={styles.panelHeading}>
           <div><span className="kicker">Multi-revision view</span><h3>Claim evolution matrix</h3></div>
-          <p>Shows up to 12 recent committed snapshots and 20 Claim IDs. Active filters intersect exactly; event type filters transition labels while Evidence/relation filters also narrow authored link counts. Matrix-only revisions do not trigger historical research endpoint scans.</p>
+          <p>Shows up to 12 recent committed snapshots and 20 Claim IDs. Active filters intersect exactly; an event-type filter restricts unfocused rows to Claims with matching events, while Evidence/relation filters also narrow authored link counts. Matrix-only revisions do not trigger historical research endpoint scans.</p>
         </header>
         <div className={styles.matrixScroll}>
           <table className={styles.matrix}>
