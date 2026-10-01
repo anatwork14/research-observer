@@ -64,7 +64,7 @@ function ClaimLinks({ links }: { links: ManuscriptClaimHistoryLink[] }) {
         </Link>
       ) : (
         <span className={styles.historicalLink} key={`${link.relation}:${link.evidenceSlug}`}>
-          <span>{linkLabel(link)}</span><small>{link.evidenceSlug} · not current canonical Evidence</small>
+          <span>{link.relation} · {link.evidenceSlug}</span><small>historical authored slug · not current canonical Evidence</small>
         </span>
       ))}
     </div>
@@ -154,7 +154,7 @@ export function ManuscriptClaimHistory({
       <section className={styles.summary} aria-label="Claim revision history summary">
         <article className="panel"><span>Revisions scanned</span><strong>{evolution.stats.revisions}</strong><small>latest committed snapshots, bounded at 40</small></article>
         <article className="panel"><span>Historical Claim IDs</span><strong>{uniqueHistoricalClaims}</strong><small>explicit authored identities</small></article>
-        <article className="panel"><span>Recorded transitions</span><strong>{evolution.stats.events}</strong><small>factual adjacent-revision changes</small></article>
+        <article className="panel"><span>Authored changes</span><strong>{evolution.stats.events}</strong><small>factual adjacent-revision events</small></article>
         <article className="panel"><span>Working changes</span><strong>{dirtyFiles.length}</strong><small>excluded from committed history</small></article>
       </section>
 
