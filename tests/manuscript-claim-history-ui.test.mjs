@@ -81,6 +81,20 @@ test("historical Evidence comparison validates only selected loaded snapshots an
   assert.match(resolver, /if \(!index\?\.available \|\| !index\?\.complete\)/);
 });
 
+test("multi-revision Claim matrix stays bounded and never expands historical Evidence validation beyond Base/Compare", async () => {
+  const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
+  const css = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.module.css"), "utf8");
+  assert.match(component, /const matrixSnapshots = snapshots\.slice\(-12\)/);
+  assert.match(component, /const matrixClaimIds = selectedClaim \? \[selectedClaim\] : \(matrixChangedIds\.length \? matrixChangedIds : claimIds\)\.slice\(0, 20\)/);
+  assert.match(component, /Claim evolution matrix/);
+  assert.match(component, /no historical research endpoint scan is run for matrix-only revisions/);
+  assert.match(component, /matrixEventSummary\(events\)/);
+  assert.match(component, /\{links\.length\} authored link/);
+  assert.match(css, /\.matrixScroll\s*\{[^}]*overflow-x:\s*auto/s);
+  assert.match(css, /\.matrix\s*\{[^}]*width:\s*max\(100%, 760px\)/s);
+  assert.match(css, /\.matrixChanged/);
+});
+
 test("Claim history responsive layout collapses compare grids without document-width assumptions", async () => {
   const css = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.module.css"), "utf8");
   assert.match(css, /\.shell\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);
