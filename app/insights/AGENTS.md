@@ -30,13 +30,27 @@ The Claims view is additive. Do not make Overview, Analytics, Timeline, or Versi
 ## Claim drill-down filters
 
 - Claim filters are read-only views over the complete audit result; they do not mutate manuscript source or canonical research state.
-- Keep filter state URL-backed with `claimRelation`, `claimCoverage`, `claimFile`, `claimSection`, and `claimQ` so drill-downs are reproducible/shareable.
-- Normalize unsupported query values to no filter. Never reinterpret an unknown relation or coverage token.
+- Keep filter state URL-backed with `claimRelation`, `claimCoverage`, `claimSignal`, `claimEvidence`, `claimFile`, `claimSection`, and `claimQ` so drill-downs are reproducible/shareable.
+- `claimSignal` currently supports only the explicit `support-contradiction` overlap. Individual support/contradiction/context/qualification chart bars reuse `claimRelation` instead of inventing duplicate filter semantics.
+- `claimEvidence` is an exact canonical Evidence slug filter. Do not replace it with fuzzy title search or semantic matching.
+- Normalize unsupported query values to no filter. Never reinterpret an unknown relation, coverage token, or signal.
 - Relation filters use only the existing authored vocabulary. Coverage filters operate on distinct canonical Evidence-target count, not relationship-edge count.
 - File/section filters use exact saved manuscript metadata. Text search may match literal Claim/Evidence/source context only.
 - Complete-scope KPI/chart totals stay visibly separate from filtered Claim-row counts. A filtered `12 of 105` result must not overwrite or masquerade as a new total of 12 Claims.
 - Project-scope changes while remaining on Claims preserve Claim filters. Switching to a non-Claims Insights view drops Claim-only parameters.
+- Form submissions must preserve active chart-only filters unless the user explicitly removes or clears them.
 - Do not add automatic relationship writes, AI recommendations, auto-fix actions, or score changes as a side effect of filtering.
+
+## Chart drill-downs
+
+- Claims chart drill-downs are navigation into the same URL-backed filter state, not a second client-side selection model.
+- Coverage segments map to `claimCoverage`.
+- Authored relationship bars map to `claimRelation`.
+- The support + contradiction overlap bar maps to `claimSignal=support-contradiction`; the other signal bars reuse `claimRelation`.
+- Evidence-reuse bars map to exact `claimEvidence=<slug>`.
+- Chart values remain complete-scope audit context after navigation. Only the Claim drill-down rows are filtered.
+- Preserve all unrelated active filters and project scope when a chart link is followed.
+- Keep chart links keyboard reachable and represented as real links in rendered markup. Do not require pointer-only JavaScript handlers.
 
 ## Navigation
 
@@ -59,4 +73,4 @@ Verify the Claims view at narrow mobile, tablet portrait/landscape, and desktop 
 
 Only `view=claims` may invoke the manuscript Claim audit loader. Preserve the lazy-loading boundary with regression coverage.
 
-Filtering should operate on the already-built audit result. Do not trigger a second manuscript scan solely because a Claim filter changed.
+Filtering should operate on the already-built audit result. Do not trigger a second manuscript scan solely because a Claim filter or chart drill-down changed.
