@@ -74,7 +74,7 @@
 
 .form {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   align-items: end;
   margin-top: 16px;
@@ -93,7 +93,7 @@
   font: 11px var(--sans);
 }
 .form select { width: 100%; padding: 0 28px 0 10px; text-overflow: ellipsis; }
-.form button { padding: 0 15px; color: var(--accent-deep); border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); cursor: pointer; }
+.form button { grid-column: span 3; padding: 0 15px; color: var(--accent-deep); border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); cursor: pointer; }
 .form button:hover { background: var(--accent-wash); }
 .focusBar {
   display: flex;
@@ -329,6 +329,7 @@
   .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .grid { grid-template-columns: 1fr; }
   .form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .form button { grid-column: span 2; }
 }
 
 @media (max-width: 700px) {
@@ -339,6 +340,7 @@
   .controlsHeading > p,
   .panelHeading > p { max-width: none; }
   .form { grid-template-columns: 1fr; }
+  .form button { grid-column: span 1; }
   .revisionPair,
   .claimPair { grid-template-columns: 1fr; }
   .relationTransitionHeading { align-items: flex-start; flex-direction: column; }
