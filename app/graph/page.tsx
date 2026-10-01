@@ -43,6 +43,7 @@ export default async function GraphPage({
     claimBase?: string;
     claimCompare?: string;
     claimHistory?: string;
+    evidenceHistory?: string;
   }>;
 }) {
   const workspace = await getResearchWorkspace();
@@ -267,6 +268,7 @@ export default async function GraphPage({
               baseCommit={filters.claimBase}
               compareCommit={filters.claimCompare}
               claimId={filters.claimHistory}
+              evidenceSlug={filters.evidenceHistory}
               stateDirty={manuscriptStateDirty}
             />
           </>
