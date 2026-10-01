@@ -1,0 +1,209 @@
+# Claim ↔ Evidence revision history
+
+Observaire's Claim/Evidence revision history is a **read-only derived projection over committed manuscript Git snapshots**. It answers factual questions about how explicitly authored manuscript state changed across commits. It does not infer meaning from prose, citations, dates, or AI interpretation.
+
+Read this document together with:
+
+- `docs/MANUSCRIPT_CLAIMS.md`
+- `docs/CLAIM_EVIDENCE_RELATIONS.md`
+- `docs/CLAIM_EVIDENCE_AUDIT.md`
+- `docs/RESEARCH_EVOLUTION.md`
+
+## Source boundary
+
+Historical Claim state may use only:
+
+1. actual Git commits returned by the manuscript history service;
+2. committed `.tex` bytes inside the selected manuscript project;
+3. the committed `.observaire-ide.json` visibility state for that revision, when present;
+4. the existing Claim and Claim↔Evidence directive parsers.
+
+Current editor buffers, dirty working-tree bytes, filesystem mtimes, IDE save timestamps, build timestamps, and current hidden-state choices must not rewrite historical snapshots.
+
+Dirty manuscript files may be reported as current working state, but they are not revision snapshots.
+
+## Historical visibility
+
+A committed `.observaire-ide.json` state controls which `.tex` files participate in that revision's historical Claim snapshot.
+
+If a commit changes only manuscript visibility state, Claim-history may include that commit even when no `.tex` bytes changed. The ordinary manuscript revision graph keeps state-only history opt-in so the state file is never presented as a manuscript source file.
+
+A Claim that leaves the visible snapshot because its source became hidden is recorded factually as absent from the next visible authored snapshot. Do not label that as deletion unless source history separately establishes deletion.
+
+## Historical Claim identity
+
+Claim identity remains the explicit authored ID:
+
+```tex
+% observaire:claim robustness-under-drift
+```
+
+For the same Claim ID across two snapshots, the projection may report factual changes such as:
+
+- Claim appeared in the visible authored snapshot;
+- Claim left the visible authored snapshot;
+- literal bounded Claim passage text changed;
+- file or section location changed.
+
+Do not infer that one removed Claim ID was renamed into another added Claim ID. A changed ID is represented as removal plus addition unless a future explicit rename contract is introduced.
+
+Duplicate or malformed Claim IDs remain historical snapshot issues rather than being auto-repaired.
+
+## Historical Claim ↔ Evidence directives
+
+Historical links are reconstructed from explicit committed directives:
+
+```tex
+% observaire:claim-evidence <claim-id> <relation> <evidence-slug>
+```
+
+Supported authored relation words remain exactly:
+
+```text
+supports
+contradicts
+contextualizes
+qualifies
+```
+
+A historical snapshot records the exact syntactically valid directive attached to a valid unique Claim ID in that snapshot.
+
+### Important canonical-Evidence limitation
+
+The first revision-history implementation does **not** reconstruct historical Git snapshots of canonical `progress/` research objects. Therefore a historical authored directive establishes:
+
+> At this manuscript commit, the author explicitly wrote this Claim ID, relation word, and Evidence slug.
+
+It does **not** independently establish:
+
+> At that historical moment, the Evidence slug necessarily resolved to a same-project canonical `type:evidence` research object.
+
+The UI may annotate whether the historical Evidence slug resolves to canonical Evidence **in the current workspace**, but that present-day annotation must never decide whether the historical authored directive is included.
+
+A future research-object Git-history feature could add historical endpoint validation as a separate derived layer. Do not fake it using current canonical state.
+
+## Adjacent-revision events
+
+Adjacent historical snapshots may produce only factual events derived from explicit state:
+
+```text
+claim-added
+claim-removed
+claim-text-changed
+claim-moved
+evidence-target-added
+evidence-target-removed
+relation-added
+relation-removed
+relation-changed
+```
+
+### Relation change rule
+
+A direct relation transformation such as:
+
+```text
+supports → qualifies
+```
+
+may be reported only when the same exact `<claim-id, evidence-slug>` endpoints have:
+
+- exactly one removed relation type; and
+- exactly one added relation type
+
+between the two compared snapshots.
+
+If multiple relation types disappear and/or appear for the same endpoints, do not guess pairings. Report the explicit additions and removals separately.
+
+Changing only the relation word does not mean the Evidence target itself disappeared. Evidence-target add/remove events operate on exact `<claim-id, evidence-slug>` endpoint presence independent of relation type.
+
+## Arbitrary revision comparison
+
+The UI may compare any two loaded committed snapshots with a directional **Base → Compare** contract.
+
+Comparison state is URL-backed:
+
+```text
+claimBase=<full-commit-sha>
+claimCompare=<full-commit-sha>
+claimHistory=<optional-claim-id>
+```
+
+`claimHistory` is a view filter only. It must not change or regenerate the historical snapshots.
+
+Invalid or unavailable commit query values fall back to the default recent pair rather than causing arbitrary Git object access.
+
+## UI semantics
+
+The first UI lives under `/graph?view=timeline` and complements:
+
+- the global research/manuscript timeline;
+- semantic research-version comparison;
+- existing provenance views.
+
+The history panel should show:
+
+- bounded committed revisions scanned;
+- unique historical Claim IDs;
+- factual authored transition count;
+- current dirty manuscript-file count, clearly excluded from history;
+- chronological adjacent-revision events;
+- Base/Compare/Claim controls;
+- side-by-side literal Claim text and explicit relation sets.
+
+Current-canonical Evidence targets may link to `/progress/<slug>`. A historical slug that does not currently resolve to canonical Evidence remains visible as historical authored text but must be labeled as not current canonical Evidence rather than guessed or removed.
+
+Do not deep-link a historical Claim line into the current editor as if the historical line number necessarily still existed.
+
+## Bounds
+
+Historical work is intentionally bounded:
+
+- manuscript Git history service: maximum 80 revisions;
+- Claim historical snapshots: latest 40 relevant revisions;
+- source file read: maximum 2 MiB per historical `.tex` source;
+- event rows displayed per transition: 10;
+- unfocused side-by-side changed Claims: 20.
+
+The underlying loaded snapshot may contain more Claims/events than the UI displays. Disclose bounded presentation instead of silently implying completeness.
+
+## Loading boundary
+
+Claim revision history is Timeline-only in the first implementation.
+
+- Research Graph must not load historical Claim snapshots.
+- Provenance must not load historical Claim snapshots.
+- Timeline may reuse its already-loaded manuscript revision history so it does not run a duplicate `git log` merely for Claim history.
+
+An unavailable historical Claim scan must fail soft without breaking the canonical research timeline.
+
+## Non-inference rules
+
+Historical revision events must never infer:
+
+- support/contradiction from prose wording;
+- Evidence use from citation proximity;
+- Claim rename from textual similarity;
+- relation transformation from ambiguous many-to-many relation changes;
+- chronology from mtimes, filename order, graph position, or IDE timestamps;
+- historical canonical Evidence validity from current canonical research state.
+
+## Verification
+
+Focused verification should include:
+
+- Claim added/removed;
+- same-ID literal text change;
+- Claim file/section move;
+- exact one-to-one relation change;
+- ambiguous multi-relation change remains additions/removals;
+- Evidence target add/remove independent of relation-word change;
+- committed hidden-state changes, including state-only commits;
+- dirty working-tree Claim edits excluded;
+- current-canonical Evidence annotation does not control historical inclusion;
+- Timeline-only loading and reuse of the existing manuscript history scan;
+- URL-backed Base/Compare/Claim controls;
+- invalid comparison SHAs cannot trigger arbitrary Git reads;
+- responsive comparison/timeline layout without document-level overflow.
+
+Do not claim browser/runtime verification until it runs in a real checkout.
