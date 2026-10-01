@@ -157,6 +157,16 @@ function matrixEventSummary(events: ManuscriptClaimHistoryEvent[]) {
   return [...new Set(events.map((event) => EVENT_LABELS[event.type]))].join(" · ");
 }
 
+function comparisonEventSummary(events: ManuscriptClaimHistoryEvent[]) {
+  return EVENT_ORDER
+    .map((type) => {
+      const count = events.filter((event) => event.type === type).length;
+      return count ? `${EVENT_LABELS[type]} ${count}` : "";
+    })
+    .filter(Boolean)
+    .join(" · ");
+}
+
 export async function ManuscriptClaimHistory({
   evolution,
   projectId,
@@ -401,9 +411,11 @@ export async function ManuscriptClaimHistory({
                 const after = snapshotClaim(compare, id);
                 const beforeLinks = snapshotLinks(base, id);
                 const afterLinks = snapshotLinks(compare, id);
+                const claimEvents = transitionEvents(comparison?.events || [], id);
+                const presence = before && after ? "present in both" : before ? "left compared snapshot" : "entered compared snapshot";
                 return (
                   <section className={styles.claimCompare} key={id}>
-                    <header><strong>{id}</strong><span>{before && after ? "present in both" : before ? "left compared snapshot" : "entered compared snapshot"}</span></header>
+                    <header><strong>{id}</strong><span>{presence}{claimEvents.length ? ` · ${comparisonEventSummary(claimEvents)}` : ""}</span></header>
                     <div className={styles.claimPair}>
                       <div>
                         <span>Base</span>
