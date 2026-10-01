@@ -57,6 +57,24 @@ function snapshotLabel(snapshot: ManuscriptClaimHistorySnapshot) {
   return `${snapshot.shortCommit} · ${formatDate(snapshot.at)} · ${snapshot.subject || "Manuscript revision"}`;
 }
 
+function historyHref({
+  projectId,
+  baseCommit,
+  compareCommit,
+  claimId,
+}: {
+  projectId: string;
+  baseCommit?: string;
+  compareCommit?: string;
+  claimId?: string;
+}) {
+  const params = new URLSearchParams({ research: projectId, view: "timeline" });
+  if (baseCommit) params.set("claimBase", baseCommit);
+  if (compareCommit) params.set("claimCompare", compareCommit);
+  if (claimId) params.set("claimHistory", claimId);
+  return `/graph?${params.toString()}`;
+}
+
 function eventDetail(event: ManuscriptClaimHistoryEvent) {
   if (event.type === "relation-changed") return `${event.beforeRelation} → ${event.afterRelation} · ${event.evidenceSlug}`;
   if (event.type === "relation-added" || event.type === "relation-removed") return `${event.relation} · ${event.evidenceSlug}`;
@@ -270,20 +288,28 @@ export async function ManuscriptClaimHistory({
       <section className={`${styles.matrixPanel} panel`} aria-label="Claim evolution matrix">
         <header className={styles.panelHeading}>
           <div><span className="kicker">Multi-revision view</span><h3>Claim evolution matrix</h3></div>
-          <p>Shows up to 12 recent committed snapshots and 20 changed Claim IDs. Cells report authored presence, authored-link count, and explicit changes entering that revision; no historical research endpoint scan is run for matrix-only revisions.</p>
+          <p>Shows up to 12 recent committed snapshots and 20 changed Claim IDs. Click a Claim to focus it or a revision to make it Compare; cells report authored state only, and matrix-only revisions do not trigger historical research endpoint scans.</p>
         </header>
         <div className={styles.matrixScroll}>
           <table className={styles.matrix}>
             <thead>
               <tr>
                 <th scope="col">Claim</th>
-                {matrixSnapshots.map((snapshot) => <th scope="col" key={snapshot.commit}><code>{snapshot.shortCommit}</code><small>{snapshot.subject || "Revision"}</small></th>)}
+                {matrixSnapshots.map((snapshot) => (
+                  <th scope="col" key={snapshot.commit}>
+                    <Link className={snapshot.commit === compare?.commit ? styles.matrixActiveLink : styles.matrixLink} href={historyHref({ projectId, baseCommit: base?.commit, compareCommit: snapshot.commit, claimId: selectedClaim })}>
+                      <code>{snapshot.shortCommit}</code><small>{snapshot.subject || "Revision"}</small>
+                    </Link>
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {matrixClaimIds.map((id) => (
                 <tr key={id}>
-                  <th scope="row">{id}</th>
+                  <th scope="row">
+                    <Link className={id === selectedClaim ? styles.matrixActiveLink : styles.matrixLink} href={historyHref({ projectId, baseCommit: base?.commit, compareCommit: compare?.commit, claimId: id })}>{id}</Link>
+                  </th>
                   {matrixSnapshots.map((snapshot) => {
                     const present = Boolean(snapshotClaim(snapshot, id));
                     const links = snapshotLinks(snapshot, id);
