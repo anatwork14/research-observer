@@ -111,3 +111,36 @@ export function buildManuscriptClaimActivityMatrix(
     claimLimit?: number;
   },
 ): ManuscriptClaimActivityMatrix;
+
+export type ManuscriptEventTypeActivityMatrixCell = {
+  fromCommit: string;
+  toCommit: string;
+  events: number;
+};
+
+export type ManuscriptEventTypeActivityMatrix = {
+  columns: Array<{
+    fromCommit: string;
+    toCommit: string;
+    at: string;
+    subject: string;
+  }>;
+  rows: Array<{
+    type: ManuscriptClaimHistoryEvent["type"];
+    label: string;
+    totalEvents: number;
+    cells: ManuscriptEventTypeActivityMatrixCell[];
+  }>;
+  stats: {
+    transitions: number;
+    eventTypes: number;
+    events: number;
+    changedCells: number;
+    maxCellEvents: number;
+  };
+};
+
+export function buildManuscriptEventTypeActivityMatrix(
+  transitions?: ManuscriptClaimHistoryTransition[],
+  options?: ManuscriptClaimActivityFilters & { transitionLimit?: number },
+): ManuscriptEventTypeActivityMatrix;

@@ -7,6 +7,7 @@ import {
   buildManuscriptClaimActivity,
   buildManuscriptClaimActivityMatrix,
   buildManuscriptClaimEventComposition,
+  buildManuscriptEventTypeActivityMatrix,
   filterManuscriptClaimHistoryEvents,
 } from "../lib/research/manuscript-claim-activity.mjs";
 
@@ -87,6 +88,47 @@ test("selected-pair composition reuses exact filters and canonical event labels"
   });
   assert.equal(relationOnly.stats.events, 1);
   assert.equal(relationOnly.rows[0].type, "relation-changed");
+});
+
+test("event-type matrix maps canonical authored event types across revision pairs", () => {
+  const matrix = buildManuscriptEventTypeActivityMatrix([transition]);
+
+  assert.deepEqual(matrix.rows.map((row) => row.type), [
+    "claim-text-changed",
+    "evidence-target-added",
+    "relation-added",
+    "relation-changed",
+  ]);
+  assert.deepEqual(matrix.rows.map((row) => row.cells[0].events), [1, 1, 1, 1]);
+  assert.equal(matrix.stats.transitions, 1);
+  assert.equal(matrix.stats.eventTypes, 4);
+  assert.equal(matrix.stats.events, 4);
+  assert.equal(matrix.stats.changedCells, 4);
+  assert.equal(matrix.stats.maxCellEvents, 1);
+});
+
+test("event-type matrix keeps exact filters and latest bounded Git order", () => {
+  const relationOnly = buildManuscriptEventTypeActivityMatrix([transition], {
+    relationType: "supports",
+  });
+  assert.equal(relationOnly.rows.length, 1);
+  assert.equal(relationOnly.rows[0].type, "relation-changed");
+  assert.equal(relationOnly.rows[0].cells[0].events, 1);
+
+  const noSubstringMatch = buildManuscriptEventTypeActivityMatrix([transition], { claimId: "claim" });
+  assert.equal(noSubstringMatch.rows.length, 0);
+  assert.equal(noSubstringMatch.stats.events, 0);
+
+  const transitions = Array.from({ length: 16 }, (_, index) => ({
+    ...transition,
+    fromCommit: `from-${index}`,
+    toCommit: `to-${index}`,
+    subject: `revision ${index}`,
+  }));
+  const bounded = buildManuscriptEventTypeActivityMatrix(transitions, { transitionLimit: 12 });
+  assert.equal(bounded.columns.length, 12);
+  assert.equal(bounded.columns[0].fromCommit, "from-4");
+  assert.equal(bounded.columns.at(-1).toCommit, "to-15");
 });
 
 test("activity keeps the latest bounded transition window in Git sequence order", () => {
@@ -171,7 +213,7 @@ test("Timeline integrates the activity overview without widening historical load
   assert.equal(page.match(/loadManuscriptClaimEvolution\(/g)?.length, 1);
 });
 
-test("activity overview, pair composition, and heatmap remain factual and touch usable", async () => {
+test("activity overview, pair composition, event matrix, and Claim heatmap remain factual and touch usable", async () => {
   const component = await fs.readFile(path.join(root, "components/ManuscriptRevisionActivity.tsx"), "utf8");
   const css = await fs.readFile(path.join(root, "components/ManuscriptRevisionActivity.module.css"), "utf8");
   assert.match(component, /limit:\s*12/);
@@ -179,6 +221,10 @@ test("activity overview, pair composition, and heatmap remain factual and touch 
   assert.match(component, /compareManuscriptClaimSnapshots\(resolvedBase, resolvedCompare\)/);
   assert.match(component, /Event composition/);
   assert.match(component, /Bar length is relative only to the largest matching event-type count in this selected pair; it is not a score/);
+  assert.match(component, /buildManuscriptEventTypeActivityMatrix/);
+  assert.match(component, /Event type × revision map/);
+  assert.match(component, /How explicit event types vary over revisions/);
+  assert.match(component, /Active semantic filters, including Event, apply with strict AND semantics/);
   assert.match(component, /buildManuscriptClaimActivityMatrix/);
   assert.match(component, /transitionLimit:\s*12/);
   assert.match(component, /claimLimit:\s*20/);

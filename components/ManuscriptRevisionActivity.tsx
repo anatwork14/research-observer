@@ -3,6 +3,7 @@ import {
   buildManuscriptClaimActivity,
   buildManuscriptClaimActivityMatrix,
   buildManuscriptClaimEventComposition,
+  buildManuscriptEventTypeActivityMatrix,
   isManuscriptClaimHistoryEventType,
   isManuscriptClaimHistoryRelation,
 } from "@/lib/research/manuscript-claim-activity.mjs";
@@ -115,6 +116,10 @@ export function ManuscriptRevisionActivity({
   const matrix = buildManuscriptClaimActivityMatrix(evolution.transitions, {
     transitionLimit: 12,
     claimLimit: 20,
+    ...activityFilters,
+  });
+  const eventMatrix = buildManuscriptEventTypeActivityMatrix(evolution.transitions, {
+    transitionLimit: 12,
     ...activityFilters,
   });
   const selectedPairComparison = compareManuscriptClaimSnapshots(resolvedBase, resolvedCompare);
@@ -254,6 +259,91 @@ export function ManuscriptRevisionActivity({
         </div>
       ) : (
         <p className={styles.emptyMatrix}>The selected Base → Compare pair has no explicit events matching every active semantic filter.</p>
+      )}
+
+      <div className={styles.matrixHeading}>
+        <div>
+          <span className="kicker">Event type × revision map</span>
+          <h3>How explicit event types vary over revisions</h3>
+        </div>
+        <p>
+          {eventMatrix.stats.eventTypes} matching authored event type{eventMatrix.stats.eventTypes === 1 ? "" : "s"} shown across the latest {eventMatrix.stats.transitions} adjacent revision pairs. Cell shade reflects only the exact matching event count. Active semantic filters, including Event, apply with strict AND semantics.
+        </p>
+      </div>
+
+      {eventMatrix.rows.length > 0 ? (
+        <div className={styles.matrixScroll}>
+          <table className={styles.heatmap} aria-label="Explicit event type by revision pair heatmap">
+            <thead>
+              <tr>
+                <th scope="col">Event type</th>
+                {eventMatrix.columns.map((column) => {
+                  const from = snapshotByCommit.get(column.fromCommit);
+                  const to = snapshotByCommit.get(column.toCommit);
+                  const selected = resolvedBase.commit === column.fromCommit && resolvedCompare.commit === column.toCommit;
+                  const href = historyHref({
+                    projectId,
+                    baseCommit: column.fromCommit,
+                    compareCommit: column.toCommit,
+                    claimId: selectedClaim,
+                    evidenceSlug: selectedEvidence,
+                    eventType: selectedEvent,
+                    relationType: selectedRelation,
+                    changedOnly,
+                  });
+                  return (
+                    <th className={selected ? styles.selectedColumn : undefined} scope="col" key={`event-${column.fromCommit}-${column.toCommit}`}>
+                      <Link href={href} title={column.subject || "Committed manuscript revision"}>
+                        <code>{from?.shortCommit ?? column.fromCommit.slice(0, 7)}</code>
+                        <span>→</span>
+                        <code>{to?.shortCommit ?? column.toCommit.slice(0, 7)}</code>
+                      </Link>
+                    </th>
+                  );
+                })}
+                <th scope="col">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {eventMatrix.rows.map((row) => (
+                <tr key={row.type}>
+                  <th className={selectedEvent === row.type ? styles.selectedClaim : undefined} scope="row" title={row.type}>
+                    {row.label}
+                  </th>
+                  {row.cells.map((cell) => {
+                    const selected = resolvedBase.commit === cell.fromCommit && resolvedCompare.commit === cell.toCommit;
+                    const href = historyHref({
+                      projectId,
+                      baseCommit: cell.fromCommit,
+                      compareCommit: cell.toCommit,
+                      claimId: selectedClaim,
+                      evidenceSlug: selectedEvidence,
+                      eventType: row.type,
+                      relationType: selectedRelation,
+                      changedOnly,
+                    });
+                    const label = `${row.label}: ${cell.events} matching explicit event${cell.events === 1 ? "" : "s"} in ${cell.fromCommit.slice(0, 7)} → ${cell.toCommit.slice(0, 7)}`;
+                    return (
+                      <td className={selected ? styles.selectedColumn : undefined} key={`${row.type}-${cell.fromCommit}-${cell.toCommit}`}>
+                        <Link
+                          className={`${styles.heatCell} ${heatClass(cell.events, eventMatrix.stats.maxCellEvents)}`}
+                          href={href}
+                          aria-label={label}
+                          title={label}
+                        >
+                          <strong>{cell.events}</strong>
+                        </Link>
+                      </td>
+                    );
+                  })}
+                  <td className={styles.totalCell}><strong>{row.totalEvents}</strong></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className={styles.emptyMatrix}>No authored event type has matching explicit events in this bounded revision window.</p>
       )}
 
       <div className={styles.matrixHeading}>
