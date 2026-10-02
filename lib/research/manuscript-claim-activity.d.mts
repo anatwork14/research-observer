@@ -1,13 +1,14 @@
+import type { ManuscriptClaimEvidenceRelationType } from "./manuscript-claim-relations.mjs";
 import type {
   ManuscriptClaimHistoryEvent,
   ManuscriptClaimHistoryTransition,
 } from "./manuscript-claim-history.mjs";
 
 export const MANUSCRIPT_CLAIM_HISTORY_EVENT_TYPES: readonly ManuscriptClaimHistoryEvent["type"][];
-export const MANUSCRIPT_CLAIM_HISTORY_RELATIONS: readonly ("supports" | "contradicts" | "contextualizes" | "qualifies")[];
+export const MANUSCRIPT_CLAIM_HISTORY_RELATIONS: readonly ManuscriptClaimEvidenceRelationType[];
 
 export function isManuscriptClaimHistoryEventType(value: unknown): value is ManuscriptClaimHistoryEvent["type"];
-export function isManuscriptClaimHistoryRelation(value: unknown): value is "supports" | "contradicts" | "contextualizes" | "qualifies";
+export function isManuscriptClaimHistoryRelation(value: unknown): value is ManuscriptClaimEvidenceRelationType;
 
 export function filterManuscriptClaimHistoryEvents(
   events?: ManuscriptClaimHistoryEvent[],
