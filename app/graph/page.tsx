@@ -46,6 +46,7 @@ export default async function GraphPage({
     evidenceHistory?: string;
     historyEvent?: string;
     historyRelation?: string;
+    historyChanged?: string;
   }>;
 }) {
   const workspace = await getResearchWorkspace();
@@ -273,6 +274,7 @@ export default async function GraphPage({
               evidenceSlug={filters.evidenceHistory}
               eventType={filters.historyEvent}
               relationType={filters.historyRelation}
+              changedMode={filters.historyChanged}
               stateDirty={manuscriptStateDirty}
             />
           </>
