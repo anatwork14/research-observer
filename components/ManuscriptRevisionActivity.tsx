@@ -2,10 +2,14 @@ import Link from "next/link";
 import {
   buildManuscriptClaimActivity,
   buildManuscriptClaimActivityMatrix,
+  buildManuscriptClaimEventComposition,
   isManuscriptClaimHistoryEventType,
   isManuscriptClaimHistoryRelation,
 } from "@/lib/research/manuscript-claim-activity.mjs";
-import type { ManuscriptClaimEvolution } from "@/lib/research/manuscript-claim-history.mjs";
+import {
+  compareManuscriptClaimSnapshots,
+  type ManuscriptClaimEvolution,
+} from "@/lib/research/manuscript-claim-history.mjs";
 import styles from "./ManuscriptRevisionActivity.module.css";
 
 type ManuscriptRevisionActivityProps = {
@@ -113,7 +117,10 @@ export function ManuscriptRevisionActivity({
     claimLimit: 20,
     ...activityFilters,
   });
+  const selectedPairComparison = compareManuscriptClaimSnapshots(resolvedBase, resolvedCompare);
+  const pairComposition = buildManuscriptClaimEventComposition(selectedPairComparison.events, activityFilters);
   const scale = Math.max(1, activity.stats.maxEvents);
+  const pairScale = Math.max(1, pairComposition.stats.maxCount);
   const focusLabels = [
     selectedClaim ? `Claim ${selectedClaim}` : "",
     selectedEvidence ? `Evidence ${selectedEvidence}` : "",
@@ -199,6 +206,55 @@ export function ManuscriptRevisionActivity({
           );
         })}
       </ol>
+
+      <div className={styles.pairHeading}>
+        <div>
+          <span className="kicker">Selected pair</span>
+          <h3>Event composition</h3>
+        </div>
+        <p>
+          <code>{resolvedBase.shortCommit} → {resolvedCompare.shortCommit}</code> has {pairComposition.stats.events} matching explicit event{pairComposition.stats.events === 1 ? "" : "s"} across {pairComposition.stats.eventTypes} event type{pairComposition.stats.eventTypes === 1 ? "" : "s"}. Bar length is relative only to the largest matching event-type count in this selected pair; it is not a score.
+        </p>
+      </div>
+
+      <div className={styles.pairCategorySummary} aria-label="Selected pair event category summary">
+        <span><i className={styles.claimLegend} /><strong>{pairComposition.categories.claimState}</strong> Claim state</span>
+        <span><i className={styles.evidenceLegend} /><strong>{pairComposition.categories.evidenceTargets}</strong> Evidence target</span>
+        <span><i className={styles.relationLegend} /><strong>{pairComposition.categories.relations}</strong> Relationship</span>
+      </div>
+
+      {pairComposition.rows.length > 0 ? (
+        <div className={styles.compositionRows}>
+          {pairComposition.rows.map((row) => {
+            const active = selectedEvent === row.type;
+            const href = historyHref({
+              projectId,
+              baseCommit: resolvedBase.commit,
+              compareCommit: resolvedCompare.commit,
+              claimId: selectedClaim,
+              evidenceSlug: selectedEvidence,
+              eventType: active ? undefined : row.type,
+              relationType: selectedRelation,
+              changedOnly,
+            });
+            const width = Math.max(6, (row.count / pairScale) * 100);
+            return (
+              <Link
+                className={`${styles.compositionRow}${active ? ` ${styles.compositionActive}` : ""}`}
+                href={href}
+                aria-current={active ? "page" : undefined}
+                key={row.type}
+              >
+                <span className={styles.compositionLabel}><strong>{row.label}</strong><small>{row.type}</small></span>
+                <span className={styles.compositionTrack} aria-hidden="true"><i style={{ width: `${width}%` }} /></span>
+                <strong className={styles.compositionCount}>{row.count}</strong>
+              </Link>
+            );
+          })}
+        </div>
+      ) : (
+        <p className={styles.emptyMatrix}>The selected Base → Compare pair has no explicit events matching every active semantic filter.</p>
+      )}
 
       <div className={styles.matrixHeading}>
         <div>

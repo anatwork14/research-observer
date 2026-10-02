@@ -3,8 +3,10 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import {
+  MANUSCRIPT_CLAIM_HISTORY_EVENT_LABELS,
   buildManuscriptClaimActivity,
   buildManuscriptClaimActivityMatrix,
+  buildManuscriptClaimEventComposition,
   filterManuscriptClaimHistoryEvents,
 } from "../lib/research/manuscript-claim-activity.mjs";
 
@@ -63,6 +65,28 @@ test("relation filters match explicit relation transitions on either authored si
   assert.equal(qualifies.length, 1);
   assert.equal(supports[0].type, "relation-changed");
   assert.equal(qualifies[0].type, "relation-changed");
+});
+
+test("selected-pair composition reuses exact filters and canonical event labels", () => {
+  const composition = buildManuscriptClaimEventComposition(transition.events, {
+    claimId: "claim-a",
+    evidenceSlug: "evidence-a",
+  });
+
+  assert.equal(composition.stats.events, 2);
+  assert.equal(composition.stats.eventTypes, 2);
+  assert.equal(composition.stats.maxCount, 1);
+  assert.deepEqual(composition.categories, { claimState: 0, evidenceTargets: 1, relations: 1 });
+  assert.deepEqual(composition.rows.map((row) => [row.type, row.label, row.count]), [
+    ["evidence-target-added", MANUSCRIPT_CLAIM_HISTORY_EVENT_LABELS["evidence-target-added"], 1],
+    ["relation-changed", MANUSCRIPT_CLAIM_HISTORY_EVENT_LABELS["relation-changed"], 1],
+  ]);
+
+  const relationOnly = buildManuscriptClaimEventComposition(transition.events, {
+    relationType: "supports",
+  });
+  assert.equal(relationOnly.stats.events, 1);
+  assert.equal(relationOnly.rows[0].type, "relation-changed");
 });
 
 test("activity keeps the latest bounded transition window in Git sequence order", () => {
@@ -147,10 +171,14 @@ test("Timeline integrates the activity overview without widening historical load
   assert.equal(page.match(/loadManuscriptClaimEvolution\(/g)?.length, 1);
 });
 
-test("activity overview and heatmap are bounded, document-contained, and coarse-pointer usable", async () => {
+test("activity overview, pair composition, and heatmap remain factual and touch usable", async () => {
   const component = await fs.readFile(path.join(root, "components/ManuscriptRevisionActivity.tsx"), "utf8");
   const css = await fs.readFile(path.join(root, "components/ManuscriptRevisionActivity.module.css"), "utf8");
   assert.match(component, /limit:\s*12/);
+  assert.match(component, /buildManuscriptClaimEventComposition/);
+  assert.match(component, /compareManuscriptClaimSnapshots\(resolvedBase, resolvedCompare\)/);
+  assert.match(component, /Event composition/);
+  assert.match(component, /Bar length is relative only to the largest matching event-type count in this selected pair; it is not a score/);
   assert.match(component, /buildManuscriptClaimActivityMatrix/);
   assert.match(component, /transitionLimit:\s*12/);
   assert.match(component, /claimLimit:\s*20/);
@@ -163,5 +191,5 @@ test("activity overview and heatmap are bounded, document-contained, and coarse-
   assert.match(css, /\.matrixScroll\s*\{[^}]*max-width:\s*100%[^}]*overflow-x:\s*auto/s);
   assert.match(css, /\.heatmap tr > :first-child\s*\{[^}]*position:\s*sticky[^}]*left:\s*0/s);
   assert.match(css, /@media \(max-width:\s*760px\)/);
-  assert.match(css, /@media \(pointer:\s*coarse\)[\s\S]*\.heatCell[\s\S]*min-height:\s*44px/);
+  assert.match(css, /@media \(pointer:\s*coarse\)[\s\S]*\.compositionRow[\s\S]*\.heatCell[\s\S]*min-height:\s*44px/);
 });

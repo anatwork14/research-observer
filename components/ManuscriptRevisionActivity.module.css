@@ -172,6 +172,7 @@
 .activityMeta a:hover { text-decoration: underline; }
 .activityMeta a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
 
+.pairHeading,
 .matrixHeading {
   display: flex;
   align-items: flex-start;
@@ -181,11 +182,14 @@
   padding-top: 18px;
   border-top: 1px solid var(--line);
 }
+.pairHeading > div,
 .matrixHeading > div { min-width: 0; }
+.pairHeading h3,
 .matrixHeading h3 {
   margin: 4px 0 0;
   font: 600 21px/1.15 var(--serif);
 }
+.pairHeading p,
 .matrixHeading p {
   max-width: 650px;
   margin: 0;
@@ -193,6 +197,72 @@
   font-size: 10px;
   line-height: 1.55;
 }
+.pairHeading code { color: var(--accent-deep); font: 600 9px/1.3 var(--mono); }
+
+.pairCategorySummary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 12px;
+}
+.pairCategorySummary span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-strong) 84%, transparent);
+  color: var(--muted);
+  font: 8px/1.3 var(--mono);
+}
+.pairCategorySummary i { width: 13px; height: 4px; border-radius: 999px; }
+.pairCategorySummary strong { color: var(--ink); font-size: 10px; }
+
+.compositionRows {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+.compositionRow {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(150px, .7fr) minmax(120px, 1.3fr) 30px;
+  gap: 12px;
+  align-items: center;
+  min-height: 42px;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-strong) 82%, transparent);
+  color: inherit;
+  text-decoration: none;
+}
+.compositionRow:hover { border-color: color-mix(in srgb, var(--accent) 48%, var(--line)); }
+.compositionRow:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.compositionActive {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  background: color-mix(in srgb, var(--accent-wash) 55%, var(--surface));
+}
+.compositionLabel { min-width: 0; display: grid; gap: 2px; }
+.compositionLabel strong { color: var(--ink-soft); font-size: 10px; overflow-wrap: anywhere; }
+.compositionLabel small { color: var(--muted); font: 8px/1.25 var(--mono); overflow-wrap: anywhere; }
+.compositionTrack {
+  min-width: 0;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 74%, var(--line));
+}
+.compositionTrack i {
+  display: block;
+  min-width: 3px;
+  height: 100%;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--accent) 72%, var(--warm));
+}
+.compositionCount { color: var(--accent-deep); font: 600 10px/1 var(--mono); text-align: right; }
 
 .matrixScroll {
   min-width: 0;
@@ -309,10 +379,13 @@
 
 @media (max-width: 760px) {
   .heading,
+  .pairHeading,
   .matrixHeading { display: grid; gap: 12px; }
   .stats { justify-content: flex-start; }
   .row { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .pairHeading p,
   .matrixHeading p { max-width: none; }
+  .compositionRow { grid-template-columns: minmax(130px, .8fr) minmax(90px, 1.2fr) 28px; gap: 8px; }
 }
 
 @media (max-width: 520px) {
@@ -323,10 +396,14 @@
     grid-template-columns: auto 1fr auto;
   }
   .activityMeta a { grid-column: auto; justify-self: end; }
+  .compositionRow { grid-template-columns: minmax(0, 1fr) 28px; }
+  .compositionTrack { grid-column: 1 / -1; grid-row: 2; }
+  .compositionCount { grid-column: 2; grid-row: 1; }
 }
 
 @media (pointer: coarse) {
   .revisionMeta > a,
   .activityMeta a,
+  .compositionRow,
   .heatCell { min-height: 44px; align-content: center; }
 }

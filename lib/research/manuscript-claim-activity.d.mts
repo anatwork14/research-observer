@@ -5,6 +5,7 @@ import type {
 } from "./manuscript-claim-history.mjs";
 
 export const MANUSCRIPT_CLAIM_HISTORY_EVENT_TYPES: readonly ManuscriptClaimHistoryEvent["type"][];
+export const MANUSCRIPT_CLAIM_HISTORY_EVENT_LABELS: Readonly<Record<ManuscriptClaimHistoryEvent["type"], string>>;
 export const MANUSCRIPT_CLAIM_HISTORY_RELATIONS: readonly ManuscriptClaimEvidenceRelationType[];
 
 export function isManuscriptClaimHistoryEventType(value: unknown): value is ManuscriptClaimHistoryEvent["type"];
@@ -21,6 +22,29 @@ export function filterManuscriptClaimHistoryEvents(
   events?: ManuscriptClaimHistoryEvent[],
   filters?: ManuscriptClaimActivityFilters,
 ): ManuscriptClaimHistoryEvent[];
+
+export type ManuscriptClaimEventComposition = {
+  rows: Array<{
+    type: ManuscriptClaimHistoryEvent["type"];
+    label: string;
+    count: number;
+  }>;
+  categories: {
+    claimState: number;
+    evidenceTargets: number;
+    relations: number;
+  };
+  stats: {
+    events: number;
+    eventTypes: number;
+    maxCount: number;
+  };
+};
+
+export function buildManuscriptClaimEventComposition(
+  events?: ManuscriptClaimHistoryEvent[],
+  filters?: ManuscriptClaimActivityFilters,
+): ManuscriptClaimEventComposition;
 
 export type ManuscriptClaimActivityRow = {
   fromCommit: string;
