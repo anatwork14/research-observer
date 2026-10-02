@@ -371,3 +371,12 @@
   .event time { grid-row: auto; }
   .dot { left: -18px; }
 }
+
+@media (pointer: coarse) {
+  .controls input,
+  .controls button,
+  .event,
+  .versionStep button {
+    min-height: 44px;
+  }
+}
