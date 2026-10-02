@@ -17,13 +17,18 @@ test("Claim revision history loads only on Timeline and reuses the existing manu
 test("Claim history comparison state is URL-backed and preserves the selected project", async () => {
   const page = await fs.readFile(path.join(root, "app/graph/page.tsx"), "utf8");
   const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
-  for (const param of ["claimBase", "claimCompare", "claimHistory"]) assert.match(page, new RegExp(`${param}\\?: string`));
+  for (const param of ["claimBase", "claimCompare", "claimHistory", "evidenceHistory", "historyEvent", "historyRelation", "historyChanged"]) {
+    assert.match(page, new RegExp(`${param}\\?: string`));
+  }
   assert.match(component, /<form action="\/graph" method="get"/);
   assert.match(component, /name="research" value=\{projectId\}/);
   assert.match(component, /name="view" value="timeline"/);
   assert.match(component, /name="claimBase"/);
   assert.match(component, /name="claimCompare"/);
   assert.match(component, /name="claimHistory"/);
+  assert.match(component, /name="evidenceHistory"/);
+  assert.match(component, /name="historyEvent"/);
+  assert.match(component, /name="historyRelation"/);
 });
 
 test("Claim history UI keeps historical semantics factual, bounded, and working state separate", async () => {
@@ -36,8 +41,8 @@ test("Claim history UI keeps historical semantics factual, bounded, and working 
   assert.match(component, /Manuscript visibility state differs from the latest committed state/);
   assert.match(page, /stateDirty=\{manuscriptStateDirty\}/);
   assert.match(page, /manuscriptStateDirty = Boolean\(manuscriptHistory\.stateDirty\)/);
-  assert.match(component, /slice\(0, 10\)/);
-  assert.match(component, /changedClaimIds\(comparisonEvents\)\.slice\(0, 20\)/);
+  assert.match(component, /events\.slice\(0, 10\)/);
+  assert.match(component, /comparisonVisibleClaimIds\.slice\(0, 20\)/);
   assert.match(component, /bounded at 40/);
   assert.match(service, /const MAX_SNAPSHOTS = 40/);
   assert.match(service, /includeStateChanges: true/);
@@ -52,13 +57,13 @@ test("Claim history chronology follows Git revision order rather than authored t
   assert.doesNotMatch(service, /snapshots\.slice\(\)\.sort/);
 });
 
-test("chronology revision and Claim drill-down reuse safe URL-backed loaded-snapshot state", async () => {
+test("chronology revision, Claim, Evidence, and summary drill-down reuse safe URL-backed loaded-snapshot state", async () => {
   const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
-  assert.match(component, /Revision and Claim links update the same URL-backed comparison state/);
   assert.match(component, /compareCommit: transition\.toCommit/);
   assert.match(component, /claimId: event\.claimId/);
-  assert.match(component, /baseCommit: base\?\.commit/);
-  assert.match(component, /compareCommit: compare\?\.commit/);
+  assert.match(component, /evidenceSlug: event\.evidenceSlug/);
+  assert.match(component, /eventType: type/);
+  assert.match(component, /relationType: relation/);
   assert.match(component, /transition\.toCommit === compare\?\.commit \? styles\.matrixActiveLink : styles\.matrixLink/);
   assert.match(component, /event\.claimId === selectedClaim \? styles\.matrixActiveLink : styles\.matrixLink/);
   assert.doesNotMatch(component, /loadHistoricalResearchEvidenceIndex\(\{ commit: transition\.toCommit/);
@@ -98,7 +103,7 @@ test("multi-revision Claim matrix stays bounded, URL-backed, and never expands h
   const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
   const css = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.module.css"), "utf8");
   assert.match(component, /const matrixSnapshots = snapshots\.slice\(-12\)/);
-  assert.match(component, /const matrixClaimIds = selectedClaim \? \[selectedClaim\] : \(matrixChangedIds\.length \? matrixChangedIds : claimIds\)\.slice\(0, 20\)/);
+  assert.match(component, /const matrixClaimIds = selectedClaim \? \[selectedClaim\] : matrixDefaultIds\.slice\(0, 20\)/);
   assert.match(component, /function historyHref/);
   assert.match(component, /params\.set\("claimBase", baseCommit\)/);
   assert.match(component, /params\.set\("claimCompare", compareCommit\)/);
@@ -106,15 +111,31 @@ test("multi-revision Claim matrix stays bounded, URL-backed, and never expands h
   assert.match(component, /compareCommit: snapshot\.commit/);
   assert.match(component, /claimId: id/);
   assert.match(component, /Claim evolution matrix/);
-  assert.match(component, /matrix-only revisions do not trigger historical research endpoint scans/);
+  assert.match(component, /Matrix-only revisions do not trigger historical research endpoint scans/);
   assert.match(component, /matrixEventSummary\(events\)/);
-  assert.match(component, /\{links\.length\} authored link/);
+  assert.match(component, /\{links\.length\} \{\(selectedEvidence \|\| selectedRelation\) \? "focused" : "authored"\} link/);
   assert.match(css, /\.matrixScroll\s*\{[^}]*overflow-x:\s*auto/s);
   assert.match(css, /\.matrix\s*\{[^}]*width:\s*max\(100%, 1180px\)/s);
   assert.match(css, /\.matrixLink:focus-visible/);
   assert.match(css, /\.matrixActiveLink/);
   assert.match(css, /\.matrixChanged/);
-  assert.match(css, /@media \(pointer: coarse\)[\s\S]*\.matrixLink,[\s\S]*\.matrixActiveLink \{ min-height: 44px; \}/);
+  assert.match(css, /@media \(pointer: coarse\)[\s\S]*\.matrixLink,[\s\S]*\.matrixActiveLink/);
+});
+
+test("side-by-side Claim rows are bounded, changed-first, and collapse unchanged state without altering the event model", async () => {
+  const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
+  const css = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.module.css"), "utf8");
+  assert.match(component, /const allComparisonChangedFirst = \[/);
+  assert.match(component, /const comparisonVisibleClaimIds = selectedChangedOnly/);
+  assert.match(component, /comparisonVisibleClaimIds\.slice\(0, 20\)/);
+  assert.match(component, /<details className=\{`\$\{styles\.claimCompare\} \$\{deltaClass\}`\} open=\{deltaKind !== "unchanged"\}/);
+  assert.match(component, /deltaKind = !before && after \? "added" : before && !after \? "removed" : claimEvents\.length \? "changed" : "unchanged"/);
+  assert.match(css, /\.claimCompare > summary/);
+  assert.match(css, /\.claimUnchanged/);
+  assert.match(css, /\.claimAdded/);
+  assert.match(css, /\.claimRemoved/);
+  assert.match(css, /\.claimChanged/);
+  assert.doesNotMatch(component, /excerpt.*similar/i);
 });
 
 test("Claim history responsive layout collapses compare grids without document-width assumptions", async () => {
