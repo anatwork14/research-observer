@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { EvolutionGraph } from "@/components/EvolutionGraph";
 import { ManuscriptClaimHistory } from "@/components/ManuscriptClaimHistory";
+import { ManuscriptRevisionActivity } from "@/components/ManuscriptRevisionActivity";
 import { ResearchEvolutionTimeline } from "@/components/ResearchEvolutionTimeline";
 import { ResearchGraph } from "@/components/ResearchGraph";
 import { ResearchVersionCompare } from "@/components/ResearchVersionCompare";
@@ -265,6 +266,17 @@ export default async function GraphPage({
           <>
             <ResearchEvolutionTimeline nodes={evolution.nodes} timeline={evolution.timeline} lineages={evolution.lineages} />
             <ResearchVersionCompare comparisons={versionComparisons} />
+            <ManuscriptRevisionActivity
+              evolution={claimHistory}
+              projectId={projectId}
+              baseCommit={filters.claimBase}
+              compareCommit={filters.claimCompare}
+              claimId={filters.claimHistory}
+              evidenceSlug={filters.evidenceHistory}
+              eventType={filters.historyEvent}
+              relationType={filters.historyRelation}
+              changedMode={filters.historyChanged}
+            />
             <ManuscriptClaimHistory
               evolution={claimHistory}
               projectId={projectId}
