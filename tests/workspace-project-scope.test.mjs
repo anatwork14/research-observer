@@ -40,6 +40,7 @@ test("workspace selector exposes multi-project Insights scope with touch-safe co
   assert.match(navigation, /section\.key === "insights"/);
   assert.match(navigation, /primaryResearchProject\(projectValues\)/);
   assert.match(navigation, /serializeResearchProjectScope\(projectScope\)/);
-  assert.match(css, /@media \(max-width:\s*760px\)/);
+  assert.match(css, /\.menu\s*\{[^}]*max-height:\s*min\(70vh,\s*520px\)[^}]*overflow-y:\s*auto/s);
+  assert.match(css, /@media \(max-width:\s*760px\)[\s\S]*\.menu\s*\{[^}]*position:\s*fixed[^}]*bottom:\s*14px[^}]*max-height:\s*min\(72vh,\s*560px\)/);
   assert.match(css, /@media \(pointer:\s*coarse\)[\s\S]*min-height:\s*44px/);
 });

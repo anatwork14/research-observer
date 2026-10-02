@@ -32,6 +32,9 @@
   top: calc(100% + 8px);
   left: 0;
   width: min(390px, calc(100vw - 28px));
+  max-height: min(70vh, 520px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -105,7 +108,7 @@
 
 @media (max-width: 760px) {
   .summary { min-width: 150px; max-width: min(58vw, 260px); }
-  .menu { position: fixed; left: 14px; right: 14px; top: auto; width: auto; }
+  .menu { position: fixed; left: 14px; right: 14px; top: auto; bottom: 14px; width: auto; max-height: min(72vh, 560px); }
 }
 
 @media (pointer: coarse) {
