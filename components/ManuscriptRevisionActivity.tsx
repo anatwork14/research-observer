@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   buildManuscriptClaimActivity,
+  buildManuscriptClaimActivityMatrix,
   isManuscriptClaimHistoryEventType,
   isManuscriptClaimHistoryRelation,
 } from "@/lib/research/manuscript-claim-activity.mjs";
@@ -61,6 +62,15 @@ function historyHref({
   return `/graph?${params.toString()}`;
 }
 
+function heatClass(events: number, maximum: number) {
+  if (events <= 0 || maximum <= 0) return styles.heat0;
+  const ratio = events / maximum;
+  if (ratio <= 0.25) return styles.heat1;
+  if (ratio <= 0.5) return styles.heat2;
+  if (ratio <= 0.75) return styles.heat3;
+  return styles.heat4;
+}
+
 export function ManuscriptRevisionActivity({
   evolution,
   projectId,
@@ -88,12 +98,20 @@ export function ManuscriptRevisionActivity({
   const previous = snapshots.at(-2)!;
   const resolvedBase = snapshotByCommit.get(baseCommit ?? "") ?? previous;
   const resolvedCompare = snapshotByCommit.get(compareCommit ?? "") ?? latest;
-  const activity = buildManuscriptClaimActivity(evolution.transitions, {
-    limit: 12,
+  const activityFilters = {
     claimId: selectedClaim,
     evidenceSlug: selectedEvidence,
     eventType: selectedEvent,
     relationType: selectedRelation,
+  };
+  const activity = buildManuscriptClaimActivity(evolution.transitions, {
+    limit: 12,
+    ...activityFilters,
+  });
+  const matrix = buildManuscriptClaimActivityMatrix(evolution.transitions, {
+    transitionLimit: 12,
+    claimLimit: 20,
+    ...activityFilters,
   });
   const scale = Math.max(1, activity.stats.maxEvents);
   const focusLabels = [
@@ -181,6 +199,98 @@ export function ManuscriptRevisionActivity({
           );
         })}
       </ol>
+
+      <div className={styles.matrixHeading}>
+        <div>
+          <span className="kicker">Claim × revision map</span>
+          <h3>Where each explicit Claim changed</h3>
+        </div>
+        <p>
+          {matrix.stats.claims} of {matrix.stats.totalClaims} matching Claims shown across {matrix.stats.transitions} adjacent revision pairs.
+          {matrix.stats.truncatedClaims > 0 ? ` ${matrix.stats.truncatedClaims} additional matching Claims are omitted by the 20-Claim presentation bound.` : ""}
+          {" "}Cell shade reflects only the exact matching event count within that Claim/revision pair.
+        </p>
+      </div>
+
+      {matrix.rows.length > 0 ? (
+        <div className={styles.matrixScroll}>
+          <table className={styles.heatmap}>
+            <thead>
+              <tr>
+                <th scope="col">Claim</th>
+                {matrix.columns.map((column) => {
+                  const from = snapshotByCommit.get(column.fromCommit);
+                  const to = snapshotByCommit.get(column.toCommit);
+                  const selected = resolvedBase.commit === column.fromCommit && resolvedCompare.commit === column.toCommit;
+                  const href = historyHref({
+                    projectId,
+                    baseCommit: column.fromCommit,
+                    compareCommit: column.toCommit,
+                    claimId: selectedClaim,
+                    evidenceSlug: selectedEvidence,
+                    eventType: selectedEvent,
+                    relationType: selectedRelation,
+                    changedOnly,
+                  });
+                  return (
+                    <th className={selected ? styles.selectedColumn : undefined} scope="col" key={`${column.fromCommit}-${column.toCommit}`}>
+                      <Link href={href} title={column.subject || "Committed manuscript revision"}>
+                        <code>{from?.shortCommit ?? column.fromCommit.slice(0, 7)}</code>
+                        <span>→</span>
+                        <code>{to?.shortCommit ?? column.toCommit.slice(0, 7)}</code>
+                      </Link>
+                    </th>
+                  );
+                })}
+                <th scope="col">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {matrix.rows.map((row) => (
+                <tr key={row.claimId}>
+                  <th className={selectedClaim === row.claimId ? styles.selectedClaim : undefined} scope="row">
+                    <code>{row.claimId}</code>
+                  </th>
+                  {row.cells.map((cell) => {
+                    const selected = resolvedBase.commit === cell.fromCommit && resolvedCompare.commit === cell.toCommit;
+                    const href = historyHref({
+                      projectId,
+                      baseCommit: cell.fromCommit,
+                      compareCommit: cell.toCommit,
+                      claimId: row.claimId,
+                      evidenceSlug: selectedEvidence,
+                      eventType: selectedEvent,
+                      relationType: selectedRelation,
+                      changedOnly,
+                    });
+                    const label = `${row.claimId}: ${cell.events} matching explicit events — ${cell.claimState} Claim-state, ${cell.evidenceTargets} Evidence-target, ${cell.relations} relationship`;
+                    return (
+                      <td className={selected ? styles.selectedColumn : undefined} key={`${row.claimId}-${cell.fromCommit}-${cell.toCommit}`}>
+                        <Link
+                          className={`${styles.heatCell} ${heatClass(cell.events, matrix.stats.maxCellEvents)}`}
+                          href={href}
+                          aria-label={label}
+                          title={label}
+                        >
+                          <strong>{cell.events}</strong>
+                          <span className={styles.cellSignals} aria-hidden="true">
+                            {cell.claimState > 0 && <i className={styles.claimSignal} />}
+                            {cell.evidenceTargets > 0 && <i className={styles.evidenceSignal} />}
+                            {cell.relations > 0 && <i className={styles.relationSignal} />}
+                          </span>
+                        </Link>
+                      </td>
+                    );
+                  })}
+                  <td className={styles.totalCell}><strong>{row.totalEvents}</strong></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className={styles.emptyMatrix}>No Claims have matching explicit events in this bounded revision window.</p>
+      )}
     </section>
   );
 }

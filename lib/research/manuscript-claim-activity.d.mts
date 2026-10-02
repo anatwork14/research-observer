@@ -10,14 +10,16 @@ export const MANUSCRIPT_CLAIM_HISTORY_RELATIONS: readonly ManuscriptClaimEvidenc
 export function isManuscriptClaimHistoryEventType(value: unknown): value is ManuscriptClaimHistoryEvent["type"];
 export function isManuscriptClaimHistoryRelation(value: unknown): value is ManuscriptClaimEvidenceRelationType;
 
+export type ManuscriptClaimActivityFilters = {
+  claimId?: string;
+  evidenceSlug?: string;
+  eventType?: string;
+  relationType?: string;
+};
+
 export function filterManuscriptClaimHistoryEvents(
   events?: ManuscriptClaimHistoryEvent[],
-  filters?: {
-    claimId?: string;
-    evidenceSlug?: string;
-    eventType?: string;
-    relationType?: string;
-  },
+  filters?: ManuscriptClaimActivityFilters,
 ): ManuscriptClaimHistoryEvent[];
 
 export type ManuscriptClaimActivityRow = {
@@ -44,11 +46,44 @@ export type ManuscriptClaimActivity = {
 
 export function buildManuscriptClaimActivity(
   transitions?: ManuscriptClaimHistoryTransition[],
-  options?: {
-    limit?: number;
-    claimId?: string;
-    evidenceSlug?: string;
-    eventType?: string;
-    relationType?: string;
-  },
+  options?: ManuscriptClaimActivityFilters & { limit?: number },
 ): ManuscriptClaimActivity;
+
+export type ManuscriptClaimActivityMatrixCell = {
+  fromCommit: string;
+  toCommit: string;
+  events: number;
+  claimState: number;
+  evidenceTargets: number;
+  relations: number;
+};
+
+export type ManuscriptClaimActivityMatrix = {
+  columns: Array<{
+    fromCommit: string;
+    toCommit: string;
+    at: string;
+    subject: string;
+  }>;
+  rows: Array<{
+    claimId: string;
+    totalEvents: number;
+    cells: ManuscriptClaimActivityMatrixCell[];
+  }>;
+  stats: {
+    transitions: number;
+    claims: number;
+    totalClaims: number;
+    changedCells: number;
+    maxCellEvents: number;
+    truncatedClaims: number;
+  };
+};
+
+export function buildManuscriptClaimActivityMatrix(
+  transitions?: ManuscriptClaimHistoryTransition[],
+  options?: ManuscriptClaimActivityFilters & {
+    transitionLimit?: number;
+    claimLimit?: number;
+  },
+): ManuscriptClaimActivityMatrix;
