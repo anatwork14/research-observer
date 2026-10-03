@@ -138,6 +138,8 @@ test("branched lineage never invents an adjacent predecessor comparison", () => 
   assert.deepEqual(item.predecessors.map((predecessor) => predecessor.slug), ["idea-v2", "idea-branch"]);
   assert.equal(item.predecessors[0].note, "Retains the constrained reranking path.");
   assert.equal(item.predecessors[1].note, "Adopts the alternative failure analysis.");
+  assert.deepEqual(item.predecessors[0].changes, diffResearchSemantics(revised, merged));
+  assert.deepEqual(item.predecessors[1].changes, diffResearchSemantics(branch, merged));
   assert.equal(item.changes, null);
 });
 

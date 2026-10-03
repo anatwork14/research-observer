@@ -152,18 +152,23 @@ export function ResearchSemanticEvolution({
           {trail.map((item) => {
             const transitions = item.predecessors;
             const changedDimensions = transitions.reduce((total, predecessor) => total + predecessor.changes.summary.changedDimensions, 0);
-            const detail = transitions.length === 0
-              ? "Lineage baseline"
-              : transitions.length === 1
-                ? trailSummary(transitions[0].changes)
-                : `${transitions.length} explicit predecessors · ${changedDimensions} semantic dimension changes`;
             return (
               <article key={item.slug} className={styles.trailCard} role="listitem" data-selected={item.slug === compare.slug ? "true" : undefined}>
                 <div className={styles.trailIndex}>v{item.index + 1}</div>
                 <div className={styles.trailCopy}>
                   <strong>{item.title}</strong>
                   <span>{[item.date, item.status].filter(Boolean).join(" · ") || "Undated version"}</span>
-                  <small>{detail}</small>
+                  {transitions.length === 0 ? <small>Lineage baseline</small> : (
+                    <div className={styles.trailTransitions} aria-label={`${transitions.length} explicit predecessor${transitions.length === 1 ? "" : "s"}`}>
+                      {transitions.map((predecessor) => (
+                        <div key={predecessor.slug} className={styles.trailTransition}>
+                          <strong>{predecessor.title} → {item.title}</strong>
+                          <small>Δ{predecessor.changes.summary.changedDimensions} · {trailSummary(predecessor.changes)}</small>
+                          {predecessor.note && <em>{predecessor.note}</em>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 {transitions.length > 0 && <b>{changedDimensions}</b>}
               </article>

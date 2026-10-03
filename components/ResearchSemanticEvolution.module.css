@@ -308,6 +308,39 @@
   font: 7px/1.35 var(--mono);
 }
 
+.trailTransitions {
+  display: grid;
+  gap: 5px;
+  margin-top: 3px;
+}
+
+.trailTransition {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface-strong);
+}
+
+.trailTransition > strong {
+  overflow-wrap: anywhere;
+  color: var(--ink-soft);
+  font: 600 8px/1.35 var(--sans);
+}
+
+.trailTransition > small {
+  overflow-wrap: anywhere;
+}
+
+.trailTransition > em {
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.4;
+}
+
 .trailCard > b {
   min-width: 22px;
   height: 22px;
