@@ -24,7 +24,7 @@ test("parseLspFrames keeps partial frames buffered", () => {
   assert.equal(completed.messages[0].method, "window/logMessage");
 });
 
-test("TexLab protocol normalizes diagnostics, symbols, and plain completions", async (t) => {
+test("TexLab protocol normalizes diagnostics, symbols, completions, and server requests", async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "observaire-texlab-test-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const fake = path.join(root, "fake-texlab.mjs");
@@ -34,6 +34,7 @@ if (process.argv.includes("--version")) {
   process.exit(0);
 }
 let buffer = Buffer.alloc(0);
+let openUri = "";
 function send(payload) {
   const body = JSON.stringify(payload);
   process.stdout.write("Content-Length: " + Buffer.byteLength(body, "utf8") + "\\r\\n\\r\\n" + body);
@@ -52,9 +53,12 @@ function parse() {
     buffer = buffer.subarray(start + length);
     if (message.id === 1 && message.method === "initialize") {
       send({ jsonrpc: "2.0", id: 1, result: { capabilities: {} } });
+      send({ jsonrpc: "2.0", id: 77, method: "workspace/configuration", params: { items: [{ section: "texlab" }] } });
     } else if (message.method === "textDocument/didOpen") {
+      openUri = message.params.textDocument.uri;
+    } else if (message.id === 77 && Array.isArray(message.result)) {
       send({ jsonrpc: "2.0", method: "textDocument/publishDiagnostics", params: {
-        uri: message.params.textDocument.uri,
+        uri: openUri,
         diagnostics: [{ severity: 2, message: "Fake warning", source: "texlab", code: "fake", range: { start: { line: 1, character: 2 }, end: { line: 1, character: 5 } } }],
       } });
     } else if (message.id === 2) {
@@ -77,7 +81,7 @@ process.stdin.on("data", (chunk) => { buffer = Buffer.concat([buffer, chunk]); p
     command: fake,
     cwd: root,
     fileUri,
-    content: "\\\\documentclass{article}\n\\\\begin{document}\nHello\n\\\\section{Introduction}\n\\\\end{document}\n",
+    content: "\\documentclass{article}\n\\begin{document}\nHello\n\\section{Introduction}\n\\end{document}\n",
     position: { line: 0, column: 2 },
     timeoutMs: 2_000,
   });
