@@ -36,6 +36,13 @@ export type ResearchSemanticDiff = {
   hasChanges: boolean;
 };
 
+export type ResearchEvolutionPredecessor = {
+  slug: string;
+  title: string;
+  note?: string;
+  changes: ResearchSemanticDiff;
+};
+
 export function diffResearchSemantics(base?: Partial<ResearchEntry>, compare?: Partial<ResearchEntry>): ResearchSemanticDiff;
 export function buildResearchEvolutionTrail(versions?: ResearchEntry[]): Array<{
   index: number;
@@ -43,5 +50,6 @@ export function buildResearchEvolutionTrail(versions?: ResearchEntry[]): Array<{
   title: string;
   date?: string;
   status?: string;
+  predecessors: ResearchEvolutionPredecessor[];
   changes: ResearchSemanticDiff | null;
 }>;
