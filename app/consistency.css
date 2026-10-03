@@ -114,6 +114,10 @@
 }
 
 @media (pointer: coarse) {
+  .workspace-tabs a {
+    min-height: 44px;
+  }
+
   .evidence-source-actions .evidence-source-link,
   .consensus-citation-actions > span,
   .pdf-selection-bar button,
