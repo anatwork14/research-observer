@@ -38,6 +38,20 @@ export type ResearchMetric = {
   aliases: string[]; threshold?: unknown; description?: string;
 };
 
+export type ResearchProjectOrchestration = {
+  status: "queued" | "active" | "blocked" | "done";
+  dependsOn?: string[];
+  next?: string;
+  note?: string;
+};
+
+export type ResearchProjectDefinition = {
+  id: string;
+  label: string;
+  description?: string;
+  orchestration?: ResearchProjectOrchestration;
+};
+
 export type ResearchEntry = {
   filename: string;
   fileSlug: string;
@@ -76,6 +90,7 @@ export type ResearchProjectSummary = {
   id: string;
   label: string;
   description?: string;
+  orchestration?: ResearchProjectOrchestration;
   directory?: string;
   autoIndexed?: boolean;
   notes: number;
@@ -109,7 +124,7 @@ export type ResearchWorkspace = {
     allowedMediaExtensions: string[];
     allowedRelationshipTypes: string[];
     maxAssetBytes: number;
-    researchProjects: Array<{ id: string; label: string; description?: string }>;
+    researchProjects: ResearchProjectDefinition[];
     savedCollections: Array<{ id: string; label: string; description?: string; query: string }>;
     [key: string]: unknown;
   };
