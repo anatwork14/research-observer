@@ -24,7 +24,9 @@ export type AnalyticsDrilldown = {
   count: number;
 };
 
-export function normalizeAnalyticsDrilldown(input?: Partial<AnalyticsDrilldownFilters>): AnalyticsDrilldownFilters;
+export function normalizeAnalyticsDrilldown(
+  input?: Partial<Omit<AnalyticsDrilldownFilters, "focus">> & { focus?: string },
+): AnalyticsDrilldownFilters;
 export function hasAnalyticsDrilldown(filters?: Partial<AnalyticsDrilldownFilters>): boolean;
 export function buildAnalyticsDrilldown(options?: {
   workspace?: ResearchWorkspace;
