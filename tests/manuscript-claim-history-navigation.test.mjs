@@ -58,7 +58,7 @@ test("event and relation filters normalize exact authored vocabulary and compose
 
 test("event-type filtering restricts unfocused matrix and compare rows to matching events", async () => {
   const component = await fs.readFile(path.join(root, "components/ManuscriptClaimHistory.tsx"), "utf8");
-  assert.match(component, /const focusedComparisonClaimIds = selectedEvent\s*\? changedClaimIds\(comparisonEvents\)\s*:\s*stateFocusedComparisonClaimIds/);
+  assert.match(component, /const focusedComparisonClaimIds = selectedEvent\s*\? comparisonChangedClaimIds\s*:\s*stateFocusedComparisonClaimIds/);
   assert.match(component, /const matrixDefaultIds = selectedEvent\s*\? matrixChangedIds\s*:/);
   assert.match(component, /const matrixChangedIds = changedClaimIds\(matrixTransitions\.flatMap\(\(transition\) => transitionEvents\(transition\.events, "", selectedEvidence, selectedEvent, selectedRelation\)\)\)/);
   assert.doesNotMatch(component, /selectedEvent\s*\?\s*matrixFocusedClaimIds/);
@@ -126,7 +126,7 @@ test("chronology Evidence details provide exact focus links without changing fil
   assert.match(component, /historyHref\(\{ \.\.\.hrefState, claimId: event\.claimId \}\)/);
   assert.match(css, /\.eventEvidenceLink:focus-visible/);
   assert.match(css, /\.eventEvidenceActiveLink/);
-  assert.match(css, /@media \(pointer: coarse\)[\s\S]*\.eventEvidenceLink,[\s\S]*\.eventEvidenceActiveLink \{ min-height: 44px; \}/);
+  assert.match(css, /@media \(pointer: coarse\)[\s\S]*\.eventEvidenceLink,[\s\S]*\.eventEvidenceActiveLink,[\s\S]*\.relationFilterLink,[\s\S]*\.relationFilterActiveLink \{ min-height: 44px; \}/);
   assert.match(css, /@media \(max-width: 700px\)[\s\S]*\.eventEvidenceLink,[\s\S]*\.eventEvidenceActiveLink \{ grid-column: 1 \/ -1; \}/);
 });
 

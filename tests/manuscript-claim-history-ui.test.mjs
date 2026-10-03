@@ -113,7 +113,7 @@ test("multi-revision Claim matrix stays bounded, URL-backed, and never expands h
   assert.match(component, /Claim evolution matrix/);
   assert.match(component, /Matrix-only revisions do not trigger historical research endpoint scans/);
   assert.match(component, /matrixEventSummary\(events\)/);
-  assert.match(component, /\{links\.length\} \{\(selectedEvidence \|\| selectedRelation\) \? "focused" : "authored"\} link/);
+  assert.match(component, /\$\{links\.length\} \$\{\(selectedEvidence \|\| selectedRelation\) \? "focused" : "authored"\} link\$\{links\.length === 1 \? "" : "s"\}/);
   assert.match(css, /\.matrixScroll\s*\{[^}]*overflow-x:\s*auto/s);
   assert.match(css, /\.matrix\s*\{[^}]*width:\s*max\(100%, 1180px\)/s);
   assert.match(css, /\.matrixLink:focus-visible/);
