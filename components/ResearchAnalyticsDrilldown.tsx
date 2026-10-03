@@ -18,7 +18,7 @@ export function AnalyticsDrilldownRail({
       <span>{label}</span>
       <div>
         {visible.map((item) => (
-          <Link key={item.key} href={item.href} scroll={false}>
+          <Link key={item.key} href={item.href}>
             {item.label}<strong>{item.value}</strong>
           </Link>
         ))}
@@ -85,7 +85,7 @@ export function ResearchAnalyticsDrilldown({
         </div>
         <div className={styles.headerActions}>
           <strong>{drilldown.count}</strong>
-          <Link href={clearHref} scroll={false}>Clear</Link>
+          <Link href={clearHref}>Clear</Link>
         </div>
       </header>
 
