@@ -13,11 +13,12 @@ import {
   type LatexEditorDiagnostic,
   type LatexOutlineItem,
 } from "@/lib/research/latex-editor-tools.mjs";
+import { LatexLanguageIntelligence } from "./LatexLanguageIntelligence";
 import styles from "./LatexEditorAssistant.module.css";
 import { activeLatexEditor, notifyLatexEditorChange } from "./latex-editor-adapter";
 import { announceIdeOverlayOpen, listenForOtherIdeOverlay } from "./ide-overlay-coordinator";
 
-type Tab = "commands" | "outline" | "problems";
+type Tab = "commands" | "outline" | "problems" | "language";
 type Transform = { content: string; selectionStart: number; selectionEnd: number };
 
 type Snapshot = {
@@ -68,7 +69,7 @@ function snapshotFromEditor(editor: NonNullable<ReturnType<typeof activeEditor>>
   };
 }
 
-export function LatexEditorAssistant() {
+export function LatexEditorAssistant({ projectId }: { projectId: string }) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("commands");
   const [query, setQuery] = useState("");
@@ -193,6 +194,7 @@ export function LatexEditorAssistant() {
             <button type="button" data-active={tab === "commands"} onClick={() => setTab("commands")}>Commands</button>
             <button type="button" data-active={tab === "outline"} onClick={() => setTab("outline")}>Outline {snapshot.outline.length ? `(${snapshot.outline.length})` : ""}</button>
             <button type="button" data-active={tab === "problems"} onClick={() => setTab("problems")}>Problems {snapshot.diagnostics.length ? `(${snapshot.diagnostics.length})` : ""}</button>
+            <button type="button" data-active={tab === "language"} onClick={() => setTab("language")}>Language</button>
           </div>
 
           {error && <p className={styles.error}>{error}</p>}
@@ -234,10 +236,12 @@ export function LatexEditorAssistant() {
                 ))}
               </div>
             )}
+
+            {tab === "language" && <LatexLanguageIntelligence projectId={projectId} />}
           </div>
 
           <footer className={styles.footer}>
-            <span>Client hints only</span>
+            <span>Client hints + optional TexLab</span>
             <span>latexmk diagnostics decide build status</span>
           </footer>
         </aside>

@@ -1,0 +1,210 @@
+.shell {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.8rem;
+  border: 1px solid color-mix(in srgb, var(--border, #888) 70%, transparent);
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--surface-2, #111) 82%, transparent);
+}
+
+.status > div {
+  display: grid;
+  gap: 0.22rem;
+  min-width: 0;
+}
+
+.status strong {
+  font-size: 0.88rem;
+}
+
+.status small {
+  color: var(--muted, #8f96a3);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.status[data-available="true"] {
+  border-color: color-mix(in srgb, #2eaa77 42%, var(--border, #888));
+}
+
+.status button,
+.item,
+.completion {
+  border: 1px solid color-mix(in srgb, var(--border, #888) 72%, transparent);
+  background: color-mix(in srgb, var(--surface, #151515) 88%, transparent);
+  color: inherit;
+}
+
+.status button {
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.status button:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.authority,
+.empty,
+.error {
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.72rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.authority,
+.empty {
+  color: var(--muted, #8f96a3);
+  background: color-mix(in srgb, var(--surface-2, #111) 72%, transparent);
+}
+
+.error {
+  color: #ffb3b3;
+  background: color-mix(in srgb, #a52626 18%, transparent);
+  border: 1px solid color-mix(in srgb, #d64d4d 42%, transparent);
+}
+
+.results {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.results section {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.results section > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.results section > header strong {
+  font-size: 0.8rem;
+}
+
+.results section > header span {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.65rem;
+  height: 1.65rem;
+  padding: 0 0.42rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent, #8e78ff) 18%, transparent);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.items {
+  display: grid;
+  gap: 0.4rem;
+  max-height: 18rem;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.item,
+.completion {
+  width: 100%;
+  min-width: 0;
+  padding: 0.62rem 0.7rem;
+  border-radius: 0.7rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.item:disabled {
+  cursor: default;
+  opacity: 0.82;
+}
+
+.item > span,
+.completion > span {
+  display: grid;
+  gap: 0.16rem;
+  min-width: 0;
+}
+
+.item strong,
+.completion strong {
+  font-size: 0.8rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.item small,
+.completion small {
+  color: var(--muted, #8f96a3);
+  font-size: 0.68rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.item[data-severity="error"] {
+  border-color: color-mix(in srgb, #dc5555 52%, var(--border, #888));
+}
+
+.item[data-severity="warning"] {
+  border-color: color-mix(in srgb, #d7a33b 48%, var(--border, #888));
+}
+
+.completion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.completion b {
+  flex: 0 0 auto;
+  font-size: 0.68rem;
+  color: var(--accent, #8e78ff);
+}
+
+.status button:hover:not(:disabled),
+.item:hover:not(:disabled),
+.completion:hover {
+  border-color: color-mix(in srgb, var(--accent, #8e78ff) 54%, var(--border, #888));
+}
+
+.status button:focus-visible,
+.item:focus-visible,
+.completion:focus-visible {
+  outline: 2px solid var(--accent, #8e78ff);
+  outline-offset: 2px;
+}
+
+@media (max-width: 620px) {
+  .status {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .status button {
+    width: 100%;
+  }
+}
+
+@media (pointer: coarse) {
+  .status button,
+  .item,
+  .completion {
+    min-height: 44px;
+  }
+}

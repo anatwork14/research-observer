@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "LaTeX IDE · Observaire",
-  description: "Project-scoped LaTeX authoring, research citations, CodeMirror, Codex Ask/Draft plus reviewed Act patches, compilation, PDF preview, diagnostics, SyncTeX, and manuscript-location navigation.",
+  description: "Project-scoped LaTeX authoring, research citations, CodeMirror, optional TexLab language intelligence, Codex Ask/Draft plus reviewed Act patches, compilation, PDF preview, diagnostics, SyncTeX, and manuscript-location navigation.",
 };
 
 export default async function IdePage({
@@ -35,7 +35,7 @@ export default async function IdePage({
       <WorkspaceHeader entries={navEntries} active="ide" />
       <LatexWorkbench projectId={projectId} initialFile={requestedFile} initialLine={initialLine} />
       <LatexDeepLinkCursor file={requestedFile} line={initialLine} />
-      <LatexEditorAssistant />
+      <LatexEditorAssistant projectId={projectId} />
       <LatexCodexAssistant projectId={projectId} />
       <LatexCitationLauncher projectId={projectId} />
     </div>
