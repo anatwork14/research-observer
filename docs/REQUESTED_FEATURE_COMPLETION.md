@@ -1,6 +1,6 @@
 # Requested feature completion
 
-This note records the implementation boundary for the Research Observer work requested around Research Assist, analytics, revision history, multi-research work, and tablet/mobile behavior.
+This note records the implementation and verification boundary for the Research Observer work requested around Research Assist, analytics, revision history, multi-research work, and tablet/mobile behavior.
 
 ## Completion scope
 
@@ -53,9 +53,9 @@ Heat intensity and bar length always represent explicit event counts. They are n
 
 ### 4. Multiple research tracks at the same time
 
-`Insights` already accepts the canonical comma-separated `research` scope and renders portfolio/cross-project views over several research projects simultaneously.
+`Insights` accepts the canonical comma-separated `research` scope and renders portfolio/cross-project views over several research projects simultaneously.
 
-The global research context now exposes that capability directly:
+The global research context exposes that capability directly:
 
 - Insights can select several projects or the implicit all-project portfolio;
 - the selected set remains URL-backed through the existing `research=a,b,c` convention;
@@ -87,14 +87,35 @@ Focused coverage exists for the relevant contracts, including:
 - multi-project workspace-scope tests;
 - responsive coarse-pointer regression checks.
 
-## Verification boundary
+## Release verification
 
-The branch has been checked with focused runtime assertions, source-level regression tests, standalone declaration type-checking, and targeted TSX transpilation during implementation.
+The application-code checkpoint `b2f0c95b6c7744e145bde86f9124f0c727de4244` received full repository and browser verification in an isolated worktree. Subsequent merge-preparation hygiene changed only documentation/CI metadata, not application runtime code.
 
-At the time of this completion note, GitHub exposes no CI status for the feature branch, and the connected Vercel account has no deployment for `anatwork14/research-observer`. Therefore this note does **not** claim a full repository production build or browser/device runtime verification.
+Repository gates:
 
-Those environment-level checks remain release verification, not missing user-facing feature implementation.
+- `npm test`: PASS — 285/285 tests;
+- typecheck: PASS;
+- lint: PASS with two pre-existing warnings;
+- production build: PASS;
+- `npm run check:full`: PASS;
+- research doctor: 0 errors, one ignored `AGENTS.md` warning;
+- production dependency audit (`npm audit --omit=dev`): 0 vulnerabilities.
+
+Browser sign-off covered Overview, Analytics, Claims, Timeline, workspace navigation, New Research, multi-project scope, version comparison, and manuscript history at representative desktop, iPad/tablet, and mobile viewports from 1440×900 down to 390×844. No unintended page-level horizontal overflow remained on the audited surfaces.
+
+Multi-project scope was verified across seven viewport sizes, including add/remove behavior, URL persistence after refresh, and viewport-bounded menus. Version comparison selected the intended Base/Compare revisions and rendered the expected diff. Manuscript-history QA used a temporary local-only Git fixture covering all nine revision event types and all four supported relations; strict AND filtering and exact revision/Claim drill-down behavior were verified. The fixture was not pushed and was cleaned up after testing.
+
+Consensus browser QA covered loading, results, empty, error/retry, selection, citation copy, and Evidence save flows. Codex's local-development-only/offline frontend state was verified responsively; the authenticated Codex backend was not exercised because no local authenticated agent service was configured.
+
+Final browser observations at the application-code checkpoint:
+
+- runtime/page errors: 0;
+- hydration errors: 0;
+- unhandled promise failures observed: 0;
+- unexpected failed requests: 0.
+
+The repository does not rely on a GitHub Actions workflow for this sign-off; verification was performed in a real checkout plus browser automation.
 
 ## Completion statement
 
-Within the requested scope above, there is no remaining known user-facing feature gap. Future work may still refactor internals, add unrelated product capabilities, or perform release-environment verification, but those are outside this feature-completion boundary.
+Within the requested scope above, there is no remaining known user-facing feature gap. The feature branch has completed code verification and browser sign-off and is ready for final code review / merge preparation. Future work may still refactor internals or add unrelated product capabilities, but those are outside this feature-completion boundary.
