@@ -149,17 +149,26 @@ export function ResearchSemanticEvolution({
           <small>{trail.length} version{trail.length === 1 ? "" : "s"}</small>
         </div>
         <div className={styles.trailScroller} role="list" aria-label="Semantic research evolution trail">
-          {trail.map((item) => (
-            <article key={item.slug} className={styles.trailCard} role="listitem" data-selected={item.slug === compare.slug ? "true" : undefined}>
-              <div className={styles.trailIndex}>v{item.index + 1}</div>
-              <div className={styles.trailCopy}>
-                <strong>{item.title}</strong>
-                <span>{[item.date, item.status].filter(Boolean).join(" · ") || "Undated version"}</span>
-                <small>{item.changes ? trailSummary(item.changes) : "Lineage baseline"}</small>
-              </div>
-              {item.changes && <b>{item.changes.summary.changedDimensions}</b>}
-            </article>
-          ))}
+          {trail.map((item) => {
+            const transitions = item.predecessors;
+            const changedDimensions = transitions.reduce((total, predecessor) => total + predecessor.changes.summary.changedDimensions, 0);
+            const detail = transitions.length === 0
+              ? "Lineage baseline"
+              : transitions.length === 1
+                ? trailSummary(transitions[0].changes)
+                : `${transitions.length} explicit predecessors · ${changedDimensions} semantic dimension changes`;
+            return (
+              <article key={item.slug} className={styles.trailCard} role="listitem" data-selected={item.slug === compare.slug ? "true" : undefined}>
+                <div className={styles.trailIndex}>v{item.index + 1}</div>
+                <div className={styles.trailCopy}>
+                  <strong>{item.title}</strong>
+                  <span>{[item.date, item.status].filter(Boolean).join(" · ") || "Undated version"}</span>
+                  <small>{detail}</small>
+                </div>
+                {transitions.length > 0 && <b>{changedDimensions}</b>}
+              </article>
+            );
+          })}
         </div>
       </div>
     </section>
