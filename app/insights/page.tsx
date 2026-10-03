@@ -1,5 +1,10 @@
 import Link from "next/link";
 import { ClaimEvidenceAuditView } from "@/components/ClaimEvidenceAudit";
+import {
+  AnalyticsDrilldownRail,
+  EvidenceSignalOverview,
+  ResearchAnalyticsDrilldown,
+} from "@/components/ResearchAnalyticsDrilldown";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
 import {
   ActivityLineChart,
@@ -13,6 +18,12 @@ import {
 } from "@/components/ResearchAnalyticsCharts";
 import { ResearchTimeline } from "@/components/ResearchTimeline";
 import { ResearchVersionExplorer } from "@/components/ResearchVersionExplorer";
+import {
+  buildAnalyticsDrilldown,
+  buildEvidenceSignalSummary,
+  normalizeAnalyticsDrilldown,
+  type AnalyticsDrilldownFilters,
+} from "@/lib/research/analytics-drilldown.mjs";
 import { buildResearchAnalytics } from "@/lib/research/analytics.mjs";
 import { loadClaimEvidenceAudit } from "@/lib/research/claim-evidence-audit.mjs";
 import {
@@ -60,6 +71,18 @@ function scopeHref(
   return `/insights${query ? `?${query}` : ""}`;
 }
 
+function analyticsFocusHref(ids: string[], filters: Partial<AnalyticsDrilldownFilters>) {
+  const normalized = normalizeAnalyticsDrilldown(filters);
+  const params = new URLSearchParams({ view: "analytics" });
+  if (ids.length) params.set("research", ids.join(","));
+  if (normalized.focus) params.set("analyticsFocus", normalized.focus);
+  if (normalized.value) params.set("analyticsValue", normalized.value);
+  if (normalized.project) params.set("analyticsProject", normalized.project);
+  if (normalized.sourceProject) params.set("analyticsSource", normalized.sourceProject);
+  if (normalized.targetProject) params.set("analyticsTarget", normalized.targetProject);
+  return `/insights?${params.toString()}#analytics-drilldown`;
+}
+
 function compactNumber(value: number) {
   return new Intl.NumberFormat("en", { notation: value >= 1000 ? "compact" : "standard", maximumFractionDigits: 1 }).format(value);
 }
@@ -83,10 +106,21 @@ export default async function InsightsPage({
     section: one(params.claimSection),
     query: one(params.claimQ),
   });
+  const analyticsFilters = normalizeAnalyticsDrilldown({
+    focus: one(params.analyticsFocus),
+    value: one(params.analyticsValue),
+    project: one(params.analyticsProject),
+    sourceProject: one(params.analyticsSource),
+    targetProject: one(params.analyticsTarget),
+  });
   const analytics = buildResearchAnalytics(workspace, requested);
   const claimAudit = view === "claims"
     ? await loadClaimEvidenceAudit({ workspace, researchIds: analytics.researchIds })
     : null;
+  const drilldown = view === "analytics"
+    ? buildAnalyticsDrilldown({ workspace, analytics, filters: analyticsFilters })
+    : null;
+  const evidenceSignals = buildEvidenceSignalSummary(analytics.entries);
   const navEntries = workspace.entries.map(({ slug, order, title, status }) => ({ slug, order, title, status }));
   const availableProjects = workspace.projects.filter((project) => project.notes > 0);
   const explicitlyScoped = requested.length > 0;
@@ -94,6 +128,31 @@ export default async function InsightsPage({
   const base = one(params.base);
   const compare = one(params.compare);
   const claimResearchScope = explicitlyScoped ? analytics.researchIds : [];
+  const analyticsResearchScope = explicitlyScoped ? analytics.researchIds : [];
+  const clearAnalyticsHref = scopeHref("analytics", analyticsResearchScope);
+
+  const healthDrilldowns = analytics.healthRows.flatMap((row) => row.issues.map((issue) => ({
+    key: `${row.id}:${issue.key}`,
+    label: `${row.label} · ${issue.label}`,
+    value: issue.value,
+    href: analyticsFocusHref(analyticsResearchScope, { focus: "health", value: issue.key, project: row.id }),
+  })));
+  const crossPairCounts = new Map<string, number>();
+  for (const edge of analytics.crossProject) {
+    const key = `${edge.sourceResearch}→${edge.targetResearch}`;
+    crossPairCounts.set(key, (crossPairCounts.get(key) ?? 0) + 1);
+  }
+  const crossProjectDrilldowns = [...crossPairCounts.entries()].map(([key, value]) => {
+    const [sourceProject, targetProject] = key.split("→");
+    const sourceLabel = analytics.projects.find((project) => project.id === sourceProject)?.label ?? sourceProject;
+    const targetLabel = analytics.projects.find((project) => project.id === targetProject)?.label ?? targetProject;
+    return {
+      key,
+      label: `${sourceLabel} → ${targetLabel}`,
+      value,
+      href: analyticsFocusHref(analyticsResearchScope, { focus: "cross-project", sourceProject, targetProject }),
+    };
+  });
 
   function toggled(projectId: string) {
     if (!explicitlyScoped) return [projectId];
@@ -207,39 +266,72 @@ export default async function InsightsPage({
         )}
 
         {view === "analytics" && (
-          <section className="insight-chart-grid analytics">
-            <InsightCard eyebrow="Composition" title="Research object types" description="What the selected research is made of.">
-              <HorizontalBarChart data={analytics.types} ariaLabel="Research object type distribution" />
-            </InsightCard>
+          <>
+            <section className="insight-chart-grid analytics">
+              <InsightCard eyebrow="Composition" title="Research object types" description="What the selected research is made of.">
+                <HorizontalBarChart data={analytics.types} ariaLabel="Research object type distribution" />
+                <AnalyticsDrilldownRail
+                  items={analytics.types.map((item) => ({ ...item, href: analyticsFocusHref(analyticsResearchScope, { focus: "type", value: item.key }) }))}
+                />
+              </InsightCard>
 
-            <InsightCard eyebrow="State" title="Status composition" description="Current workflow states across the selected portfolio.">
-              <DonutChart data={analytics.statuses} ariaLabel="Research status composition" />
-            </InsightCard>
+              <InsightCard eyebrow="State" title="Status composition" description="Current workflow states across the selected portfolio.">
+                <DonutChart data={analytics.statuses} ariaLabel="Research status composition" />
+                <AnalyticsDrilldownRail
+                  items={analytics.statuses.map((item) => ({ ...item, href: analyticsFocusHref(analyticsResearchScope, { focus: "status", value: item.key }) }))}
+                />
+              </InsightCard>
 
-            <InsightCard eyebrow="Flow" title="Research pipeline" description="Questions → hypotheses → experiments → results → evidence → decisions." className="wide">
-              <PipelineChart data={analytics.pipeline} />
-            </InsightCard>
+              <InsightCard eyebrow="Flow" title="Research pipeline" description="Questions → hypotheses → experiments → results → evidence → decisions." className="wide">
+                <PipelineChart data={analytics.pipeline} />
+                <AnalyticsDrilldownRail
+                  items={analytics.pipeline.map((item) => ({ ...item, href: analyticsFocusHref(analyticsResearchScope, { focus: "type", value: item.key }) }))}
+                />
+              </InsightCard>
 
-            <InsightCard eyebrow="Semantics" title="Typed relationship mix" description="How research objects support, answer, derive from, contradict, or supersede one another.">
-              <HorizontalBarChart data={analytics.relationships} ariaLabel="Typed relationship distribution" />
-            </InsightCard>
+              <InsightCard eyebrow="Semantics" title="Typed relationship mix" description="How research objects support, answer, derive from, contradict, or supersede one another.">
+                <HorizontalBarChart data={analytics.relationships} ariaLabel="Typed relationship distribution" />
+                <AnalyticsDrilldownRail
+                  items={analytics.relationships.map((item) => ({ ...item, href: analyticsFocusHref(analyticsResearchScope, { focus: "relation", value: item.key }) }))}
+                />
+              </InsightCard>
 
-            <InsightCard eyebrow="Trend" title="Research activity over time" description="Linked to the same project scope as every chart on this page." className="wide">
-              <ActivityLineChart data={analytics.activity} />
-            </InsightCard>
+              <InsightCard eyebrow="Evidence" title="Explicit evidence signals" description="Inspect authored Evidence → research relationships without turning absence into a quality score.">
+                <EvidenceSignalOverview
+                  summary={evidenceSignals}
+                  hrefFor={(value) => analyticsFocusHref(analyticsResearchScope, { focus: "evidence-signal", value })}
+                />
+              </InsightCard>
 
-            <InsightCard eyebrow="Projects" title="Cross-project composition" description="Stacked stage counts make multiple researches comparable without hiding their structure." className="wide">
-              <ProjectCompositionChart projects={analytics.projects} />
-            </InsightCard>
+              <InsightCard eyebrow="Trend" title="Research activity over time" description="Linked to the same project scope as every chart on this page." className="wide">
+                <ActivityLineChart data={analytics.activity} />
+                <AnalyticsDrilldownRail
+                  label="Inspect month"
+                  items={analytics.activity.map((item) => ({ key: item.month, label: item.month, value: item.total, href: analyticsFocusHref(analyticsResearchScope, { focus: "month", value: item.month }) }))}
+                />
+              </InsightCard>
 
-            <InsightCard eyebrow="Integrity" title="Health heatmap" description="Darker cells indicate more compiler-detected conditions, not subjective quality.">
-              <HealthHeatmap rows={analytics.healthRows} />
-            </InsightCard>
+              <InsightCard eyebrow="Projects" title="Cross-project composition" description="Stacked stage counts make multiple researches comparable without hiding their structure." className="wide">
+                <ProjectCompositionChart projects={analytics.projects} />
+                <AnalyticsDrilldownRail
+                  label="Inspect project"
+                  items={analytics.projects.map((project) => ({ key: project.id, label: project.label, value: project.notes, href: analyticsFocusHref(analyticsResearchScope, { focus: "project", value: project.id }) }))}
+                />
+              </InsightCard>
 
-            <InsightCard eyebrow="Connections" title="Cross-project dependency matrix" description="Typed relationships that cross research-project boundaries.">
-              <CrossProjectMatrix projects={analytics.projects} edges={analytics.crossProject} />
-            </InsightCard>
-          </section>
+              <InsightCard eyebrow="Integrity" title="Health heatmap" description="Darker cells indicate more compiler-detected conditions, not subjective quality.">
+                <HealthHeatmap rows={analytics.healthRows} />
+                <AnalyticsDrilldownRail label="Inspect condition" items={healthDrilldowns} />
+              </InsightCard>
+
+              <InsightCard eyebrow="Connections" title="Cross-project dependency matrix" description="Typed relationships that cross research-project boundaries.">
+                <CrossProjectMatrix projects={analytics.projects} edges={analytics.crossProject} />
+                <AnalyticsDrilldownRail label="Inspect boundary" items={crossProjectDrilldowns} />
+              </InsightCard>
+            </section>
+
+            {drilldown && <ResearchAnalyticsDrilldown drilldown={drilldown} clearHref={clearAnalyticsHref} />}
+          </>
         )}
 
         {view === "claims" && claimAudit && (
