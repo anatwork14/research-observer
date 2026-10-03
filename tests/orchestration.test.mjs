@@ -88,6 +88,26 @@ test("untracked projects remain visible and dated activity is factual", () => {
   assert.equal(model.summary.untracked, 1);
 });
 
+test("empty untracked config placeholders stay out of the default control plane", () => {
+  const model = buildResearchOrchestration(workspace({
+    projects: [project("default", { notes: 0, active: 0 }), project("alpha")],
+    configProjects: [configProject("default"), configProject("alpha")],
+  }));
+
+  assert.deepEqual(model.projects.map((item) => item.id), ["alpha"]);
+  assert.equal(model.summary.total, 1);
+});
+
+test("zero-note projects with explicit orchestration remain visible", () => {
+  const model = buildResearchOrchestration(workspace({
+    projects: [project("planned", { notes: 0, active: 0 })],
+    configProjects: [configProject("planned", { status: "queued", next: "Create the first research note" })],
+  }));
+
+  assert.deepEqual(model.projects.map((item) => item.id), ["planned"]);
+  assert.equal(model.summary.queued, 1);
+});
+
 test("missing and self dependencies are explicit invalid states", () => {
   const model = buildResearchOrchestration(workspace({
     projects: [project("alpha"), project("beta")],
