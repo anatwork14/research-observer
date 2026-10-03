@@ -43,12 +43,12 @@
 }
 
 .summaryBadge.ready {
-  border-color: color-mix(in srgb, var(--success) 45%, var(--line));
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
 }
 
 .summaryBadge.partial,
 .summaryBadge.attention {
-  border-color: color-mix(in srgb, var(--warning) 50%, var(--line));
+  border-color: color-mix(in srgb, var(--warm) 50%, var(--line));
 }
 
 .secondaryButton,
@@ -58,8 +58,8 @@
   border-radius: 10px;
   min-height: 38px;
   padding: 8px 12px;
-  background: var(--panel-strong);
-  color: var(--text);
+  background: var(--surface-strong);
+  color: var(--ink);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
@@ -68,7 +68,7 @@
 .primaryButton {
   background: var(--accent);
   border-color: var(--accent);
-  color: var(--accent-contrast, #fff);
+  color: var(--surface-strong);
 }
 
 .secondaryButton:disabled,
@@ -83,11 +83,11 @@
   padding: 14px;
   border-radius: 12px;
   border: 1px solid var(--line);
-  background: var(--panel-strong);
+  background: var(--surface-strong);
 }
 
 .error {
-  border-color: color-mix(in srgb, var(--danger) 55%, var(--line));
+  border-color: color-mix(in srgb, var(--warm) 55%, var(--line));
 }
 
 .overview {
@@ -102,7 +102,7 @@
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: var(--panel-strong);
+  background: var(--surface-strong);
 }
 
 .overview span {
@@ -146,15 +146,15 @@
   padding: 13px;
   border-radius: 12px;
   border: 1px solid var(--line);
-  background: var(--panel-strong);
+  background: var(--surface-strong);
 }
 
 .card.ready {
-  border-color: color-mix(in srgb, var(--success) 32%, var(--line));
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--line));
 }
 
 .card.attention {
-  border-color: color-mix(in srgb, var(--warning) 42%, var(--line));
+  border-color: color-mix(in srgb, var(--warm) 42%, var(--line));
 }
 
 .card.unavailable {
@@ -186,11 +186,11 @@
 }
 
 .ready .statusDot {
-  background: var(--success);
+  background: var(--accent);
 }
 
 .attention .statusDot {
-  background: var(--warning);
+  background: var(--warm);
 }
 
 .card p {
