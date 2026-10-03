@@ -1,0 +1,386 @@
+.shell {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-strong) 94%, var(--accent-wash));
+}
+
+.heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.heading h3 {
+  margin: 4px 0 6px;
+  font: 600 18px/1.2 var(--serif);
+}
+
+.heading p {
+  margin: 0;
+  max-width: 760px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.heading code {
+  color: var(--accent-deep);
+}
+
+.kicker,
+.changeGroup > span,
+.relationPanel header span,
+.trailHeading span,
+.summaryGrid span,
+.fieldChanges > article > span {
+  color: var(--muted);
+  font: 7px/1.2 var(--mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.dimensionBadge {
+  flex: 0 0 auto;
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 9px;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--line));
+  border-radius: 999px;
+  color: var(--accent-deep);
+  background: var(--accent-wash);
+  font: 700 8px var(--mono);
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.summaryGrid article {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-strong);
+}
+
+.summaryGrid strong {
+  font: 600 20px/1 var(--serif);
+}
+
+.summaryGrid small {
+  overflow: hidden;
+  color: var(--muted);
+  font: 7px/1.35 var(--mono);
+  text-overflow: ellipsis;
+}
+
+.noChange {
+  padding: 12px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.fieldChanges {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.fieldChanges article {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--canvas);
+}
+
+.fieldChanges article > div {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+}
+
+.fieldChanges code {
+  min-width: 0;
+  padding: 6px;
+  overflow-wrap: anywhere;
+  border-radius: 5px;
+  background: var(--surface-strong);
+  color: var(--ink-soft);
+  font-size: 8px;
+}
+
+.fieldChanges b {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.collectionChanges {
+  display: grid;
+  gap: 8px;
+}
+
+.changeGroup {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pills strong {
+  max-width: 100%;
+  padding: 4px 7px;
+  overflow-wrap: anywhere;
+  border-radius: 999px;
+  font: 700 7px var(--mono);
+}
+
+.pills strong[data-kind="added"],
+.relationList code[data-kind="added"] {
+  color: var(--accent-deep);
+  background: var(--accent-wash);
+}
+
+.pills strong[data-kind="removed"],
+.relationList code[data-kind="removed"] {
+  color: var(--warm);
+  background: color-mix(in srgb, var(--warm) 10%, var(--surface-strong));
+}
+
+.relationGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.relationPanel {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-strong);
+}
+
+.relationPanel header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.relationPanel header strong {
+  min-width: 22px;
+  min-height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--accent-deep);
+  background: var(--accent-wash);
+  font: 700 8px var(--mono);
+}
+
+.relationPanel p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.relationList {
+  display: grid;
+  gap: 5px;
+}
+
+.relationList code {
+  padding: 6px 7px;
+  overflow-wrap: anywhere;
+  border-radius: 5px;
+  font-size: 8px;
+  line-height: 1.4;
+}
+
+.trail {
+  display: grid;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+.trailHeading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: end;
+}
+
+.trailHeading > div {
+  display: grid;
+  gap: 3px;
+}
+
+.trailHeading strong {
+  font-size: 11px;
+}
+
+.trailHeading small {
+  color: var(--muted);
+  font: 7px var(--mono);
+}
+
+.trailScroller {
+  min-width: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(180px, 1fr);
+  gap: 7px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  overscroll-behavior-inline: contain;
+}
+
+.trailCard {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--canvas);
+}
+
+.trailCard[data-selected="true"] {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.trailIndex {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  color: var(--accent-deep);
+  background: var(--accent-wash);
+  font: 700 8px var(--mono);
+}
+
+.trailCopy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.trailCopy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 9px;
+}
+
+.trailCopy span,
+.trailCopy small {
+  color: var(--muted);
+  font: 7px/1.35 var(--mono);
+}
+
+.trailTransitions {
+  display: grid;
+  gap: 5px;
+  margin-top: 3px;
+}
+
+.trailTransition {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface-strong);
+}
+
+.trailTransition > strong {
+  overflow-wrap: anywhere;
+  color: var(--ink-soft);
+  font: 600 8px/1.35 var(--sans);
+}
+
+.trailTransition > small {
+  overflow-wrap: anywhere;
+}
+
+.trailTransition > em {
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.4;
+}
+
+.trailCard > b {
+  min-width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--ink-soft);
+  background: var(--surface-strong);
+  font: 700 8px var(--mono);
+}
+
+@media (max-width: 900px) {
+  .summaryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .relationGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .heading {
+    display: grid;
+  }
+
+  .dimensionBadge {
+    justify-self: start;
+  }
+
+  .fieldChanges,
+  .summaryGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .changeGroup {
+    grid-template-columns: 1fr;
+  }
+
+  .trailScroller {
+    grid-auto-columns: minmax(82vw, 1fr);
+  }
+}

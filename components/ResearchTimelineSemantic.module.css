@@ -1,0 +1,145 @@
+.legendDelta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legendDelta b {
+  min-width: 18px;
+  min-height: 18px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--accent-deep);
+  background: var(--accent-wash);
+  font: 700 7px var(--mono);
+}
+
+.deltaMarker circle {
+  fill: var(--surface-strong);
+  stroke: color-mix(in srgb, var(--accent) 55%, var(--line));
+  stroke-width: 1.5;
+}
+
+.deltaMarker text {
+  fill: var(--accent-deep);
+  font: 700 6.5px var(--mono);
+  pointer-events: none;
+}
+
+.revisionRing {
+  fill: none;
+  stroke: color-mix(in srgb, var(--accent) 56%, var(--line));
+  stroke-width: 1.5;
+  stroke-dasharray: 3 2;
+  pointer-events: none;
+}
+
+.revisionSummary {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 10px;
+}
+
+.revisionSummary > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: end;
+}
+
+.revisionSummary h3 {
+  margin: 3px 0 0;
+  font: 600 15px/1.2 var(--serif);
+}
+
+.revisionSummary header small {
+  color: var(--muted);
+  font: 7.5px var(--mono);
+}
+
+.revisionScroller {
+  min-width: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(250px, 1fr);
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  overscroll-behavior-inline: contain;
+}
+
+.revisionCard {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  text-decoration: none;
+  background: var(--surface-strong);
+}
+
+.revisionCard:hover {
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--line));
+  background: color-mix(in srgb, var(--accent-wash) 30%, var(--surface-strong));
+}
+
+.revisionTopline {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+
+.revisionTopline span,
+.revisionCard small {
+  color: var(--muted);
+  font: 7.5px/1.4 var(--mono);
+}
+
+.revisionTopline strong {
+  min-width: 30px;
+  min-height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--accent-deep);
+  background: var(--accent-wash);
+  font: 700 8px var(--mono);
+}
+
+.revisionCard > b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+  font-size: 9px;
+}
+
+.revisionCard em {
+  padding-top: 5px;
+  border-top: 1px solid var(--line);
+  color: var(--ink-soft);
+  font-size: 8px;
+  line-height: 1.4;
+  font-style: normal;
+}
+
+@media (max-width: 620px) {
+  .revisionSummary > header {
+    display: grid;
+  }
+
+  .revisionScroller {
+    grid-auto-columns: minmax(84vw, 1fr);
+  }
+}
+
+@media (pointer: coarse) {
+  .revisionCard {
+    min-height: 88px;
+  }
+}

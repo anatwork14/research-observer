@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ResearchEntry } from "@/lib/research/compiler.mjs";
 import { diffResearchVersions } from "@/lib/research/analytics.mjs";
+import { ResearchSemanticEvolution } from "@/components/ResearchSemanticEvolution";
 
 type VersionGroup = {
   id: string;
@@ -92,6 +93,8 @@ export function ResearchVersionExplorer({
           <article><span>Assets</span><strong>{base.assets.length} → {compare.assets.length}</strong><small>{metricDelta(compare.assets.length - base.assets.length)}</small></article>
           <article><span>Status</span><strong>{base.status ?? "—"} → {compare.status ?? "—"}</strong><small>{base.research}</small></article>
         </div>
+
+        <ResearchSemanticEvolution versions={selectedGroup.versions} base={base} compare={compare} />
 
         <div className="version-diff-legend"><span className="added">+ Added</span><span className="removed">− Removed</span><span>Unchanged context</span>{diff.truncated && <em>Diff preview capped for robustness</em>}</div>
         <div className="version-diff" role="region" aria-label="Markdown version diff">
