@@ -26,9 +26,18 @@ test("version-difference surfaces retain tablet and narrow-screen structural fal
 test("workspace navigation and New Research filters meet coarse-pointer touch targets", async () => {
   const css = await fs.readFile(path.join(root, "app/globals.css"), "utf8");
   const consistency = await fs.readFile(path.join(root, "app/consistency.css"), "utf8");
+  const workbench = await fs.readFile(path.join(root, "components/LatexWorkbench.module.css"), "utf8");
+  const editorAssistant = await fs.readFile(path.join(root, "components/LatexEditorAssistant.module.css"), "utf8");
+  const codexAssistant = await fs.readFile(path.join(root, "components/LatexCodexAssistant.module.css"), "utf8");
+  const citationLauncher = await fs.readFile(path.join(root, "components/LatexCitationLauncher.module.css"), "utf8");
 
   assert.match(consistency, /@media \(pointer:\s*coarse\)[\s\S]*\.workspace-tabs a\s*\{[^}]*min-height:\s*44px/s);
+  assert.match(css, /@media \(pointer:\s*coarse\)[\s\S]*\.project-context-selector select\s*\{[^}]*min-height:\s*44px/s);
   assert.match(css, /@media \(pointer:\s*coarse\)[\s\S]*\.new-research-filters input:not\(\[type="checkbox"\]\),\s*\.new-research-filters select\s*\{[^}]*height:\s*44px/s);
   assert.match(css, /@media \(pointer:\s*coarse\)[\s\S]*\.new-research-check\s*\{[^}]*min-height:\s*44px/s);
   assert.match(css, /@media \(pointer:\s*coarse\)[\s\S]*\.new-research-check input\[type="checkbox"\]\s*\{[^}]*width:\s*20px;\s*height:\s*20px/s);
+  assert.match(workbench, /@media \(pointer:\s*coarse\)[\s\S]*\.toolbar button,[\s\S]*\.toolbar select,[\s\S]*\.editorModes button,[\s\S]*\.previewTabs button,[\s\S]*\.pdfControls button\s*\{[^}]*min-height:\s*44px/s);
+  for (const module of [editorAssistant, codexAssistant, citationLauncher]) {
+    assert.match(module, /@media \(pointer:\s*coarse\)[\s\S]*\.launcher\s*\{[^}]*min-height:\s*44px/s);
+  }
 });
