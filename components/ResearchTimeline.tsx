@@ -1,5 +1,7 @@
 import Link from "next/link";
 import type { ResearchEntry } from "@/lib/research/compiler.mjs";
+import { diffResearchSemantics, type ResearchSemanticDiff } from "@/lib/research/semantic-evolution.mjs";
+import styles from "./ResearchTimelineSemantic.module.css";
 
 const TYPE_SHORT: Record<string, string> = {
   question: "Q",
@@ -22,6 +24,17 @@ function utc(date: string) {
 function tickDates(min: number, max: number, count = 6) {
   if (max <= min) return [min];
   return Array.from({ length: count }, (_, index) => min + (index / (count - 1)) * (max - min));
+}
+
+function semanticSummary(diff: ResearchSemanticDiff) {
+  const parts: string[] = [];
+  if (diff.summary.fieldChanges) parts.push(`${diff.summary.fieldChanges} field`);
+  if (diff.summary.relationshipChanges) parts.push(`${diff.summary.relationshipChanges} relation`);
+  if (diff.summary.evidenceSignalChanges) parts.push(`${diff.summary.evidenceSignalChanges} evidence`);
+  if (diff.summary.headingChanges) parts.push(`${diff.summary.headingChanges} section`);
+  if (diff.summary.tagChanges) parts.push(`${diff.summary.tagChanges} tag`);
+  if (diff.summary.assetChanges) parts.push(`${diff.summary.assetChanges} asset`);
+  return parts.slice(0, 3).join(" · ") || "Wording-only or no normalized semantic change";
 }
 
 export function ResearchTimeline({
@@ -81,13 +94,28 @@ export function ResearchTimeline({
   const supersedes = entries.flatMap((entry) =>
     entry.relationships
       .filter((relation) => relation.type === "supersedes" && bySlug.has(relation.target))
-      .map((relation) => ({ newer: entry, older: bySlug.get(relation.target)! })),
+      .map((relation) => {
+        const older = bySlug.get(relation.target)!;
+        return {
+          newer: entry,
+          older,
+          semantic: diffResearchSemantics(older, entry),
+          note: relation.note,
+        };
+      }),
   );
+  const semanticByNewer = new Map<string, ResearchSemanticDiff[]>();
+  for (const transition of supersedes) {
+    const list = semanticByNewer.get(transition.newer.slug) ?? [];
+    list.push(transition.semantic);
+    semanticByNewer.set(transition.newer.slug, list);
+  }
 
   return (
     <>
       <div className="timeline-legend">
         <span><i className="version-link" />Version lineage</span>
+        <span className={styles.legendDelta}><b>Δ</b> Normalized semantic change on explicit <code>supersedes</code> links</span>
         <span>Each lane is a research project; same-day markers stack without changing their date.</span>
       </div>
       <div className="research-timeline-scroll panel">
@@ -114,30 +142,69 @@ export function ResearchTimeline({
             );
           })}
 
-          {supersedes.map(({ newer, older }) => {
+          {supersedes.map(({ newer, older, semantic }) => {
             if (newer.research !== older.research) return null;
             const newerPoint = positions.get(newer.slug);
             const olderPoint = positions.get(older.slug);
             if (!newerPoint || !olderPoint) return null;
-            return <line key={`${newer.slug}-${older.slug}`} x1={olderPoint.x} x2={newerPoint.x} y1={olderPoint.y} y2={newerPoint.y} className="timeline-version-link" />;
+            const midX = (olderPoint.x + newerPoint.x) / 2;
+            const midY = (olderPoint.y + newerPoint.y) / 2;
+            return (
+              <g key={`${newer.slug}-${older.slug}`}>
+                <line x1={olderPoint.x} x2={newerPoint.x} y1={olderPoint.y} y2={newerPoint.y} className="timeline-version-link" />
+                <g className={styles.deltaMarker} aria-label={`${semantic.summary.changedDimensions} semantic dimensions changed`}>
+                  <circle cx={midX} cy={midY} r="11" />
+                  <text x={midX} y={midY + 3} textAnchor="middle">Δ{semantic.summary.changedDimensions}</text>
+                </g>
+              </g>
+            );
           })}
 
           {entries.map((entry) => {
             const point = positions.get(entry.slug);
             if (!point) return null;
             const label = TYPE_SHORT[entry.type ?? "note"] ?? "N";
+            const semanticTransitions = semanticByNewer.get(entry.slug) ?? [];
+            const changed = semanticTransitions.reduce((total, item) => total + item.summary.changedDimensions, 0);
             return (
               <a key={entry.slug} href={`/progress/${entry.slug}`} aria-label={entry.title}>
                 <g className={`timeline-event type-${entry.type ?? "note"}`}>
+                  {semanticTransitions.length > 0 && <circle cx={point.x} cy={point.y} r="21" className={styles.revisionRing} />}
                   <circle cx={point.x} cy={point.y} r="15" />
                   <text x={point.x} y={point.y + 3.5} textAnchor="middle">{label}</text>
-                  <desc>{entry.date} · {entry.title} · {entry.type ?? "note"} · {entry.status ?? "unspecified"}</desc>
+                  <desc>{entry.date} · {entry.title} · {entry.type ?? "note"} · {entry.status ?? "unspecified"}{semanticTransitions.length ? ` · revision with ${changed} semantic dimension changes across ${semanticTransitions.length} predecessor${semanticTransitions.length === 1 ? "" : "s"}` : ""}</desc>
                 </g>
               </a>
             );
           })}
         </svg>
       </div>
+
+      {supersedes.length > 0 && (
+        <section className={`${styles.revisionSummary} panel`} aria-labelledby="timeline-revision-summary">
+          <header>
+            <div><span className="kicker">Revision semantics</span><h3 id="timeline-revision-summary">What changed at each explicit version step</h3></div>
+            <small>{supersedes.length} supersedes transition{supersedes.length === 1 ? "" : "s"}</small>
+          </header>
+          <div className={styles.revisionScroller}>
+            {supersedes.map(({ newer, older, semantic, note }) => (
+              <Link
+                key={`${newer.slug}-${older.slug}-summary`}
+                href={`/insights?view=versions&research=${encodeURIComponent(newer.research)}&base=${encodeURIComponent(older.slug)}&compare=${encodeURIComponent(newer.slug)}`}
+                className={styles.revisionCard}
+              >
+                <div className={styles.revisionTopline}>
+                  <span>{older.date ?? "undated"} → {newer.date ?? "undated"}</span>
+                  <strong>Δ{semantic.summary.changedDimensions}</strong>
+                </div>
+                <b>{older.title} → {newer.title}</b>
+                <small>{semanticSummary(semantic)}</small>
+                {note && <em>{note}</em>}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {undatedEntries.length > 0 && (
         <section className="undated-research panel">
