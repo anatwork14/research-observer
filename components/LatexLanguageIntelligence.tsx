@@ -119,7 +119,10 @@ export function LatexLanguageIntelligence({ projectId }: { projectId: string }) 
     editor.setValue(next, cursor, cursor);
     editor.focus();
     notifyLatexEditorChange();
-    setAnalyzedContent(next);
+    setAnalysis(null);
+    setAnalyzedContent("");
+    setAnalyzedFile("");
+    setCursorOffset(0);
     setError("");
   };
 
