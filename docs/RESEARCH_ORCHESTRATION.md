@@ -94,7 +94,7 @@ The orchestration model validates:
 - dependency cycles;
 - text shape for `next` and `note`.
 
-Invalid metadata remains visible as a configuration issue instead of being repaired or guessed automatically.
+Invalid metadata remains visible as a configuration issue instead of being repaired or guessed automatically. `npm run doctor` reports the same orchestration issues against `research-observer.config.json`, so invalid coordination metadata fails the normal local quality gate.
 
 This first orchestration slice is intentionally read-only. Edit `research-observer.config.json` locally to change orchestration metadata. A future local editing surface may reuse this contract, but must preserve explicit human control and stale-safe writes.
 
