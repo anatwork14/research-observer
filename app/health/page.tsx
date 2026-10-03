@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LocalWorkspaceHealth } from "@/components/LocalWorkspaceHealth";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
 import { getResearchWorkspace } from "@/lib/progress";
 
@@ -68,20 +69,22 @@ export default async function HealthPage() {
         <header className="collection-heading">
           <div>
             <p className="eyebrow">Health</p>
-            <h1>Research integrity, not a vanity score.</h1>
-            <p>Every card is a factual, inspectable condition derived from Markdown, relationships, sources, and compiler diagnostics.</p>
+            <h1>Local readiness and research integrity.</h1>
+            <p>Runtime checks explain whether this local workstation is ready; research checks remain factual conditions derived from source files and explicit relationships.</p>
           </div>
-          <span className="collection-count">{clear}/{checks.length} checks clear</span>
+          <span className="collection-count">{clear}/{checks.length} research checks clear</span>
         </header>
 
-        <section className="health-summary panel">
+        <LocalWorkspaceHealth />
+
+        <section className="health-summary panel" aria-label="Research integrity summary">
           <div><span>Compiler errors</span><strong>{workspace.stats.errors}</strong></div>
           <div><span>Warnings</span><strong>{workspace.stats.warnings}</strong></div>
           <div><span>Typed relations</span><strong>{workspace.stats.relationships}</strong></div>
           <div><span>Orphan assets</span><strong>{orphanAssets.length}</strong></div>
         </section>
 
-        <section className="health-grid">
+        <section className="health-grid" aria-label="Research integrity checks">
           {checks.map((check) => (
             <article key={check.key} className={`health-card panel ${check.slugs.length ? "attention" : "clear"}`}>
               <div className="health-card-heading">
@@ -103,7 +106,7 @@ export default async function HealthPage() {
         </section>
 
         <section className="dashboard-card panel health-diagnostics">
-          <div className="dashboard-card-heading"><div><span className="kicker">Compiler</span><h2>Diagnostics</h2></div></div>
+          <div className="dashboard-card-heading"><div><span className="kicker">Research compiler</span><h2>Diagnostics</h2></div></div>
           <div className="diagnostic-list">
             {workspace.diagnostics.map((item, index) => (
               <div key={`${item.code}-${item.file ?? index}`} className={`diagnostic-row ${item.severity}`}>
