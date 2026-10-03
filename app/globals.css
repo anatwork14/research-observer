@@ -3587,6 +3587,12 @@ body::after { width: 300px; height: 300px; left: -150px; bottom: 8vh; background
 }
 
 @media (pointer: coarse) {
+  .workspace-tabs a { min-height: 44px; }
+  .new-research-filters input:not([type="checkbox"]),
+  .new-research-filters select { height: 44px; }
+  .new-research-check { min-height: 44px; }
+  .new-research-check input[type="checkbox"] { width: 20px; height: 20px; }
+
   .intelligence-view-tabs a,
   .research-scope a,
   .version-chain a,
