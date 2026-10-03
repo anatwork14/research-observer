@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./LocalWorkspaceHealth.module.css";
 
 type HealthState = "ready" | "attention" | "unavailable";
@@ -37,9 +37,12 @@ function statusLabel(state: HealthState) {
 export function LocalWorkspaceHealth() {
   const [health, setHealth] = useState<HealthPayload | null>(null);
   const [error, setError] = useState("");
-  const [busy, setBusy] = useState("");
+  const [busy, setBusy] = useState("check");
+  const busyRef = useRef(false);
 
   const load = useCallback(async () => {
+    if (busyRef.current) return;
+    busyRef.current = true;
     setBusy("check");
     setError("");
     try {
@@ -50,18 +53,47 @@ export function LocalWorkspaceHealth() {
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : "Could not inspect the local workspace.");
     } finally {
+      busyRef.current = false;
       setBusy("");
     }
   }, []);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    const controller = new AbortController();
+    let active = true;
+
+    async function checkInitialHealth() {
+      try {
+        const response = await fetch("/api/health/local", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Could not inspect the local workspace.");
+        if (active) setHealth(payload);
+      } catch (nextError) {
+        if (active && !(nextError instanceof Error && nextError.name === "AbortError")) {
+          setError(nextError instanceof Error ? nextError.message : "Could not inspect the local workspace.");
+        }
+      } finally {
+        if (active) setBusy("");
+      }
+    }
+
+    void checkInitialHealth();
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, []);
 
   async function repair(action: "rebuild-research" | "prepare-pdf-runtime" | "repair-generated") {
+    if (busyRef.current) return;
+    busyRef.current = true;
     setBusy(action);
     setError("");
     try {
+      await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
       const response = await fetch("/api/health/local", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -73,6 +105,7 @@ export function LocalWorkspaceHealth() {
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : "Local maintenance failed.");
     } finally {
+      busyRef.current = false;
       setBusy("");
     }
   }
