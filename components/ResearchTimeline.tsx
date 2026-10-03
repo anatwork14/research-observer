@@ -67,7 +67,8 @@ export function ResearchTimeline({
   const plot = width - labelWidth - right;
   const xAt = (date: string) => labelWidth + ((utc(date) - min) / (max - min)) * plot;
   const projectIndex = new Map(projects.map((project, index) => [project.id, index]));
-  const bySlug = new Map(entries.map((entry) => [entry.slug, entry]));
+  const allEntries = [...entries, ...undatedEntries];
+  const bySlug = new Map(allEntries.map((entry) => [entry.slug, entry]));
 
   const collisionGroups = new Map<string, ResearchEntry[]>();
   for (const entry of entries) {
@@ -91,7 +92,7 @@ export function ResearchTimeline({
     });
   }
 
-  const supersedes = entries.flatMap((entry) =>
+  const supersedes = allEntries.flatMap((entry) =>
     entry.relationships
       .filter((relation) => relation.type === "supersedes" && bySlug.has(relation.target))
       .map((relation) => {
