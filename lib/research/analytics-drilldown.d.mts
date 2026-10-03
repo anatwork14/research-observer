@@ -2,7 +2,7 @@ import type { ResearchEntry, ResearchWorkspace } from "./compiler.mjs";
 import type { ResearchAnalytics } from "./analytics.mjs";
 
 export type AnalyticsDrilldownFilters = {
-  focus: "" | "type" | "status" | "relation" | "month" | "project" | "health" | "cross-project";
+  focus: "" | "type" | "status" | "relation" | "month" | "project" | "health" | "cross-project" | "evidence-signal";
   value: string;
   project: string;
   sourceProject: string;
