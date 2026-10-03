@@ -101,14 +101,44 @@ test("semantic diff tracks explicit evidence source provenance changes", () => {
   ]);
 });
 
-test("semantic evolution trail compares every adjacent revision", () => {
+test("semantic evolution trail follows explicit predecessor edges", () => {
   const trail = buildResearchEvolutionTrail([baseline, revised, current]);
 
   assert.equal(trail.length, 3);
   assert.equal(trail[0].changes, null);
+  assert.deepEqual(trail[0].predecessors, []);
+  assert.equal(trail[1].predecessors[0].slug, "idea-v1");
   assert.equal(trail[1].changes.summary.evidenceSignalChanges, 1);
+  assert.equal(trail[2].predecessors[0].slug, "idea-v2");
   assert.equal(trail[2].changes.fieldChanges.some((change) => change.field === "title"), true);
   assert.deepEqual(trail.map((item) => item.slug), ["idea-v1", "idea-v2", "idea-v3"]);
+});
+
+test("branched lineage never invents an adjacent predecessor comparison", () => {
+  const branch = {
+    ...baseline,
+    slug: "idea-branch",
+    title: "Alternative retrieval hypothesis",
+    date: "2026-02-20",
+    relationships: [{ type: "supersedes", target: "idea-v1" }],
+  };
+  const merged = {
+    ...current,
+    slug: "idea-merged",
+    title: "Merged retrieval hypothesis",
+    date: "2026-04-10",
+    relationships: [
+      { type: "supersedes", target: "idea-v2", note: "Retains the constrained reranking path." },
+      { type: "supersedes", target: "idea-branch", note: "Adopts the alternative failure analysis." },
+    ],
+  };
+  const trail = buildResearchEvolutionTrail([baseline, revised, branch, merged]);
+  const item = trail.find((candidate) => candidate.slug === "idea-merged");
+
+  assert.deepEqual(item.predecessors.map((predecessor) => predecessor.slug), ["idea-v2", "idea-branch"]);
+  assert.equal(item.predecessors[0].note, "Retains the constrained reranking path.");
+  assert.equal(item.predecessors[1].note, "Adopts the alternative failure analysis.");
+  assert.equal(item.changes, null);
 });
 
 test("wording-only edits do not become semantic changes", () => {
