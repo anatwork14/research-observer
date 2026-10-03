@@ -66,6 +66,9 @@ test("chronology revision, Claim, Evidence, and summary drill-down reuse safe UR
   assert.match(component, /relationType: relation/);
   assert.match(component, /transition\.toCommit === compare\?\.commit \? styles\.matrixActiveLink : styles\.matrixLink/);
   assert.match(component, /event\.claimId === selectedClaim \? styles\.matrixActiveLink : styles\.matrixLink/);
+  assert.match(component, /className=\{styles\.matrixCellLink\}/);
+  assert.match(component, /baseCommit: pairBase\?\.commit/);
+  assert.match(component, /compareCommit: pairCompare\?\.commit/);
   assert.doesNotMatch(component, /loadHistoricalResearchEvidenceIndex\(\{ commit: transition\.toCommit/);
   assert.doesNotMatch(component, /loadHistoricalResearchEvidenceIndex\(\{ commit: event/);
 });

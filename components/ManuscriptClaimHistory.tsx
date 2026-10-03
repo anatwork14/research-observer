@@ -499,16 +499,31 @@ export async function ManuscriptClaimHistory({
                   <th scope="row">
                     <Link className={id === selectedClaim ? styles.matrixActiveLink : styles.matrixLink} href={historyHref({ ...hrefState, claimId: id })}>{id}</Link>
                   </th>
-                  {matrixSnapshots.map((snapshot) => {
+                  {matrixSnapshots.map((snapshot, index) => {
                     const present = Boolean(snapshotClaim(snapshot, id));
                     const allLinks = snapshotLinks(snapshot, id);
                     const links = focusedLinks(allLinks, selectedEvidence, selectedRelation);
                     const events = transitionEvents(transitionByCommit.get(snapshot.commit)?.events || [], id, selectedEvidence, selectedEvent, selectedRelation);
+                    const pairBase = matrixSnapshots[index > 0 ? index - 1 : index];
+                    const pairCompare = matrixSnapshots[index > 0 ? index : index + 1];
+                    const href = historyHref({
+                      ...hrefState,
+                      baseCommit: pairBase?.commit,
+                      compareCommit: pairCompare?.commit,
+                      claimId: id,
+                    });
                     return (
                       <td className={events.length ? styles.matrixChanged : present ? styles.matrixPresent : styles.matrixAbsent} key={`${id}:${snapshot.commit}`}>
-                        <strong>{present ? "Present" : "Absent"}</strong>
-                        <span>{present ? `${links.length} ${(selectedEvidence || selectedRelation) ? "focused" : "authored"} link${links.length === 1 ? "" : "s"}` : "—"}</span>
-                        <small>{events.length ? matrixEventSummary(events) : "snapshot state"}</small>
+                        <Link
+                          className={styles.matrixCellLink}
+                          href={href}
+                          aria-label={`Claim ${id}, ${present ? "present" : "absent"} at ${snapshot.shortCommit}; compare ${pairBase?.shortCommit ?? "available"} to ${pairCompare?.shortCommit ?? "available"}`}
+                          title={`Inspect ${id} at ${snapshot.shortCommit} in an adjacent revision comparison`}
+                        >
+                          <strong>{present ? "Present" : "Absent"}</strong>
+                          <span>{present ? `${links.length} ${(selectedEvidence || selectedRelation) ? "focused" : "authored"} link${links.length === 1 ? "" : "s"}` : "—"}</span>
+                          <small>{events.length ? matrixEventSummary(events) : "snapshot state"}</small>
+                        </Link>
                       </td>
                     );
                   })}

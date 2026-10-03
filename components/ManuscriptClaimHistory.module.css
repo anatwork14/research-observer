@@ -227,7 +227,8 @@
 .matrix td span,
 .matrix td small { display: block; margin-top: 3px; color: var(--muted); font-size: 8px; line-height: 1.35; }
 .matrixLink,
-.matrixActiveLink {
+.matrixActiveLink,
+.matrixCellLink {
   display: block;
   min-width: 0;
   margin: -4px;
@@ -238,9 +239,11 @@
   overflow-wrap: anywhere;
 }
 .matrixLink:hover,
-.matrixActiveLink:hover { background: color-mix(in srgb, var(--accent-wash) 72%, transparent); }
+.matrixActiveLink:hover,
+.matrixCellLink:hover { background: color-mix(in srgb, var(--accent-wash) 72%, transparent); }
 .matrixLink:focus-visible,
-.matrixActiveLink:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.matrixActiveLink:focus-visible,
+.matrixCellLink:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .matrixActiveLink { background: color-mix(in srgb, var(--accent-wash) 82%, transparent); }
 .matrixPresent { background: color-mix(in srgb, var(--accent-wash) 28%, var(--surface)) !important; }
 .matrixChanged { background: color-mix(in srgb, var(--warm) 9%, var(--surface)) !important; }
@@ -499,6 +502,7 @@
   .linkList a,
   .matrixLink,
   .matrixActiveLink,
+  .matrixCellLink,
   .eventFilterLink,
   .eventFilterActiveLink,
   .eventEvidenceLink,
