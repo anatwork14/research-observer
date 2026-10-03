@@ -131,7 +131,7 @@ export function ResearchTimeline({
                 <g className={`timeline-event type-${entry.type ?? "note"}`}>
                   <circle cx={point.x} cy={point.y} r="15" />
                   <text x={point.x} y={point.y + 3.5} textAnchor="middle">{label}</text>
-                  <title>{entry.date} · {entry.title} · {entry.type ?? "note"} · {entry.status ?? "unspecified"}</title>
+                  <desc>{entry.date} · {entry.title} · {entry.type ?? "note"} · {entry.status ?? "unspecified"}</desc>
                 </g>
               </a>
             );
