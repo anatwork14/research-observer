@@ -243,3 +243,13 @@
   .metrics { grid-template-columns: 1fr 1fr; }
   .diffLine { grid-template-columns: 24px minmax(0, 1fr); }
 }
+
+@media (pointer: coarse) {
+  .header select {
+    height: 44px;
+  }
+
+  .version {
+    min-height: 44px;
+  }
+}

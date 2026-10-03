@@ -45,10 +45,10 @@ export function WorkspaceHeader({
       <div className="workspace-project-context">
         <span className="workspace-project-mark" aria-hidden="true" />
         <div className="workspace-project-copy">
-          <span className="workspace-project-label">Current project</span>
+          <span className="workspace-project-label">Research context</span>
           <WorkspaceProjectSelector />
         </div>
-        <span className="workspace-project-hint">Project context scopes notes, papers, evidence, and manuscripts.</span>
+        <span className="workspace-project-hint">Detailed workspaces stay project-specific; Insights can keep several research tracks active together.</span>
       </div>
     </Suspense>
     </>

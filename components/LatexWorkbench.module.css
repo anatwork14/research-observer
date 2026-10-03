@@ -502,3 +502,19 @@
     min-width: 2.7rem;
   }
 }
+
+@media (pointer: coarse) {
+  .toolbar button,
+  .toolbar select,
+  .editorModes button,
+  .previewTabs button,
+  .pdfControls button {
+    min-height: 44px;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .fileButton { min-height: 44px; }
+  .iconButton { min-width: 44px; min-height: 44px; }
+  .sidebarTools label { min-height: 44px; display: flex; align-items: center; gap: 0.4rem; }
+}

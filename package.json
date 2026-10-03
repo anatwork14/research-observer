@@ -19,7 +19,7 @@
     "prebuild": "npm run research:prepare-pdf && npm run research:compile",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint .",
+    "lint": "eslint --config eslint.config.mjs .",
     "typecheck": "tsc --noEmit",
     "research:compile": "node scripts/compile-research.mjs",
     "research:prepare-pdf": "node scripts/prepare-pdf-runtime.mjs",

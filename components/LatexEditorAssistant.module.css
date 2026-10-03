@@ -28,6 +28,10 @@
   font-weight: 750;
 }
 
+@media (pointer: coarse) {
+  .launcher { min-height: 44px; }
+}
+
 .drawer {
   position: fixed;
   z-index: 92;

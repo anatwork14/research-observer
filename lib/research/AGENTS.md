@@ -2,7 +2,7 @@
 
 These instructions apply to implementation under `lib/research/` and complement the repository-root `AGENTS.md`.
 
-For graph/timeline/version work, also read `docs/RESEARCH_EVOLUTION.md`. For explicit manuscript Claim work, also read `docs/MANUSCRIPT_CLAIMS.md`. For authored Claim↔Evidence semantics, also read `docs/CLAIM_EVIDENCE_RELATIONS.md`. For Claim↔Evidence analytics, also read `docs/CLAIM_EVIDENCE_AUDIT.md`.
+For graph/timeline/version work, also read `docs/RESEARCH_EVOLUTION.md`. For explicit manuscript Claim work, also read `docs/MANUSCRIPT_CLAIMS.md`. For authored Claim↔Evidence semantics, also read `docs/CLAIM_EVIDENCE_RELATIONS.md`. For Claim↔Evidence analytics, also read `docs/CLAIM_EVIDENCE_AUDIT.md`. For committed historical Claim/Evidence evolution, also read `docs/CLAIM_EVIDENCE_REVISION_HISTORY.md`.
 
 ## Canonical-data boundary
 
@@ -11,6 +11,7 @@ For graph/timeline/version work, also read `docs/RESEARCH_EVOLUTION.md`. For exp
 - Explicit manuscript Claim identity is authored in saved `.tex` comments; no separate Claim database is authoritative.
 - Explicit Claim↔Evidence semantics are authored in saved `.tex` comments; no relationship sidecar/database is authoritative.
 - Claim↔Evidence audit analytics are derived from the validated Claim projection plus canonical research objects; no audit database or score is authoritative.
+- Historical Claim/Evidence evolution is derived from committed manuscript bytes and committed manuscript visibility state; selected revision comparisons may additionally derive exact Evidence endpoint validity from the same Git commit's canonical research tree. No revision sidecar/database is authoritative.
 - Generated `.research-observer/` and `public/_research/` data are never authoritative.
 
 ## Graph semantics
@@ -100,6 +101,28 @@ For graph/timeline/version work, also read `docs/RESEARCH_EVOLUTION.md`. For exp
 - A Git repository with no `HEAD` yet still has valid working-tree state: report dirty/untracked manuscript files while returning zero committed revisions.
 - Dirty/untracked manuscript files are working state, not revisions. Report them separately.
 - If Git history is unavailable, degrade the revision layer without breaking research/citation/claim projections.
+- State-only `.observaire-ide.json` commits are opt-in revision metadata. Never present the state file itself as a manuscript source or create a fake `revised_in` manuscript edge for it.
+
+## Historical Claim ↔ Evidence revisions
+
+- Historical Claim snapshots may read only committed project-confined `.tex` bytes plus the committed `.observaire-ide.json` visibility state for that exact Git revision.
+- Reuse the existing Claim and Claim↔Evidence parsers. Do not implement a historical prose classifier or citation-to-Evidence inference path.
+- Historical Claim IDs are exact authored IDs. Do not infer renames from text similarity, file moves, dates, or adjacency.
+- A historical authored Claim↔Evidence directive records what the manuscript explicitly said at that commit. Endpoint validation annotates that authored fact; it must not decide whether the directive existed.
+- For selected Base/Compare snapshots, historical Evidence endpoint validation must read canonical research state from the exact same Git commit, not from the current workspace.
+- Historical Evidence validation must use the commit's path-safe `progressDir`, historical folder-project manifest identity, canonical stable ID/fallback slug rules, exact selected project identity, and exact `type: evidence`.
+- Historical endpoint states are exact: `valid`, `missing`, `ambiguous`, `cross-project`, `wrong-type`, or `unavailable`. Never upgrade aliases, title similarity, DOI/citation identity, or current canonical state into historical validity.
+- If a historical research scan is incomplete or exceeds its bounds, endpoint validation must be `unavailable`; never use a partial index to assert either valid or missing.
+- Duplicate historical canonical slugs are `ambiguous`; do not choose a winner.
+- Current canonical Evidence availability is a separate present-day annotation. A current `/progress/<slug>` link may be offered only when the selected historical endpoint was valid same-project Evidence and that slug is also canonical Evidence today.
+- `relation-changed` may be emitted only for exactly one removed and one added relation on the same exact Claim/Evidence endpoints. Ambiguous multi-relation changes remain additions/removals.
+- Evidence-target add/remove operates on exact Claim/Evidence endpoint presence independently of relation words, so `supports → qualifies` alone does not remove/re-add the Evidence target.
+- Committed visibility-state changes may add/remove Claims from the visible historical snapshot even when `.tex` bytes do not change; describe that as snapshot presence/absence, not automatic source deletion.
+- Preserve the manuscript history service's Git revision sequence. Reverse its newest-first list once for oldest→newest display; never sort historical snapshots by author/commit timestamp because timestamps can be skewed or equal.
+- Historical Claim scanning is Timeline-only in the first UI. Research Graph and Provenance must not pay for it.
+- Reuse the Timeline page's already-loaded manuscript revision list rather than running a duplicate `git log` in the same request.
+- Historical canonical Evidence indexing is limited to the selected Base/Compare snapshots with authored Evidence links; do not scan the research tree for all historical Claim snapshots by default.
+- Invalid `claimBase`/`claimCompare` query values must select only already-loaded snapshots or fall back to a safe default pair; never pass arbitrary query text to Git object reads, including historical research reads.
 
 ## Timeline semantics
 
@@ -112,6 +135,13 @@ For graph/timeline/version work, also read `docs/RESEARCH_EVOLUTION.md`. For exp
 Keep expensive derived work bounded. Current contracts include:
 
 - manuscript Git history: maximum 80 revisions;
+- historical Claim snapshots: latest 40 relevant committed revisions;
+- historical `.tex` read: maximum 2 MiB per source;
+- historical research endpoint index: maximum 1,000 ordered Markdown notes per selected revision;
+- historical research note read: maximum 2 MiB per note;
+- historical Evidence endpoint indexes: selected Base and Compare revisions only;
+- historical events displayed per transition: 10;
+- unfocused historical Claim comparisons displayed: 20 changed Claim IDs;
 - research source diff: maximum 240 lines per side;
 - project-scoped citation scanning: visible editable `.tex` files only;
 - project-scoped Claim/Claim↔Evidence scanning: visible editable `.tex` files only;
@@ -139,6 +169,10 @@ node --test tests/manuscript-claim-projection.test.mjs
 node --test tests/manuscript-claim-relations.test.mjs
 node --test tests/manuscript-claim-relation-collision.test.mjs
 node --test tests/manuscript-claim-evidence-projection.test.mjs
+node --test tests/manuscript-claim-history.test.mjs
+node --test tests/manuscript-claim-history-order.test.mjs
+node --test tests/manuscript-claim-history-ui.test.mjs
+node --test tests/historical-research-evidence.test.mjs
 node --test tests/claim-evidence-audit.test.mjs
 node --test tests/claim-evidence-audit-loading.test.mjs
 node --test tests/latex-claim-anchor-ui.test.mjs
