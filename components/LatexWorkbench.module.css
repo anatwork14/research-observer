@@ -513,4 +513,8 @@
     flex-shrink: 0;
     white-space: nowrap;
   }
+
+  .fileButton { min-height: 44px; }
+  .iconButton { min-width: 44px; min-height: 44px; }
+  .sidebarTools label { min-height: 44px; display: flex; align-items: center; gap: 0.4rem; }
 }
