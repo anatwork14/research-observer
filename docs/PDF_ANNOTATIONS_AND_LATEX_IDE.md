@@ -337,7 +337,7 @@ Classic BibTeX:
 
 ## Editor assistance
 
-The desktop editor uses CodeMirror 6 with the LaTeX `stex` mode and a lightweight BibTeX mode. A shared editor adapter keeps citation insertion, editor helpers, Codex snapshots, and cursor-based SyncTeX independent of the editor widget. A plain textarea remains available as a fallback and is selected automatically at narrow viewport widths.
+The desktop editor uses CodeMirror 6 with the LaTeX `stex` mode and a lightweight BibTeX mode. A shared editor adapter keeps citation insertion, editor helpers, Codex snapshots, cursor-based SyncTeX, and optional language intelligence independent of the editor widget. A plain textarea remains available as a fallback and is selected automatically at narrow viewport widths.
 
 The editor assistance provides:
 
@@ -347,11 +347,40 @@ The editor assistance provides:
 - common LaTeX environment snippets;
 - section/label outline;
 - navigation;
-- lightweight structural problems.
+- lightweight structural problems;
+- optional on-demand TexLab diagnostics, document symbols, and cursor completions.
 
-These diagnostics are advisory only. Compiler output remains authoritative.
+Local structural diagnostics and TexLab results are advisory only. Compiler output remains authoritative.
 
-CodeMirror is a UI dependency only; manuscript source remains plain files with the existing path and stale-write protections. The textarea fallback remains available for smaller viewports and safe plain-text editing. Editor diagnostics are advisory; compiler output remains authoritative.
+CodeMirror is a UI dependency only; manuscript source remains plain files with the existing path and stale-write protections. The textarea fallback remains available for smaller viewports and safe plain-text editing.
+
+### Optional TexLab language intelligence
+
+TexLab integration is intentionally optional. The IDE probes the configured `texlab` binary and degrades to the existing editor tools when the executable is absent or explicitly disabled.
+
+Configuration:
+
+```text
+RESEARCH_OBSERVER_TEXLAB=0        disable TexLab probing entirely
+OBSERVAIRE_TEXLAB_BIN=/path/...   use a non-PATH TexLab executable
+```
+
+Language analysis is user-triggered from the **Language** tab rather than spawned on every keystroke. The server receives the current unsaved `.tex` buffer through LSP `textDocument/didOpen`, so diagnostics/symbols/completions describe what the user is actually editing without requiring a save first.
+
+The TexLab bridge:
+
+- validates the selected research project and `.tex` path against the existing manuscript workspace;
+- runs a bounded one-shot stdio LSP session under that project root;
+- caps source size, protocol frame size, result counts, stderr capture, and execution time;
+- handles common server→client configuration/progress requests without granting write capability;
+- refuses `workspace/applyEdit` because language analysis is read-only;
+- uses same-origin POST protection for buffer analysis;
+- normalizes LSP positions into editor line/column navigation;
+- exposes snippet completions as preview-only;
+- applies plain completion edits only when the active file and complete buffer still match the analyzed snapshot;
+- forces a new analysis after one completion edit so stale completion ranges cannot be reused.
+
+TexLab does not save manuscript files, change project state, or decide whether a build succeeds. `latexmk` plus the selected TeX engine remain authoritative for compilation diagnostics and build status.
 
 ## Codex manuscript context
 
@@ -386,13 +415,13 @@ ${OBSERVAIRE_MANUSCRIPTS_DIR:-./manuscripts} -> /app/manuscripts
 
 ## Integrated editor and research navigation
 
-The shared editor adapter supports CodeMirror 6 and the plain-textarea fallback for citation insertion, editor helpers, manuscript Codex snapshots, and cursor-based SyncTeX.
+The shared editor adapter supports CodeMirror 6 and the plain-textarea fallback for citation insertion, editor helpers, manuscript Codex snapshots, cursor-based SyncTeX, and stale-safe application of plain TexLab completions.
 
 Citation tokens resolve from visible project `.bib` source to canonical literature/evidence using verified DOI, URL, local-PDF, or title/year identity. Ambiguous and missing matches remain explicit rather than guessing a destination.
 
 ### Possible future tooling
 
-TexLab/LSP completion, symbols, hover, and references remain optional future work. Lightweight editor diagnostics remain advisory; latexmk and the selected TeX engine remain authoritative for compilation.
+TexLab hover/references and longer-lived per-project LSP sessions remain optional future work. The current diagnostics/symbols/completions flow stays on-demand and read-only except for explicit stale-safe insertion of a selected plain completion. Lightweight editor diagnostics and TexLab hints remain advisory; latexmk and the selected TeX engine remain authoritative for compilation.
 
 ## Verification contract
 
@@ -416,8 +445,11 @@ Browser/toolchain verification must include:
 - classic BibTeX + biblatex output;
 - real TeX engine builds;
 - forward/reverse SyncTeX;
+- optional TexLab unavailable fallback;
+- TexLab diagnostics/symbol/completion analysis when a real binary is available;
+- stale-buffer completion rejection;
 - build retention;
 - mobile/tablet layouts;
 - Docker durable-state recreation.
 
-The governing principle is that PDF pixels, editor widgets, match suggestions, and compiled artifacts are **views over durable, provenance-aware project objects**, not the durable objects themselves.
+The governing principle is that PDF pixels, editor widgets, match suggestions, language-server hints, and compiled artifacts are **views over durable, provenance-aware project objects**, not the durable objects themselves.
