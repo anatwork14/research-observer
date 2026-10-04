@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { NewResearchScaffold } from "@/components/NewResearchScaffold";
 
 type Paper = {
   id: string;
@@ -373,6 +374,16 @@ export function NewResearchWorkbench() {
             <div><span className="kicker">Next actions</span><ol>{(plan.nextActions ?? []).map((action) => <li key={action}>{action}</li>)}</ol></div>
             {(plan.cautions ?? []).length > 0 && <div><span className="kicker">Cautions</span><ul>{plan.cautions?.map((caution) => <li key={caution}>{caution}</li>)}</ul></div>}
           </div>
+        </section>
+      )}
+
+      {plan && (
+        <section className="new-research-stage panel">
+          <div className="new-research-stage-heading">
+            <div><span className="stage-number">04</span><div><span className="kicker">Review + apply</span><h2>Workspace scaffold</h2></div></div>
+            <span className="service-pill ready">explicit apply</span>
+          </div>
+          <NewResearchScaffold topic={topic.trim()} objective={objective.trim()} plan={plan} />
         </section>
       )}
 
