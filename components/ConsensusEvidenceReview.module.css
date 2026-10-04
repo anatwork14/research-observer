@@ -5,7 +5,7 @@
   padding: 1rem;
   border: 1px solid var(--line);
   border-radius: 1rem;
-  background: color-mix(in srgb, var(--panel) 94%, var(--surface) 6%);
+  background: color-mix(in srgb, var(--surface) 96%, var(--accent-wash) 4%);
 }
 
 .header,
@@ -54,7 +54,7 @@
 .boundary {
   padding: 0.75rem 0.85rem;
   border-radius: 0.8rem;
-  background: color-mix(in srgb, var(--accent-soft) 72%, transparent);
+  background: color-mix(in srgb, var(--accent-wash) 72%, transparent);
 }
 
 .target,
@@ -75,8 +75,8 @@
   box-sizing: border-box;
   border: 1px solid var(--line);
   border-radius: 0.75rem;
-  background: var(--surface);
-  color: var(--text);
+  background: var(--surface-strong);
+  color: var(--ink);
   font: inherit;
   padding: 0.7rem 0.75rem;
 }
@@ -102,13 +102,13 @@
 
 .primary {
   background: var(--accent);
-  color: var(--accent-contrast);
+  color: var(--surface-strong);
   border-color: transparent !important;
 }
 
 .secondary {
-  background: var(--surface);
-  color: var(--text);
+  background: var(--surface-strong);
+  color: var(--ink);
 }
 
 .preview {
@@ -139,7 +139,7 @@
   cursor: pointer;
   padding: 0.75rem 0.85rem;
   font-weight: 700;
-  background: color-mix(in srgb, var(--surface) 92%, var(--panel) 8%);
+  background: color-mix(in srgb, var(--surface-strong) 92%, var(--accent-wash) 8%);
 }
 
 .fileMeta {
@@ -159,17 +159,17 @@
   overflow-wrap: anywhere;
   font-size: 0.78rem;
   line-height: 1.55;
-  background: var(--surface);
+  background: var(--surface-strong);
 }
 
 .error {
-  color: var(--danger);
+  color: var(--warm);
 }
 
 .success {
   padding: 0.75rem 0.85rem;
   border-radius: 0.8rem;
-  background: color-mix(in srgb, var(--success) 12%, transparent);
+  background: color-mix(in srgb, var(--accent-wash) 82%, transparent);
 }
 
 .success a {
