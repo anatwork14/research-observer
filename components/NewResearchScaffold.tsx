@@ -20,6 +20,8 @@ type ScaffoldResult = {
   workspaceSignature: string;
 };
 
+type ActionError = { key: string; message: string };
+
 export function NewResearchScaffold({
   topic,
   objective,
@@ -37,15 +39,17 @@ export function NewResearchScaffold({
   const [projectLabel, setProjectLabel] = useState(topic.slice(0, 120));
   const [projectDescription, setProjectDescription] = useState(objective.slice(0, 800));
   const [preview, setPreview] = useState<ResearchScaffoldPreview | null>(null);
+  const [previewKey, setPreviewKey] = useState("");
   const [result, setResult] = useState<ScaffoldResult | null>(null);
+  const [resultKey, setResultKey] = useState("");
   const [loading, setLoading] = useState(true);
   const [previewing, setPreviewing] = useState(false);
   const [applying, setApplying] = useState(false);
-  const [error, setError] = useState("");
+  const [statusError, setStatusError] = useState("");
+  const [actionError, setActionError] = useState<ActionError | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true);
     fetch("/api/research/new/scaffold", { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
         const payload = await response.json();
@@ -61,7 +65,7 @@ export function NewResearchScaffold({
       .catch((reason) => {
         if ((reason as Error).name !== "AbortError") {
           setEnabled(false);
-          setError(reason instanceof Error ? reason.message : "Could not load scaffold targets.");
+          setStatusError(reason instanceof Error ? reason.message : "Could not load scaffold targets.");
         }
       })
       .finally(() => {
@@ -70,24 +74,26 @@ export function NewResearchScaffold({
     return () => controller.abort();
   }, []);
 
-  useEffect(() => {
-    setPreview(null);
-    setResult(null);
-    setError("");
-  }, [topic, objective, plan, mode, projectId, projectLabel, projectDescription]);
-
   const target = useMemo(() => mode === "existing"
     ? { mode: "existing" as const, projectId }
     : { mode: "new" as const, projectLabel, projectDescription },
   [mode, projectId, projectLabel, projectDescription]);
 
+  const inputKey = useMemo(
+    () => JSON.stringify({ topic, objective, plan, target }),
+    [topic, objective, plan, target],
+  );
+  const activePreview = previewKey === inputKey ? preview : null;
+  const activeResult = resultKey === inputKey ? result : null;
+  const activeError = actionError?.key === inputKey ? actionError.message : statusError;
   const canPreview = Boolean(topic.trim()) && (mode === "existing" ? Boolean(projectId) : Boolean(projectLabel.trim()));
 
   async function buildPreview() {
     if (!canPreview || previewing || applying) return;
     setPreviewing(true);
-    setError("");
+    setActionError(null);
     setResult(null);
+    setResultKey("");
     try {
       const response = await fetch("/api/research/new/scaffold", {
         method: "POST",
@@ -97,18 +103,23 @@ export function NewResearchScaffold({
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "Could not build the scaffold preview.");
       setPreview(payload.preview ?? null);
+      setPreviewKey(inputKey);
     } catch (reason) {
       setPreview(null);
-      setError(reason instanceof Error ? reason.message : "Could not build the scaffold preview.");
+      setPreviewKey("");
+      setActionError({
+        key: inputKey,
+        message: reason instanceof Error ? reason.message : "Could not build the scaffold preview.",
+      });
     } finally {
       setPreviewing(false);
     }
   }
 
   async function apply() {
-    if (!preview || applying || !enabled) return;
+    if (!activePreview || applying || !enabled) return;
     setApplying(true);
-    setError("");
+    setActionError(null);
     try {
       const response = await fetch("/api/research/new/scaffold", {
         method: "POST",
@@ -119,22 +130,35 @@ export function NewResearchScaffold({
           objective,
           plan,
           target,
-          expectedWorkspaceSignature: preview.workspaceSignature,
-          expectedProposalHash: preview.proposalHash,
+          expectedWorkspaceSignature: activePreview.workspaceSignature,
+          expectedProposalHash: activePreview.proposalHash,
         }),
       });
       const payload = await response.json();
       if (!response.ok) {
-        if (response.status === 409) setPreview(null);
+        if (response.status === 409) {
+          setPreview(null);
+          setPreviewKey("");
+        }
         throw new Error(payload.error || "Could not apply the reviewed scaffold.");
       }
       setResult(payload.result ?? null);
+      setResultKey(inputKey);
       router.refresh();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Could not apply the reviewed scaffold.");
+      setActionError({
+        key: inputKey,
+        message: reason instanceof Error ? reason.message : "Could not apply the reviewed scaffold.",
+      });
     } finally {
       setApplying(false);
     }
+  }
+
+  function discardPreview() {
+    setPreview(null);
+    setPreviewKey("");
+    setActionError(null);
   }
 
   if (loading) return <div className={styles.state}>Loading workspace targets for the reviewed research plan…</div>;
@@ -191,40 +215,40 @@ export function NewResearchScaffold({
 
       <div className={styles.actions}>
         <button type="button" className={styles.secondary} onClick={() => void buildPreview()} disabled={!canPreview || previewing || applying}>
-          {previewing ? "Building exact Markdown…" : preview ? "Rebuild preview" : "Build exact preview"}
+          {previewing ? "Building exact Markdown…" : activePreview ? "Rebuild preview" : "Build exact preview"}
         </button>
         {!enabled && <span className={styles.state}>Apply is disabled in this environment. Preview remains available.</span>}
       </div>
 
-      {preview && (
+      {activePreview && (
         <section className={styles.preview} aria-label="Research scaffold preview">
           <header className={styles.previewHeader}>
             <div>
               <strong>Exact files to create</strong>
-              <p>{preview.target.projectLabel} · proposal {preview.proposalHash.slice(0, 12)}</p>
+              <p>{activePreview.target.projectLabel} · proposal {activePreview.proposalHash.slice(0, 12)}</p>
             </div>
             <div className={styles.summary}>
-              <span>{preview.summary.notes} Markdown notes</span>
-              <span>{preview.summary.hypotheses} hypotheses</span>
-              <span>{preview.summary.experiments} experiments</span>
+              <span>{activePreview.summary.notes} Markdown notes</span>
+              <span>{activePreview.summary.hypotheses} hypotheses</span>
+              <span>{activePreview.summary.experiments} experiments</span>
               <span data-safe="true">0 Evidence objects</span>
               <span data-safe="true">0 semantic Evidence edges</span>
             </div>
           </header>
 
           <div className={styles.fileList}>
-            {preview.manifest && (
+            {activePreview.manifest && (
               <details className={styles.file}>
                 <summary>
                   <span className={styles.fileHeading}>
                     <strong>Project manifest</strong>
-                    <code>{preview.manifest.filename}</code>
+                    <code>{activePreview.manifest.filename}</code>
                   </span>
                 </summary>
-                <pre className={styles.source}>{preview.manifest.content}</pre>
+                <pre className={styles.source}>{activePreview.manifest.content}</pre>
               </details>
             )}
-            {preview.files.map((file) => (
+            {activePreview.files.map((file) => (
               <details className={styles.file} key={file.filename}>
                 <summary>
                   <span className={styles.fileHeading}>
@@ -248,22 +272,22 @@ export function NewResearchScaffold({
           </p>
 
           <div className={styles.actions}>
-            <button type="button" className={styles.primary} onClick={() => void apply()} disabled={!enabled || applying || Boolean(result)}>
-              {applying ? "Applying reviewed scaffold…" : result ? "Applied" : "Apply reviewed scaffold"}
+            <button type="button" className={styles.primary} onClick={() => void apply()} disabled={!enabled || applying || Boolean(activeResult)}>
+              {applying ? "Applying reviewed scaffold…" : activeResult ? "Applied" : "Apply reviewed scaffold"}
             </button>
-            <button type="button" className={styles.secondary} onClick={() => setPreview(null)} disabled={applying}>Discard preview</button>
+            <button type="button" className={styles.secondary} onClick={discardPreview} disabled={applying}>Discard preview</button>
           </div>
         </section>
       )}
 
-      {error && <div className={styles.error} role="alert">{error}</div>}
+      {activeError && <div className={styles.error} role="alert">{activeError}</div>}
 
-      {result && (
+      {activeResult && (
         <section className={styles.success} role="status">
-          <strong>{result.project.created ? "Research project created" : "Research scaffold added"}</strong>
-          <p>{result.notes.length} reviewed Markdown objects were compiled successfully under {result.project.label}.</p>
+          <strong>{activeResult.project.created ? "Research project created" : "Research scaffold added"}</strong>
+          <p>{activeResult.notes.length} reviewed Markdown objects were compiled successfully under {activeResult.project.label}.</p>
           <div className={styles.createdLinks}>
-            {result.notes.map((note) => (
+            {activeResult.notes.map((note) => (
               <Link key={note.slug} href={`/progress/${note.slug}`}>{note.type ?? "note"}: {note.title} →</Link>
             ))}
           </div>
