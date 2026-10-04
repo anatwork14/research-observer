@@ -150,10 +150,8 @@ export function ResearchOrchestrationEditor({ projectId, projectLabel }: { proje
       setOpen(false);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Orchestration edit failed.");
-      if (action === "save") {
-        setPreview(null);
-        setPreviewFingerprint("");
-      }
+      setPreview(null);
+      setPreviewFingerprint("");
     } finally {
       setBusy(false);
     }
