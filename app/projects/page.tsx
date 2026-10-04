@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ProjectImportPanel } from "@/components/ProjectImportPanel";
+import { ResearchOrchestration } from "@/components/ResearchOrchestration";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
+import { buildResearchOrchestration } from "@/lib/research/orchestration.mjs";
 import { projectImportReason, projectImportWritable } from "@/lib/research/project-import.mjs";
 import { getResearchWorkspace } from "@/lib/progress";
 import styles from "./projects.module.css";
@@ -11,6 +13,7 @@ export default async function ProjectsPage() {
   const workspace = await getResearchWorkspace();
   const navEntries = workspace.entries.map(({ slug, order, title, status }) => ({ slug, order, title, status }));
   const projects = workspace.projects.filter((project) => project.notes > 0 || project.autoIndexed);
+  const orchestration = buildResearchOrchestration(workspace);
   const autoIndexed = projects.filter((project) => project.autoIndexed).length;
   const storageDirectory = String(workspace.config.progressDir || "progress");
 
@@ -21,11 +24,13 @@ export default async function ProjectsPage() {
         <header className="collection-heading">
           <div>
             <p className="eyebrow">Research projects</p>
-            <h1>Folders are projects.</h1>
-            <p>Drop a folder of numbered Markdown notes into Observaire or copy it directly into the mounted research directory. No central project registry edit is required.</p>
+            <h1>Folders are projects. Orchestration stays explicit.</h1>
+            <p>Drop project folders into Observaire as before. When several research streams need coordination, optional config metadata can declare their status, dependencies, next step, and working note without changing the research files themselves.</p>
           </div>
-          <span className="collection-count">{projects.length} projects · {autoIndexed} folder-indexed</span>
+          <span className="collection-count">{projects.length} indexed · {orchestration.summary.tracked} orchestrated</span>
         </header>
+
+        <ResearchOrchestration orchestration={orchestration} />
 
         <ProjectImportPanel
           enabled={projectImportWritable()}
@@ -51,7 +56,7 @@ export default async function ProjectsPage() {
         <section className={styles.projectSection}>
           <div className={styles.sectionHeading}>
             <div><span className="kicker">Live index</span><h2>Discovered projects</h2></div>
-            <p>Folder-backed projects are rescanned from disk; config-defined projects remain supported for backward compatibility.</p>
+            <p>Folder-backed projects are rescanned from disk; config-defined projects remain supported for backward compatibility. Orchestration metadata never replaces folder discovery or compiled research state.</p>
           </div>
           <div className={styles.grid}>
             {projects.map((project) => (

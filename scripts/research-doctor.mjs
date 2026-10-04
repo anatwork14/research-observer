@@ -1,6 +1,8 @@
 import { compileResearchWorkspace } from "../lib/research/compiler.mjs";
+import { buildResearchOrchestration } from "../lib/research/orchestration.mjs";
 
 const workspace = await compileResearchWorkspace({ fresh: true });
+const orchestration = buildResearchOrchestration(workspace);
 const additionalDiagnostics = [];
 
 for (const project of workspace.projects.filter((item) => item.directory)) {
@@ -13,6 +15,15 @@ for (const project of workspace.projects.filter((item) => item.directory)) {
       message: `Folder-backed project "${project.id}" also owns root-level research objects (${rootEntries.map((entry) => entry.filename).join(", ")}). Use a distinct folder manifest id or migrate those notes into one project location.`,
     });
   }
+}
+
+for (const issue of orchestration.issues) {
+  additionalDiagnostics.push({
+    severity: issue.severity,
+    code: issue.code,
+    file: "research-observer.config.json",
+    message: issue.message,
+  });
 }
 
 const diagnostics = [...workspace.diagnostics, ...additionalDiagnostics].sort((a, b) =>
