@@ -5,6 +5,7 @@ import {
   previewResearchScaffold,
   researchScaffoldWritable,
 } from "@/lib/research/new-research-scaffold.mjs";
+import type { NewResearchPlan, NewResearchScaffoldTarget } from "@/lib/research/new-research-scaffold.mjs";
 import { compileResearchWorkspace } from "@/lib/research/compiler.mjs";
 
 export const runtime = "nodejs";
@@ -47,8 +48,8 @@ export async function POST(request: Request) {
   const input = {
     topic: typeof body.topic === "string" ? body.topic : "",
     objective: typeof body.objective === "string" ? body.objective : "",
-    plan: body.plan,
-    target: body.target,
+    plan: body.plan as NewResearchPlan,
+    target: body.target as NewResearchScaffoldTarget,
   };
 
   try {
