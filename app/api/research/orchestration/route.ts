@@ -23,6 +23,7 @@ function errorStatus(error: unknown) {
   if (code === "ORCHESTRATION_CONFIG_STALE") return 409;
   if (code === "ORCHESTRATION_CONFIG_DISABLED") return 503;
   if (code === "ORCHESTRATION_PROJECT_MISSING") return 404;
+  if (code === "ORCHESTRATION_CONFIG_COMPILER" || code === "ORCHESTRATION_CONFIG_ROLLBACK") return 500;
   if (code === "ORCHESTRATION_CONFIG_PARSE") return 422;
   if (code === "ORCHESTRATION_CONFIG_NO_CHANGES") return 422;
   if (code === "ORCHESTRATION_CONFIG_VALIDATION") return 422;
