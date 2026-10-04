@@ -13,13 +13,14 @@ export default async function NewResearchPage() {
         <header className="collection-heading">
           <div>
             <p className="eyebrow">New Research</p>
-            <h1>From peer-reviewed literature to a testable research plan.</h1>
+            <h1>From peer-reviewed literature to a reviewed, testable research workspace.</h1>
             <p>
-              Consensus supplies the scholarly evidence packet. You screen the papers. Codex then derives research gaps,
-              falsifiable hypotheses, and experiment designs from only the selected literature.
+              Consensus supplies the scholarly discovery packet. You screen the papers. Codex proposes research gaps,
+              falsifiable hypotheses, and experiment designs. A final review step shows the exact Markdown scaffold before
+              anything is written into the workspace.
             </p>
           </div>
-          <span className="collection-count">Consensus → Codex</span>
+          <span className="collection-count">Consensus → Codex → Review</span>
         </header>
         <NewResearchWorkbench />
       </main>
