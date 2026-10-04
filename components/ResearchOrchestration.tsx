@@ -4,6 +4,7 @@ import type {
   ResearchOrchestrationProject,
   ResearchOrchestrationStatus,
 } from "@/lib/research/orchestration.mjs";
+import { ResearchOrchestrationEditor } from "./ResearchOrchestrationEditor";
 import styles from "./ResearchOrchestration.module.css";
 
 const STATUS_LABELS: Record<ResearchOrchestrationStatus, string> = {
@@ -72,6 +73,7 @@ function ProjectCard({ project }: { project: ResearchOrchestrationProject }) {
         <Link href={`/progress?research=${encodeURIComponent(project.id)}`}>Notes</Link>
         <Link href={`/insights?research=${encodeURIComponent(project.id)}`}>Insights</Link>
         <Link href={`/projects/${encodeURIComponent(project.id)}/experiments`}>Experiments</Link>
+        <ResearchOrchestrationEditor projectId={project.id} projectLabel={project.label} />
       </div>
     </article>
   );
@@ -153,7 +155,7 @@ export function ResearchOrchestration({ orchestration }: { orchestration: Resear
 
       {summary.tracked === 0 && (
         <p className={styles.help}>
-          All projects are currently untracked. Add an optional <code>orchestration</code> object to a project entry in <code>research-observer.config.json</code> when you want to coordinate that stream explicitly.
+          All projects are currently untracked. Use <strong>Edit coordination</strong> on a project card to declare its workflow state, dependencies, next step, and coordination note.
         </p>
       )}
     </section>
