@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import type { OrchestrationEditorProject, OrchestrationPreview } from "@/lib/research/orchestration-config.mjs";
 import styles from "./ResearchOrchestrationEditor.module.css";
@@ -66,6 +67,8 @@ export function ResearchOrchestrationEditor({ projectId, projectLabel }: { proje
   const currentProject = state?.projects.find((project) => project.id === projectId);
   const dependencyProjects = state?.projects.filter((project) => project.id !== projectId) ?? [];
   const reviewed = Boolean(preview && preview.valid && previewFingerprint === fingerprint && reviewSha256);
+
+  const portalRoot = typeof document === "undefined" ? null : document.body;
 
   useEffect(() => {
     if (!open) return;
@@ -154,7 +157,10 @@ export function ResearchOrchestrationEditor({ projectId, projectLabel }: { proje
         return;
       }
       setPreview(data.preview);
-      if (data.baseSha256) setState((current) => current ? { ...current, baseSha256: data.baseSha256 } : current);
+      if (data.baseSha256) {
+        const baseSha256 = data.baseSha256;
+        setState((current) => current ? { ...current, baseSha256 } : current);
+      }
       router.refresh();
       setOpen(false);
     } catch (cause) {
@@ -177,7 +183,7 @@ export function ResearchOrchestrationEditor({ projectId, projectLabel }: { proje
   return (
     <>
       <button type="button" className={styles.launcher} onClick={loadEditor}>Edit coordination</button>
-      {open && (
+      {open && portalRoot && createPortal((
         <div className={styles.backdrop} role="presentation">
           <section className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby={`orchestration-editor-${projectId}`}>
             <header className={styles.header}>
@@ -316,7 +322,7 @@ export function ResearchOrchestrationEditor({ projectId, projectLabel }: { proje
             )}
           </section>
         </div>
-      )}
+      ), portalRoot)}
     </>
   );
 }
