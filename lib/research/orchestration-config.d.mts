@@ -50,10 +50,11 @@ export function previewOrchestrationConfig(options?: {
   projectId?: string;
   orchestration?: unknown;
   baseSha256?: string;
-}): Promise<{ baseSha256: string; preview: OrchestrationPreview }>;
+}): Promise<{ baseSha256: string; reviewSha256: string; preview: OrchestrationPreview }>;
 export function saveOrchestrationConfig(options?: {
   rootDir?: string;
   projectId?: string;
   orchestration?: unknown;
   baseSha256?: string;
+  reviewSha256?: string;
 }): Promise<{ saved: true; baseSha256: string; preview: OrchestrationPreview }>;
