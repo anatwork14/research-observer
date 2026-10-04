@@ -70,7 +70,9 @@
 .stateMessage, .disabled { color: var(--muted); background: var(--canvas); font-size: 10px; }
 .disabled strong { color: var(--ink); }
 .disabled p { margin: 5px 0 0; line-height: 1.5; }
-.error { border: 1px solid color-mix(in srgb, var(--warm) 45%, var(--line)); color: var(--warm); background: color-mix(in srgb, var(--warm) 8%, var(--surface-strong)); font-size: 10px; line-height: 1.5; }
+.error { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid color-mix(in srgb, var(--warm) 45%, var(--line)); color: var(--warm); background: color-mix(in srgb, var(--warm) 8%, var(--surface-strong)); font-size: 10px; line-height: 1.5; }
+.error span { min-width: 0; }
+.error button { min-height: 32px; flex: 0 0 auto; padding: 0 10px; border: 1px solid var(--warm); border-radius: 7px; color: var(--ink); background: var(--surface-strong); font-size: 8px; }
 
 .projectMeta {
   display: flex;
@@ -213,8 +215,10 @@
   .footer { bottom: -16px; margin: 2px -16px -16px; padding: 11px 16px; flex-wrap: wrap; }
   .footer button { flex: 1 1 140px; }
   .projectMeta code { width: 100%; margin-left: 0; overflow-wrap: anywhere; }
+  .error { align-items: stretch; flex-direction: column; }
+  .error button { min-height: 40px; width: 100%; }
 }
 
 @media (pointer: coarse) {
-  .launcher, .close, .footer button, .statusGrid label, .dependencyList label { min-height: 44px; }
+  .launcher, .close, .error button, .footer button, .statusGrid label, .dependencyList label { min-height: 44px; }
 }
