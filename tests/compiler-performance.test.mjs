@@ -39,7 +39,7 @@ test("reverse research indexes preserve source ordering on large synthetic works
   }]);
 });
 
-test("generated media sync skips unchanged assets, recopies changes, and removes stale outputs", async (t) => {
+test("generated media sync skips unchanged assets, recopies changes, and mirrors removals", async (t) => {
   const root = await tempRoot(t);
   const progressRoot = path.join(root, "progress");
   const mediaDir = path.join(root, "public", "_research", "media");
@@ -67,12 +67,15 @@ test("generated media sync skips unchanged assets, recopies changes, and removes
   const secondPdfStat = await fs.stat(path.join(mediaDir, "papers", "a.pdf"));
   assert.equal(secondPdfStat.mtimeMs, firstPdfStat.mtimeMs);
 
+  await fs.writeFile(path.join(mediaDir, "rogue-generated.txt"), "must disappear");
   await new Promise((resolve) => setTimeout(resolve, 25));
   await fs.writeFile(path.join(progressRoot, "figures", "b.svg"), "<svg>v2 changed</svg>");
   const third = await syncGeneratedResearchMedia({ progressRoot, mediaDir, statePath, assets, allowedExtensions });
   assert.equal(third.copied, 1);
   assert.equal(third.skipped, 1);
+  assert.equal(third.removed, 1);
   assert.match(await fs.readFile(path.join(mediaDir, "figures", "b.svg"), "utf8"), /v2 changed/);
+  await assert.rejects(fs.stat(path.join(mediaDir, "rogue-generated.txt")), (error) => error?.code === "ENOENT");
 
   const fourth = await syncGeneratedResearchMedia({
     progressRoot,
@@ -83,6 +86,18 @@ test("generated media sync skips unchanged assets, recopies changes, and removes
   });
   assert.equal(fourth.removed, 1);
   await assert.rejects(fs.stat(path.join(mediaDir, "papers", "a.pdf")), (error) => error?.code === "ENOENT");
+
+  await fs.writeFile(statePath, "{ broken state", "utf8");
+  const fifth = await syncGeneratedResearchMedia({
+    progressRoot,
+    mediaDir,
+    statePath,
+    assets: [assets[1]],
+    allowedExtensions,
+  });
+  assert.equal(fifth.fullRebuild, true);
+  assert.equal(fifth.copied, 1);
+  assert.equal(fifth.skipped, 0);
 });
 
 test("writeResearchArtifacts preserves unchanged generated media bytes without recopying", async (t) => {
