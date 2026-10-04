@@ -39,6 +39,22 @@ async function cleanup(root) {
   await fs.rm(root, { recursive: true, force: true });
 }
 
+async function reviewedSave({ root, projectId, baseSha256, orchestration }) {
+  const review = await previewOrchestrationConfig({
+    rootDir: root,
+    projectId,
+    baseSha256,
+    orchestration,
+  });
+  return saveOrchestrationConfig({
+    rootDir: root,
+    projectId,
+    baseSha256,
+    orchestration,
+    reviewSha256: review.reviewSha256,
+  });
+}
+
 test("editor state exposes a content hash and authored orchestration only", async () => {
   const root = await fixture();
   try {
@@ -62,6 +78,7 @@ test("preview derives waiting context without writing config bytes", async () =>
       baseSha256: state.baseSha256,
       orchestration: { status: "active", dependsOn: ["beta"], next: "Review gamma" },
     });
+    assert.match(result.reviewSha256, /^[a-f0-9]{64}$/);
     assert.equal(result.preview.valid, true);
     assert.equal(result.preview.project.status, "active");
     assert.equal(result.preview.project.dependencyState, "waiting");
@@ -108,12 +125,58 @@ test("preview reports self, missing, and cycle dependencies without mutating dec
   }
 });
 
+test("save requires the review digest for the exact previewed draft", async () => {
+  const root = await fixture();
+  try {
+    const state = await readOrchestrationEditorState({ rootDir: root });
+    const orchestration = { status: "done", dependsOn: [], next: "Archive benchmark" };
+    const review = await previewOrchestrationConfig({
+      rootDir: root,
+      projectId: "beta",
+      baseSha256: state.baseSha256,
+      orchestration,
+    });
+
+    await assert.rejects(
+      () => saveOrchestrationConfig({
+        rootDir: root,
+        projectId: "beta",
+        baseSha256: state.baseSha256,
+        orchestration,
+      }),
+      (error) => error?.code === "ORCHESTRATION_CONFIG_REVIEW_REQUIRED",
+    );
+
+    await assert.rejects(
+      () => saveOrchestrationConfig({
+        rootDir: root,
+        projectId: "beta",
+        baseSha256: state.baseSha256,
+        orchestration: { ...orchestration, note: "Changed after review" },
+        reviewSha256: review.reviewSha256,
+      }),
+      (error) => error?.code === "ORCHESTRATION_CONFIG_REVIEW_REQUIRED",
+    );
+
+    const saved = await saveOrchestrationConfig({
+      rootDir: root,
+      projectId: "beta",
+      baseSha256: state.baseSha256,
+      orchestration,
+      reviewSha256: review.reviewSha256,
+    });
+    assert.equal(saved.saved, true);
+  } finally {
+    await cleanup(root);
+  }
+});
+
 test("save preserves unrelated config fields and uses the reviewed explicit values", async () => {
   const root = await fixture();
   try {
     const state = await readOrchestrationEditorState({ rootDir: root });
-    const result = await saveOrchestrationConfig({
-      rootDir: root,
+    const result = await reviewedSave({
+      root,
       projectId: "beta",
       baseSha256: state.baseSha256,
       orchestration: { status: "done", dependsOn: [], next: "Archive benchmark", note: "Validated locally" },
@@ -145,7 +208,13 @@ test("removing orchestration previews and saves as Untracked without deleting pr
     assert.equal(preview.preview.project.status, "untracked");
     assert.equal(preview.preview.project.dependencyState, "clear");
 
-    await saveOrchestrationConfig({ rootDir: root, projectId: "alpha", baseSha256: state.baseSha256, orchestration: null });
+    await saveOrchestrationConfig({
+      rootDir: root,
+      projectId: "alpha",
+      baseSha256: state.baseSha256,
+      orchestration: null,
+      reviewSha256: preview.reviewSha256,
+    });
     const saved = JSON.parse(await fs.readFile(path.join(root, "research-observer.config.json"), "utf8"));
     const alpha = saved.researchProjects.find((item) => item.id === "alpha");
     assert.equal(alpha.label, "Alpha");
@@ -169,6 +238,7 @@ test("stale base hash rejects save without overwriting newer config bytes", asyn
         projectId: "beta",
         baseSha256: state.baseSha256,
         orchestration: { status: "done", dependsOn: [] },
+        reviewSha256: "0".repeat(64),
       }),
       (error) => error?.code === "ORCHESTRATION_CONFIG_STALE",
     );
@@ -204,8 +274,8 @@ test("auto-discovered folder project receives config metadata only when explicit
     assert.equal(folder.configured, false);
     assert.equal(folder.orchestration, null);
 
-    await saveOrchestrationConfig({
-      rootDir: root,
+    await reviewedSave({
+      root,
       projectId: "folder-research",
       baseSha256: beforeState.baseSha256,
       orchestration: { status: "queued", dependsOn: [], next: "Review imported evidence" },
