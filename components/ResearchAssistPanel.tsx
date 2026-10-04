@@ -24,6 +24,7 @@ export function ResearchAssistPanel({
   const [active, setActive] = useState<Service>("consensus");
   const [consensusStatus, setConsensusStatus] = useState<ServiceStatus>(null);
   const [codexStatus, setCodexStatus] = useState<ServiceStatus>(null);
+  const [contextRevision, setContextRevision] = useState(0);
   const [assistantResponse, setAssistantResponse] = useState<{
     slug: string;
     context: ResearchAssistantContextModel | null;
@@ -71,7 +72,7 @@ export function ResearchAssistPanel({
         }
       });
     return () => controller.abort();
-  }, [contextSlug]);
+  }, [contextSlug, contextRevision]);
 
   function select(service: Service) {
     setActive(service);
@@ -81,6 +82,14 @@ export function ResearchAssistPanel({
       // The interaction still works when storage is unavailable.
     }
   }
+
+  const canonicalContext = contextSlug && assistantResponse?.slug === contextSlug ? assistantResponse.context : null;
+  const targetNote = codexContext.note ? {
+    slug: canonicalContext?.note.slug ?? codexContext.note.slug,
+    title: canonicalContext?.note.title ?? codexContext.note.title,
+    type: canonicalContext?.note.type,
+    research: canonicalContext?.note.research ?? codexContext.note.research,
+  } : undefined;
 
   return (
     <section className="research-assist-card panel" aria-label="Research assist">
@@ -93,8 +102,8 @@ export function ResearchAssistPanel({
         <span className="research-assist-guard">review-first</span>
       </header>
 
-      {contextSlug && assistantResponse?.slug === contextSlug && assistantResponse.context
-        ? <ResearchAssistantContext context={assistantResponse.context} />
+      {canonicalContext
+        ? <ResearchAssistantContext context={canonicalContext} />
         : contextSlug && <ResearchAssistantContextState loading={assistantResponse?.slug !== contextSlug} error={assistantResponse?.slug === contextSlug ? assistantResponse.error : ""} />}
 
       <div className="research-assist-tabs" role="tablist" aria-label="Research assist service">
@@ -156,8 +165,10 @@ export function ResearchAssistPanel({
         <ConsensusCitationPanel
           defaultQuery={defaultConsensusQuery}
           researchId={codexContext.note?.research}
+          targetNote={targetNote}
           embedded
           onStatusChange={setConsensusStatus}
+          onEvidenceSaved={() => setContextRevision((current) => current + 1)}
         />
       </div>
 
