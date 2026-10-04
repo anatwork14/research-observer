@@ -12,5 +12,9 @@
 .candidates button[data-active="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, var(--panel)); }
 .candidates strong { overflow: hidden; text-overflow: ellipsis; text-transform: capitalize; }
 .candidates span { color: var(--muted); font-size: .7rem; line-height: 1.35; }
+
+/* The legacy promotion mutation remains available for API/backward-compatibility tests, but the default PDF UI must not bypass the review surface. This selector is deliberately scoped to the direct annotation-card action row so inline edit/save controls are unaffected. */
+:global(aside[aria-label="PDF annotations"] article > div:last-child > button[class*="primary"]) { display: none !important; }
+
 @media (max-width: 520px) { .candidates { grid-template-columns: 1fr; } }
 @media (pointer: coarse) { .heading button, .candidates button { min-height: 44px; } }
