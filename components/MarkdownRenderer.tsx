@@ -4,6 +4,7 @@ import rehypeKatex from "rehype-katex";
 import rehypeSlug from "rehype-slug";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
+import { remarkUnwrapMediaParagraphs } from "@/lib/research/markdown-media.mjs";
 
 const imageTypes = new Set(["png", "jpg", "jpeg", "gif", "webp", "avif", "svg", "bmp"]);
 const videoTypes = new Set(["mp4", "webm", "ogv", "ogg"]);
@@ -163,7 +164,7 @@ export function MarkdownRenderer({
   return (
     <div className="markdown-body">
       <ReactMarkdown
-        remarkPlugins={[remarkGfm, [remarkMath, { singleDollarTextMath: true }]]}
+        remarkPlugins={[remarkGfm, [remarkMath, { singleDollarTextMath: true }], remarkUnwrapMediaParagraphs]}
         rehypePlugins={[rehypeSlug, rehypeKatex]}
         components={{
           img: ({ src = "", alt = "" }) => <Media src={src} alt={alt} />,
