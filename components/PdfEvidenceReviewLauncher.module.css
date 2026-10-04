@@ -1,0 +1,20 @@
+.launcher { flex: 0 0 auto; display: grid; gap: .6rem; max-height: min(52vh, 560px); overflow: auto; padding: .7rem .8rem; border-top: 1px solid var(--border); background: color-mix(in srgb, var(--panel) 97%, var(--accent) 3%); }
+.heading { display: flex; align-items: center; justify-content: space-between; gap: .7rem; }
+.heading > div { display: grid; gap: .1rem; }
+.heading strong { color: var(--text); font-size: .86rem; }
+.heading small, .boundary, .empty { color: var(--muted); font-size: .76rem; line-height: 1.45; }
+.heading button { min-height: 34px; padding: .35rem .55rem; border: 1px solid var(--border); border-radius: 8px; background: var(--panel-strong, var(--panel)); color: var(--text); font: inherit; cursor: pointer; }
+.boundary, .empty, .error { margin: 0; }
+.boundary { padding: .5rem .55rem; border-radius: 8px; background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.error { color: #c94b55; font-size: .76rem; line-height: 1.45; }
+.candidates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem; }
+.candidates button { min-width: 0; display: grid; gap: .12rem; padding: .52rem .56rem; text-align: left; border: 1px solid var(--border); border-radius: 9px; background: var(--panel-strong, var(--panel)); color: var(--text); cursor: pointer; }
+.candidates button[data-active="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, var(--panel)); }
+.candidates strong { overflow: hidden; text-overflow: ellipsis; text-transform: capitalize; }
+.candidates span { color: var(--muted); font-size: .7rem; line-height: 1.35; }
+
+/* The legacy promotion mutation remains available for API/backward-compatibility tests, but the default PDF UI must not bypass the review surface. This selector is deliberately scoped to the direct annotation-card action row so inline edit/save controls are unaffected. */
+:global(aside[aria-label="PDF annotations"] article > div:last-child > button[class*="primary"]) { display: none !important; }
+
+@media (max-width: 520px) { .candidates { grid-template-columns: 1fr; } }
+@media (pointer: coarse) { .heading button, .candidates button { min-height: 44px; } }
