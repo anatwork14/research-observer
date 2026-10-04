@@ -24,9 +24,12 @@ export function ResearchAssistPanel({
   const [active, setActive] = useState<Service>("consensus");
   const [consensusStatus, setConsensusStatus] = useState<ServiceStatus>(null);
   const [codexStatus, setCodexStatus] = useState<ServiceStatus>(null);
-  const [assistantContext, setAssistantContext] = useState<ResearchAssistantContextModel | null>(null);
-  const [contextLoading, setContextLoading] = useState(false);
-  const [contextError, setContextError] = useState("");
+  const [assistantResponse, setAssistantResponse] = useState<{
+    slug: string;
+    context: ResearchAssistantContextModel | null;
+    error: string;
+  } | null>(null);
+  const contextSlug = codexContext.note?.slug?.trim();
   const consensusId = useId();
   const codexId = useId();
   const consensusTabId = useId();
@@ -46,17 +49,9 @@ export function ResearchAssistPanel({
   }, []);
 
   useEffect(() => {
-    const slug = codexContext.note?.slug?.trim();
-    if (!slug) {
-      setAssistantContext(null);
-      setContextError("");
-      setContextLoading(false);
-      return;
-    }
+    if (!contextSlug) return;
     const controller = new AbortController();
-    setContextLoading(true);
-    setContextError("");
-    fetch(`/api/research/assist/context?slug=${encodeURIComponent(slug)}`, {
+    fetch(`/api/research/assist/context?slug=${encodeURIComponent(contextSlug)}`, {
       cache: "no-store",
       signal: controller.signal,
     })
@@ -65,18 +60,18 @@ export function ResearchAssistPanel({
         if (!response.ok) throw new Error(payload.error || "Could not build workspace context.");
         return payload;
       })
-      .then((payload) => setAssistantContext(payload.context ?? null))
+      .then((payload) => setAssistantResponse({ slug: contextSlug, context: payload.context ?? null, error: "" }))
       .catch((requestError) => {
         if ((requestError as Error).name !== "AbortError") {
-          setAssistantContext(null);
-          setContextError(requestError instanceof Error ? requestError.message : "Could not build workspace context.");
+          setAssistantResponse({
+            slug: contextSlug,
+            context: null,
+            error: requestError instanceof Error ? requestError.message : "Could not build workspace context.",
+          });
         }
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setContextLoading(false);
       });
     return () => controller.abort();
-  }, [codexContext.note?.slug]);
+  }, [contextSlug]);
 
   function select(service: Service) {
     setActive(service);
@@ -98,9 +93,9 @@ export function ResearchAssistPanel({
         <span className="research-assist-guard">review-first</span>
       </header>
 
-      {assistantContext
-        ? <ResearchAssistantContext context={assistantContext} />
-        : <ResearchAssistantContextState loading={contextLoading} error={contextError} />}
+      {contextSlug && assistantResponse?.slug === contextSlug && assistantResponse.context
+        ? <ResearchAssistantContext context={assistantResponse.context} />
+        : contextSlug && <ResearchAssistantContextState loading={assistantResponse?.slug !== contextSlug} error={assistantResponse?.slug === contextSlug ? assistantResponse.error : ""} />}
 
       <div className="research-assist-tabs" role="tablist" aria-label="Research assist service">
         <button
