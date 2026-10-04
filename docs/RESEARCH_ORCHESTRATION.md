@@ -2,7 +2,7 @@
 
 Observaire can coordinate several research streams without turning research notes into tasks or inferring workflow state from activity.
 
-The orchestration control plane lives on `/projects` and reads optional metadata from `research-observer.config.json`. Research Markdown, project folders, experiments, evidence, and manuscript files keep their existing source-of-truth rules.
+The orchestration control plane lives on `/projects` and stores optional metadata in `research-observer.config.json`. Research Markdown, project folders, experiments, evidence, and manuscript files keep their existing source-of-truth rules.
 
 ## Project metadata
 
@@ -22,7 +22,7 @@ A configured project may add an `orchestration` object:
 }
 ```
 
-For an auto-discovered folder project, add a config entry with the same stable project ID when orchestration metadata is needed. Folder discovery remains the project source; the config entry attaches coordination metadata and does not replace the folder.
+For an auto-discovered folder project, the local editor can add a config entry with the same stable project ID when orchestration metadata is first saved. Folder discovery remains the project source; the config entry attaches coordination metadata and does not replace the folder.
 
 ## Declared statuses
 
@@ -83,6 +83,52 @@ They are not generated from note content and are not executed automatically.
 
 Latest activity does not decide project status. It is displayed only to help orient the user.
 
+## Local editor
+
+Each project card exposes **Edit coordination** when the `/projects` UI is available. The editor changes only that project's orchestration metadata:
+
+- declared status;
+- explicit dependencies;
+- next declared step;
+- coordination note.
+
+The editing sequence is intentionally explicit:
+
+1. Open the editor and load the current config hash.
+2. Change the draft locally in the browser.
+3. Select **Preview changes**.
+4. Observaire validates the exact draft and shows a before → after review plus dependency context.
+5. **Save reviewed change** is enabled only while the form still matches that reviewed draft.
+6. Save re-validates the draft against the current on-disk config before writing.
+
+Changing any form field after preview invalidates the review and requires another preview. There is no autosave.
+
+Choosing `Untracked` removes only the project's `orchestration` property. It does not delete the project config entry, folder, research notes, experiments, evidence, or assets.
+
+### Stale-write protection
+
+The editor hashes the exact bytes of `research-observer.config.json`. Preview and save both require that hash to remain current.
+
+If the config changes on disk after the editor opens, Observaire rejects the operation rather than overwriting newer work. The user must reload current values, preview again, and then save.
+
+### Atomic local writes
+
+A successful save writes a temporary file beside `research-observer.config.json` and promotes it with a filesystem rename. Unrelated top-level config fields and unrelated project metadata are preserved.
+
+After promotion, Observaire rebuilds generated research artifacts. If compiler validation fails, it restores the previous config bytes and rebuilds the prior generated state.
+
+### Local write policy
+
+Development enables orchestration editing by default, matching the existing local research-write policy. A production build remains read-only unless:
+
+```text
+RESEARCH_OBSERVER_WRITES=1
+```
+
+is explicitly configured for that local runtime.
+
+Mutation requests are same-origin only. The API does not expose a generic filesystem path or arbitrary JSON-file editor.
+
 ## Validation and safety
 
 The orchestration model validates:
@@ -92,20 +138,21 @@ The orchestration model validates:
 - unknown project dependencies;
 - self-dependencies;
 - dependency cycles;
-- text shape for `next` and `note`.
+- text shape and bounded size for `next` and `note`.
 
-Invalid metadata remains visible as a configuration issue instead of being repaired or guessed automatically. `npm run doctor` reports the same orchestration issues against `research-observer.config.json`, so invalid coordination metadata fails the normal local quality gate.
+Invalid metadata remains visible as a configuration issue instead of being repaired or guessed automatically. `npm run doctor` reports orchestration issues against `research-observer.config.json`, so invalid coordination metadata fails the normal local quality gate.
 
-This first orchestration slice is intentionally read-only. Edit `research-observer.config.json` locally to change orchestration metadata. A future local editing surface may reuse this contract, but must preserve explicit human control and stale-safe writes.
+The editor uses the same orchestration model for preview; it does not maintain a parallel validation vocabulary.
 
 ## Non-goals
 
-The control plane does not:
+The control plane and editor do not:
 
 - infer priorities or quality scores;
 - infer `blocked` from health warnings;
 - infer `done` from completed notes or experiments;
 - schedule Codex/Consensus jobs automatically;
-- mutate research files;
+- mutate research Markdown or manuscript files;
 - create a parallel project database;
+- provide a generic config-file editor;
 - treat cross-project research relationships as orchestration dependencies unless they are also explicitly listed in `dependsOn`.
