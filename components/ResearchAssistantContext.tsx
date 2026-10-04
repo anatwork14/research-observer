@@ -48,6 +48,31 @@ export function ResearchAssistantContext({ context }: { context: ResearchAssista
           </div>
 
           <div className={styles.group}>
+            <span>Context-aware questions</span>
+            <div className={styles.rows}>
+              {context.suggestions.map((suggestion, index) => (
+                <div className={styles.row} key={`${suggestion}-${index}`}>
+                  <code>ask</code>
+                  <div><strong>{suggestion}</strong></div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.group}>
+            <span>Literature search ideas</span>
+            <p>These deterministic queries are derived from note metadata and explicit workspace facts. Copy one into Consensus when useful; they do not run automatically.</p>
+            <div className={styles.rows}>
+              {context.literatureQueries.map((query, index) => (
+                <div className={styles.row} key={`${query}-${index}`}>
+                  <code>search</code>
+                  <div><strong>{query}</strong></div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.group}>
             <span>Explicit evidence signals</span>
             <div className={styles.rows}>
               {evidenceSignals.length ? evidenceSignals.map((signal, index) => (
