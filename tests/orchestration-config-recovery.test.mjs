@@ -31,6 +31,7 @@ test("malformed authored orchestration can be reviewed and removed as Untracked"
       baseSha256: state.baseSha256,
       orchestration: null,
     });
+    assert.match(preview.reviewSha256, /^[a-f0-9]{64}$/);
     assert.equal(preview.preview.valid, true);
     assert.equal(preview.preview.project.status, "untracked");
     assert.deepEqual(preview.preview.changes, [
@@ -42,6 +43,7 @@ test("malformed authored orchestration can be reviewed and removed as Untracked"
       projectId: "alpha",
       baseSha256: state.baseSha256,
       orchestration: null,
+      reviewSha256: preview.reviewSha256,
     });
     const config = JSON.parse(await fs.readFile(path.join(root, "research-observer.config.json"), "utf8"));
     assert.equal(config.researchProjects[0].description, "Keep me");
