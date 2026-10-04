@@ -146,7 +146,7 @@ export function ResearchAssistPanel({
         <span aria-hidden="true">{active === "consensus" ? "↗" : "◇"}</span>
         <p>
           {active === "consensus"
-            ? "Discovery only. Workspace-derived queries are search ideas, not evidence."
+            ? "Discovery only. Workspace-derived query ideas in the context inspector are not evidence."
             : "Ask and Draft are read-only. Server-resolved workspace context takes precedence over browser note metadata."}
         </p>
       </div>
@@ -161,7 +161,6 @@ export function ResearchAssistPanel({
         <ConsensusCitationPanel
           defaultQuery={defaultConsensusQuery}
           researchId={codexContext.note?.research}
-          contextQueries={assistantContext?.literatureQueries}
           embedded
           onStatusChange={setConsensusStatus}
         />
@@ -176,7 +175,6 @@ export function ResearchAssistPanel({
       >
         <CodexPanel
           context={codexContext}
-          assistantContext={assistantContext}
           embedded
           onStatusChange={setCodexStatus}
         />
