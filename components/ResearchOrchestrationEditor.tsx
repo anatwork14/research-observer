@@ -17,6 +17,7 @@ type EditorState = {
 
 type PreviewResponse = {
   baseSha256?: string;
+  reviewSha256?: string;
   preview?: OrchestrationPreview;
   error?: string;
   issues?: Array<{ code?: string; message?: string }>;
@@ -57,13 +58,14 @@ export function ResearchOrchestrationEditor({ projectId, projectLabel }: { proje
   const [draft, setDraft] = useState<Draft | null>(null);
   const [preview, setPreview] = useState<OrchestrationPreview | null>(null);
   const [previewFingerprint, setPreviewFingerprint] = useState("");
+  const [reviewSha256, setReviewSha256] = useState("");
   const [error, setError] = useState("");
   const [stale, setStale] = useState(false);
 
   const fingerprint = useMemo(() => JSON.stringify({ projectId, draft }), [projectId, draft]);
   const currentProject = state?.projects.find((project) => project.id === projectId);
   const dependencyProjects = state?.projects.filter((project) => project.id !== projectId) ?? [];
-  const reviewed = Boolean(preview && preview.valid && previewFingerprint === fingerprint);
+  const reviewed = Boolean(preview && preview.valid && previewFingerprint === fingerprint && reviewSha256);
 
   useEffect(() => {
     if (!open) return;
@@ -74,10 +76,15 @@ export function ResearchOrchestrationEditor({ projectId, projectLabel }: { proje
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open, busy]);
 
-  function mutate(next: Draft) {
-    setDraft(next);
+  function clearReview() {
     setPreview(null);
     setPreviewFingerprint("");
+    setReviewSha256("");
+  }
+
+  function mutate(next: Draft) {
+    setDraft(next);
+    clearReview();
     setError("");
     setStale(false);
   }
@@ -87,8 +94,7 @@ export function ResearchOrchestrationEditor({ projectId, projectLabel }: { proje
     setLoading(true);
     setError("");
     setStale(false);
-    setPreview(null);
-    setPreviewFingerprint("");
+    clearReview();
     try {
       const response = await fetch("/api/research/orchestration", { cache: "no-store" });
       const data = await response.json() as EditorState;
@@ -130,6 +136,7 @@ export function ResearchOrchestrationEditor({ projectId, projectLabel }: { proje
           projectId,
           baseSha256: state.baseSha256,
           orchestration: requestPayload(),
+          ...(action === "save" ? { reviewSha256 } : {}),
         }),
       });
       const data = await response.json() as PreviewResponse;
@@ -140,8 +147,10 @@ export function ResearchOrchestrationEditor({ projectId, projectLabel }: { proje
       }
       if (!data.preview) throw new Error("The orchestration service returned no review result.");
       if (action === "preview") {
+        if (!data.reviewSha256) throw new Error("The orchestration service returned no review digest.");
         setPreview(data.preview);
         setPreviewFingerprint(fingerprint);
+        setReviewSha256(data.reviewSha256);
         return;
       }
       setPreview(data.preview);
@@ -150,8 +159,7 @@ export function ResearchOrchestrationEditor({ projectId, projectLabel }: { proje
       setOpen(false);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Orchestration edit failed.");
-      setPreview(null);
-      setPreviewFingerprint("");
+      clearReview();
     } finally {
       setBusy(false);
     }
