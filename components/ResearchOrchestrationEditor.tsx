@@ -58,6 +58,7 @@ export function ResearchOrchestrationEditor({ projectId, projectLabel }: { proje
   const [preview, setPreview] = useState<OrchestrationPreview | null>(null);
   const [previewFingerprint, setPreviewFingerprint] = useState("");
   const [error, setError] = useState("");
+  const [stale, setStale] = useState(false);
 
   const fingerprint = useMemo(() => JSON.stringify({ projectId, draft }), [projectId, draft]);
   const currentProject = state?.projects.find((project) => project.id === projectId);
@@ -78,12 +79,14 @@ export function ResearchOrchestrationEditor({ projectId, projectLabel }: { proje
     setPreview(null);
     setPreviewFingerprint("");
     setError("");
+    setStale(false);
   }
 
   async function loadEditor() {
     setOpen(true);
     setLoading(true);
     setError("");
+    setStale(false);
     setPreview(null);
     setPreviewFingerprint("");
     try {
@@ -104,8 +107,7 @@ export function ResearchOrchestrationEditor({ projectId, projectLabel }: { proje
   }
 
   function requestPayload() {
-    if (!draft) return null;
-    if (draft.status === "untracked") return null;
+    if (!draft || draft.status === "untracked") return null;
     return {
       status: draft.status,
       dependsOn: draft.dependsOn,
@@ -118,6 +120,7 @@ export function ResearchOrchestrationEditor({ projectId, projectLabel }: { proje
     if (!state || !draft || busy) return;
     setBusy(true);
     setError("");
+    setStale(false);
     try {
       const response = await fetch("/api/research/orchestration", {
         method: "POST",
@@ -131,6 +134,7 @@ export function ResearchOrchestrationEditor({ projectId, projectLabel }: { proje
       });
       const data = await response.json() as PreviewResponse;
       if (!response.ok || data.error) {
+        if (response.status === 409) setStale(true);
         const issueText = data.issues?.map((issue) => issue.message || issue.code).filter(Boolean).join(" ");
         throw new Error([data.error || "Orchestration edit failed.", issueText].filter(Boolean).join(" "));
       }
@@ -180,7 +184,12 @@ export function ResearchOrchestrationEditor({ projectId, projectLabel }: { proje
             </header>
 
             {loading && <p className={styles.stateMessage}>Loading current config…</p>}
-            {!loading && error && <div className={styles.error} role="alert">{error}</div>}
+            {!loading && error && (
+              <div className={styles.error} role="alert">
+                <span>{error}</span>
+                {stale && <button type="button" onClick={loadEditor} disabled={busy}>Reload current values</button>}
+              </div>
+            )}
 
             {!loading && state && !state.enabled && (
               <div className={styles.disabled}>
