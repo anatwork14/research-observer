@@ -3,10 +3,12 @@ import Link from "next/link";
 import GithubSlugger from "github-slugger";
 import { notFound, redirect } from "next/navigation";
 import { NoteDirectEditor } from "@/components/NoteDirectEditor";
+import { PdfSpatialProvenance } from "@/components/PdfSpatialProvenance";
 import { ResearchNav } from "@/components/ResearchNav";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
 import { ResearchAssistPanel } from "@/components/ResearchAssistPanel";
 import { getProgressEntries, getProgressEntry, getResearchWorkspace } from "@/lib/progress";
+import { parsePdfAnnotationPromotionSnapshot } from "@/lib/research/pdf-evidence-review.mjs";
 
 export const dynamic = "force-dynamic";
 
@@ -81,6 +83,9 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
   ]);
   const bodyContent = stripLeadingTitle(entry.content, entry.title);
   const headings = extractHeadings(bodyContent);
+  const pdfPromotionSnapshot = entry.type === "evidence" && entry.source?.kind === "pdf"
+    ? parsePdfAnnotationPromotionSnapshot(entry.content)
+    : null;
 
   return (
     <div className="site-shell">
@@ -193,6 +198,10 @@ export default async function ProgressPage({ params }: { params: Promise<{ slug:
               </div>
             </div>
           </section>
+
+          {pdfPromotionSnapshot && entry.source?.pdf && (
+            <PdfSpatialProvenance snapshot={pdfPromotionSnapshot} pdf={entry.source.pdf} />
+          )}
 
           <ResearchAssistPanel
             defaultConsensusQuery={[entry.title, entry.summary].filter(Boolean).join(". ")}
