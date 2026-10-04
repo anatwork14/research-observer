@@ -68,9 +68,12 @@ export function PdfEvidenceReviewLauncher({ paperPath }: { paperPath: string }) 
 
   useEffect(() => {
     if (!host) return;
-    void load();
+    const initialLoad = window.setTimeout(() => void load(), 0);
     const timer = window.setInterval(() => void load(), 2500);
-    return () => window.clearInterval(timer);
+    return () => {
+      window.clearTimeout(initialLoad);
+      window.clearInterval(timer);
+    };
   }, [host, load]);
 
   const candidates = useMemo(
