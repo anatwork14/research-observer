@@ -27,6 +27,7 @@ function errorStatus(error: unknown) {
   if (code === "ORCHESTRATION_CONFIG_PARSE") return 422;
   if (code === "ORCHESTRATION_CONFIG_NO_CHANGES") return 422;
   if (code === "ORCHESTRATION_CONFIG_VALIDATION") return 422;
+  if (code === "ORCHESTRATION_CONFIG_REVIEW_REQUIRED") return 422;
   return 422;
 }
 
@@ -56,6 +57,7 @@ export async function POST(request: Request) {
     projectId?: unknown;
     orchestration?: unknown;
     baseSha256?: unknown;
+    reviewSha256?: unknown;
   };
   try {
     body = await request.json();
@@ -68,6 +70,7 @@ export async function POST(request: Request) {
     projectId: typeof body.projectId === "string" ? body.projectId : "",
     orchestration: body.orchestration,
     baseSha256: typeof body.baseSha256 === "string" ? body.baseSha256 : "",
+    reviewSha256: typeof body.reviewSha256 === "string" ? body.reviewSha256 : "",
   };
 
   try {
