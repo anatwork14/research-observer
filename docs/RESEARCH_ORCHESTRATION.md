@@ -98,10 +98,11 @@ The editing sequence is intentionally explicit:
 2. Change the draft locally in the browser.
 3. Select **Preview changes**.
 4. Observaire validates the exact draft and shows a before → after review plus dependency context.
-5. **Save reviewed change** is enabled only while the form still matches that reviewed draft.
-6. Save re-validates the draft against the current on-disk config before writing.
+5. Preview returns a review digest bound to the config hash, project, normalized draft, and derived review context.
+6. **Save reviewed change** is enabled only while the form still matches that reviewed draft.
+7. Save re-validates the draft and requires the matching review digest before writing.
 
-Changing any form field after preview invalidates the review and requires another preview. There is no autosave.
+Changing any form field after preview invalidates the review and requires another preview. Calling the save API directly without the matching review digest is rejected. There is no autosave.
 
 Choosing `Untracked` removes only the project's `orchestration` property. It does not delete the project config entry, folder, research notes, experiments, evidence, or assets.
 
