@@ -78,10 +78,7 @@ export function PdfEvidenceReviewLauncher({ paperPath }: { paperPath: string }) 
     [state?.annotations],
   );
   const selected = candidates.find((annotation) => annotation.id === selectedId) ?? null;
-
-  useEffect(() => {
-    if (selectedId && !selected) setSelectedId(null);
-  }, [selected, selectedId]);
+  const activeSelectedId = selected?.id ?? null;
 
   if (!host) return null;
 
@@ -103,7 +100,7 @@ export function PdfEvidenceReviewLauncher({ paperPath }: { paperPath: string }) 
             <button
               key={annotation.id}
               type="button"
-              data-active={selectedId === annotation.id}
+              data-active={activeSelectedId === annotation.id}
               onClick={() => setSelectedId((current) => current === annotation.id ? null : annotation.id)}
             >
               <strong>{annotation.type}</strong>
