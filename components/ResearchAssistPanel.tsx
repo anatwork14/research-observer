@@ -24,6 +24,7 @@ export function ResearchAssistPanel({
   const [active, setActive] = useState<Service>("consensus");
   const [consensusStatus, setConsensusStatus] = useState<ServiceStatus>(null);
   const [codexStatus, setCodexStatus] = useState<ServiceStatus>(null);
+  const [contextRevision, setContextRevision] = useState(0);
   const [assistantResponse, setAssistantResponse] = useState<{
     slug: string;
     context: ResearchAssistantContextModel | null;
@@ -71,7 +72,7 @@ export function ResearchAssistPanel({
         }
       });
     return () => controller.abort();
-  }, [contextSlug]);
+  }, [contextSlug, contextRevision]);
 
   function select(service: Service) {
     setActive(service);
@@ -167,6 +168,7 @@ export function ResearchAssistPanel({
           targetNote={targetNote}
           embedded
           onStatusChange={setConsensusStatus}
+          onEvidenceSaved={() => setContextRevision((current) => current + 1)}
         />
       </div>
 
