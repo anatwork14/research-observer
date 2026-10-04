@@ -73,12 +73,14 @@ export function ConsensusCitationPanel({
   targetNote,
   embedded = false,
   onStatusChange,
+  onEvidenceSaved,
 }: {
   defaultQuery: string;
   researchId?: string;
   targetNote?: TargetNote;
   embedded?: boolean;
   onStatusChange?: (status: Status) => void;
+  onEvidenceSaved?: () => void;
 }) {
   const [status, setStatus] = useState<Status | null>(null);
   const [query, setQuery] = useState(defaultQuery);
@@ -336,6 +338,7 @@ export function ConsensusCitationPanel({
                     targetNote={targetNote}
                     onSaved={(result) => {
                       if (id) setSavedEvidence((current) => ({ ...current, [id]: { slug: result.slug, filename: result.filename } }));
+                      onEvidenceSaved?.();
                     }}
                   />
                 )}
